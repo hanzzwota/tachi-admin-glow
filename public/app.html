@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>tachi69gmail - Platform Setor & Jual Beli Gmail</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #eef6ff;
+            color: #1e293b;
+            -webkit-tap-highlight-color: transparent;
+            min-height: 100vh;
+        }
+
+        /* Ambient background mesh gradient */
+        .bg-mesh {
+            background: radial-gradient(circle at 50% 0%, #dbeafe 0%, #eff6ff 50%, #e0f2fe 100%);
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Ambient floating blurred spheres */
+        .bg-sphere-1 {
+            position: fixed;
+            top: 20%;
+            left: -80px;
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(147, 197, 253, 0.6), rgba(191, 219, 254, 0.3));
+            filter: blur(12px);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .bg-sphere-2 {
+            position: fixed;
+            bottom: -50px;
+            right: -60px;
+            width: 260px;
+            height: 260px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #60a5fa, #3b82f6);
+            box-shadow: inset -10px -10px 20px rgba(0,0,0,0.1);
+            filter: blur(8px);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .bg-sphere-3 {
+            position: fixed;
+            top: 60%;
+            left: -40px;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #93c5fd, #2563eb);
+            filter: blur(6px);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Smooth rotating animation for logo */
+        @keyframes rotateSmooth {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .animate-logo-spin {
+            animation: none; /* Animasi muter dimatikan */
+        }
+
+        /* Custom Saldo Card Gradient & Wave Effect */
+        .card-saldo-bg {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 50%, #1e40af 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-saldo-bg::before {
+            content: '';
+            position: absolute;
+            width: 260px;
+            height: 260px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.08);
+            top: -80px;
+            right: -60px;
+            pointer-events: none;
+        }
+
+        .card-saldo-bg::after {
+            content: '';
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            bottom: -80px;
+            left: -50px;
+            pointer-events: none;
+        }
+
+        /* Soft card shadows */
+        .card-soft-shadow {
+            box-shadow: 0 10px 25px -5px rgba(148, 163, 184, 0.15), 0 8px 10px -6px rgba(148, 163, 184, 0.1);
+        }
+
+        .auth-card-shadow {
+            box-shadow: 0 20px 40px -15px rgba(37, 99, 235, 0.12);
+        }
+
+        /* Glossy primary button */
+        .btn-glossy {
+            background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+            box-shadow: 0 8px 20px -4px rgba(37, 99, 235, 0.4);
+        }
+
+        .btn-glossy:hover {
+            background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+        }
+
+        /* 3D Soft Icon standard style */
+        .icon-soft-box {
+            background: linear-gradient(145deg, #60a5fa, #3b82f6);
+            box-shadow: 0 8px 16px -2px rgba(59, 130, 246, 0.35);
+        }
+
+        .icon-soft-box-green {
+            background: linear-gradient(145deg, #34d399, #10b981);
+            box-shadow: 0 6px 14px -2px rgba(16, 185, 129, 0.35);
+        }
+
+        .icon-soft-box-orange {
+            background: linear-gradient(145deg, #fbbf24, #f59e0b);
+            box-shadow: 0 6px 14px -2px rgba(245, 158, 11, 0.35);
+        }
+
+        /* Center action button on bottom navigation bar */
+        .nav-center-btn {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.45);
+        }
+
+        /* Input highlight styling */
+        .custom-input {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s ease;
+        }
+
+        .custom-input:focus-within {
+            background-color: #ffffff;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+
+        /* Hide scrollbar */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-mesh min-h-screen flex flex-col items-center justify-start relative selection:bg-blue-200">
+
+    <div class="bg-sphere-1"></div>
+    <div class="bg-sphere-2"></div>
+    <div class="bg-sphere-3"></div>
+
+    <!-- Quick Page Switcher Bar for Seamless Demonstration -->
+    <div class="w-full max-w-lg bg-slate-900/85 backdrop-blur-md text-white text-[11px] px-3 py-1.5 flex justify-between items-center z-50 sticky top-0 border-b border-white/10 shadow-lg">
+        <span class="font-bold text-blue-300 flex items-center gap-1">
+            <i class="fa-solid fa-layer-group text-xs"></i> View:
+        </span>
+        <div class="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
+            <button onclick="navigateTo('login')" id="btn-switch-login" class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-blue-600 text-white transition shrink-0">Login</button>
+            <button onclick="navigateTo('register')" id="btn-switch-register" class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600 transition shrink-0">Reg</button>
+            <button onclick="navigateTo('dashboard')" id="btn-switch-dashboard" class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600 transition shrink-0">Beranda</button>
+            <button onclick="navigateTo('stor')" id="btn-switch-stor" class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600 transition shrink-0">Stor</button>
+            <button onclick="navigateTo('saldo')" id="btn-switch-saldo" class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600 transition shrink-0">Saldo</button>
+            <button onclick="navigateTo('profil')" id="btn-switch-profil" class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600 transition shrink-0">Profil</button>
+            <button onclick="navigateTo('riwayat')" id="btn-switch-riwayat" class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600 transition shrink-0">Riwayat</button>
+        </div>
+    </div>
+
+    <!-- Main Mobile Container -->
+    <div class="w-full max-w-lg min-h-screen px-3 sm:px-4 py-4 flex flex-col justify-start relative z-10">
+
+        <!-- ==================== VIEW 1: LOGIN PAGE ==================== -->
+        <div id="view-login" class="flex flex-col items-center justify-center min-h-[85vh] w-full py-4 my-auto">
+            
+            <!-- Rotating Logo Header -->
+            <div class="flex flex-col items-center text-center mb-6">
+                <div class="w-24 h-24 mb-3 relative flex items-center justify-center">
+                    <img src="https://files.catbox.moe/dysigb.jpeg" 
+                         alt="tachi69gmail logo" 
+                         class="w-full h-full object-cover rounded-full shadow-lg border-2 border-white/60 animate-logo-spin"
+                         onerror="this.onerror=null; this.src='https://placehold.co/100x100/2563eb/ffffff?text=Tachi'">
+                </div>
+                <h1 class="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-1">
+                    tachi<span class="text-blue-600">69gmail</span>
+                </h1>
+                <p class="text-xs text-slate-500 max-w-[260px] font-medium leading-relaxed mt-2">
+                    Setor Gmail, pantau verifikasi, dan tarik saldo — semua dalam satu aplikasi.
+                </p>
+            </div>
+
+            <!-- Login Card -->
+            <div class="w-full bg-white rounded-3xl p-6 auth-card-shadow border border-slate-100/80">
+                <div class="mb-5">
+                    <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">Selamat datang</h2>
+                    <p class="text-xs text-slate-500 font-medium mt-0.5">Masuk ke akun tachi69gmail</p>
+                </div>
+
+                <form onsubmit="handleAuthSubmit(event, 'dashboard')" class="flex flex-col gap-4">
+                    <!-- Username Input -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">Username</label>
+                        <div class="custom-input rounded-xl px-3.5 py-2.5 flex items-center gap-3">
+                            <i class="fa-regular fa-user text-blue-500 text-sm"></i>
+                            <input type="text" placeholder="username" required class="bg-transparent text-xs text-slate-800 placeholder-slate-400 focus:outline-none w-full font-medium">
+                        </div>
+                    </div>
+
+                    <!-- Password Input -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">Kata Sandi</label>
+                        <div class="custom-input rounded-xl px-3.5 py-2.5 flex items-center gap-3">
+                            <i class="fa-solid fa-lock text-blue-500 text-sm"></i>
+                            <input id="login-password" type="password" placeholder="••••••••" required class="bg-transparent text-xs text-slate-800 placeholder-slate-400 focus:outline-none w-full font-medium">
+                            <button type="button" onclick="togglePasswordVisibility('login-password', this)" class="text-slate-400 hover:text-slate-600 text-xs">
+                                <i class="fa-regular fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="btn-glossy w-full text-white font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-2 mt-2 active:scale-98 transition-transform">
+                        <span>Masuk</span>
+                        <i class="fa-solid fa-arrow-right text-xs"></i>
+                    </button>
+                </form>
+
+                <!-- Footer Switch Link -->
+                <div class="text-center mt-5 pt-2">
+                    <p class="text-xs text-slate-500 font-medium">
+                        Belum punya akun? 
+                        <button onclick="navigateTo('register')" class="text-blue-600 font-bold hover:underline">Daftar</button>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- ==================== VIEW 2: REGISTER PAGE ==================== -->
+        <div id="view-register" class="hidden flex-col items-center justify-center min-h-[85vh] w-full py-4 my-auto">
+            
+            <!-- Rotating Logo Header -->
+            <div class="flex flex-col items-center text-center mb-5">
+                <div class="w-20 h-20 mb-2 relative flex items-center justify-center">
+                    <img src="https://files.catbox.moe/dysigb.jpeg" 
+                         alt="tachi69gmail logo" 
+                         class="w-full h-full object-cover rounded-full shadow-md border-2 border-white/60 animate-logo-spin"
+                         onerror="this.onerror=null; this.src='https://placehold.co/100x100/2563eb/ffffff?text=Tachi'">
+                </div>
+                <h1 class="text-xl font-black text-slate-900 tracking-tight flex items-center gap-1">
+                    tachi<span class="text-blue-600">69gmail</span>
+                </h1>
+                <p class="text-xs text-slate-500 max-w-[260px] font-medium leading-relaxed mt-1">
+                    Setor Gmail, pantau verifikasi, dan tarik saldo — semua dalam satu aplikasi.
+                </p>
+            </div>
+
+            <!-- Register Card -->
+            <div class="w-full bg-white rounded-3xl p-6 auth-card-shadow border border-slate-100/80">
+                <div class="mb-4">
+                    <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">Buat Akun</h2>
+                    <p class="text-xs text-slate-500 font-medium mt-0.5">Daftar member tachi69gmail</p>
+                </div>
+
+                <form onsubmit="handleAuthSubmit(event, 'dashboard')" class="flex flex-col gap-3.5">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Nama Lengkap</label>
+                        <div class="custom-input rounded-xl px-3.5 py-2.5 flex items-center gap-3">
+                            <i class="fa-regular fa-user text-blue-500 text-sm"></i>
+                            <input type="text" placeholder="Nama lengkap" required class="bg-transparent text-xs text-slate-800 placeholder-slate-400 focus:outline-none w-full font-medium">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Username</label>
+                        <div class="custom-input rounded-xl px-3.5 py-2.5 flex items-center gap-3">
+                            <span class="text-blue-500 font-bold text-xs">@</span>
+                            <input type="text" placeholder="username" required class="bg-transparent text-xs text-slate-800 placeholder-slate-400 focus:outline-none w-full font-medium">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Email atau WhatsApp</label>
+                        <div class="custom-input rounded-xl px-3.5 py-2.5 flex items-center gap-3">
+                            <i class="fa-solid fa-mobile-screen text-blue-500 text-sm"></i>
+                            <input type="text" placeholder="email@gmail.com atau 08xxxxxxxxxx" required class="bg-transparent text-xs text-slate-800 placeholder-slate-400 focus:outline-none w-full font-medium">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Kata Sandi</label>
+                        <div class="custom-input rounded-xl px-3.5 py-2.5 flex items-center gap-3">
+                            <i class="fa-solid fa-lock text-blue-500 text-sm"></i>
+                            <input id="register-password" type="password" placeholder="••••••••" required class="bg-transparent text-xs text-slate-800 placeholder-slate-400 focus:outline-none w-full font-medium">
+                            <button type="button" onclick="togglePasswordVisibility('register-password', this)" class="text-slate-400 hover:text-slate-600 text-xs">
+                                <i class="fa-regular fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Kode Referral (opsional)</label>
+                        <div class="custom-input rounded-xl px-3.5 py-2.5 flex items-center gap-3">
+                            <i class="fa-solid fa-gift text-blue-500 text-sm"></i>
+                            <input type="text" placeholder="KM-XXXX" class="bg-transparent text-xs text-slate-800 placeholder-slate-400 focus:outline-none w-full font-medium uppercase">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-glossy w-full text-white font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-2 mt-2 active:scale-98 transition-transform">
+                        <span>Daftar Sekarang</span>
+                        <i class="fa-solid fa-arrow-right text-xs"></i>
+                    </button>
+                </form>
+
+                <div class="text-center mt-4 pt-1">
+                    <p class="text-xs text-slate-500 font-medium">
+                        Sudah punya akun? 
+                        <button onclick="navigateTo('login')" class="text-blue-600 font-bold hover:underline">Masuk</button>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- ==================== VIEW 3: DASHBOARD (BERANDA) PAGE ==================== -->
+        <div id="view-dashboard" class="hidden flex-col gap-4 pb-24 w-full">
+            
+            <!-- Header / Navbar -->
+            <header class="flex items-center justify-between py-1">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center overflow-hidden shadow-md border border-slate-200/80">
+                        <img src="https://files.catbox.moe/dysigb.jpeg" 
+                             alt="tachi69gmail logo" 
+                             class="w-full h-full object-cover animate-logo-spin"
+                             onerror="this.onerror=null; this.src='https://placehold.co/40x40/2563eb/ffffff?text=T'">
+                    </div>
+                    <div>
+                        <h1 class="font-black text-lg text-slate-900 tracking-tight leading-none flex items-center gap-0.5">
+                            tachi<span class="text-blue-600">69gmail</span>
+                        </h1>
+                        <p class="text-[11px] text-slate-500 font-medium mt-0.5">Selamat malam, <span class="text-slate-800 font-bold">ryuu</span></p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <a href="https://wa.me/" target="_blank" class="flex items-center gap-1.5 bg-white border border-slate-200/80 px-3 py-1.5 rounded-full text-xs font-semibold text-slate-700 shadow-sm active:scale-95 transition-transform">
+                        <span class="relative flex h-2 w-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                        </span>
+                        <i class="fa-brands fa-whatsapp text-emerald-500 text-sm"></i>
+                        <span>Saluran WA</span>
+                    </a>
+
+                    <button onclick="logout()" class="flex items-center gap-1 bg-rose-50 border border-rose-200/80 px-2.5 py-1.5 rounded-full text-xs font-semibold text-rose-600 shadow-sm active:scale-95 transition-transform">
+                        <i class="fa-solid fa-right-from-bracket text-xs"></i>
+                        <span>Keluar</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Main Saldo Card -->
+            <div class="card-saldo-bg rounded-3xl p-5 text-white shadow-xl shadow-blue-500/20">
+                <div class="flex justify-between items-start">
+                    <div class="flex items-center gap-2 text-blue-100 text-[11px] font-bold tracking-wider uppercase">
+                        <i class="fa-solid fa-wallet text-blue-200"></i>
+                        <span>SALDO ANDA</span>
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner overflow-hidden">
+                        <img src="https://files.catbox.moe/dysigb.jpeg" 
+                             alt="tachi logo" 
+                             class="w-full h-full object-cover animate-logo-spin"
+                             onerror="this.onerror=null; this.src='https://placehold.co/40x40/2563eb/ffffff?text=T'">
+                    </div>
+                </div>
+
+                <div class="mt-1">
+                    <div class="text-3xl font-black tracking-tight text-white">
+                        Rp0
+                    </div>
+                    <div class="text-xs text-blue-100 font-medium mt-1">
+                        Harga / Gmail: <span class="text-white font-bold">Rp4.500</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 mt-5">
+                    <button onclick="navigateTo('saldo')" class="flex-1 bg-white text-blue-700 font-bold text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-md active:scale-95 transition duration-150">
+                        <i class="fa-solid fa-circle-arrow-down text-sm"></i>
+                        <span>Tarik Saldo</span>
+                    </button>
+
+                    <button onclick="navigateTo('riwayat')" class="flex-1 bg-blue-500/30 hover:bg-blue-500/40 border border-white/20 text-white font-bold text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 backdrop-blur-sm active:scale-95 transition duration-150">
+                        <i class="fa-solid fa-clock-rotate-left text-sm"></i>
+                        <span>Riwayat</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Diterima & Pending Stats Row -->
+            <div class="grid grid-cols-2 gap-3.5">
+                <div class="bg-white rounded-2xl p-3.5 flex items-center gap-3 card-soft-shadow border border-slate-100">
+                    <div class="w-11 h-11 rounded-xl icon-soft-box-green flex items-center justify-center text-white text-lg shrink-0">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
+                    <div>
+                        <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">DITERIMA</span>
+                        <span class="text-xl font-extrabold text-slate-800 leading-tight">0</span>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl p-3.5 flex items-center gap-3 card-soft-shadow border border-slate-100">
+                    <div class="w-11 h-11 rounded-xl icon-soft-box-orange flex items-center justify-center text-white text-lg shrink-0">
+                        <i class="fa-solid fa-hourglass-half"></i>
+                    </div>
+                    <div>
+                        <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">PENDING</span>
+                        <span class="text-xl font-extrabold text-slate-800 leading-tight">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Limit Storan Progress Bar -->
+            <div class="bg-white rounded-2xl p-4 card-soft-shadow border border-slate-100">
+                <div class="flex items-center justify-between text-xs mb-2">
+                    <div class="flex items-center gap-1.5 font-bold text-slate-700">
+                        <i class="fa-solid fa-gauge-high text-blue-500 text-xs"></i>
+                        <span>Limit Storan Hari Ini</span>
+                    </div>
+                    <div class="font-bold text-slate-700">
+                        <span>0/20</span>
+                        <span class="text-slate-400 font-medium">· Sisa 20</span>
+                    </div>
+                </div>
+                <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden relative">
+                    <div class="bg-gradient-to-r from-blue-500 to-indigo-600 h-full w-[5%] rounded-full relative">
+                        <div class="absolute right-0 top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-blue-600 border-2 border-white rounded-full shadow-sm"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Menu Utama Section -->
+            <div>
+                <h2 class="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2.5 px-1">Menu Utama</h2>
+                <div class="grid grid-cols-5 gap-2">
+                    <button onclick="navigateTo('stor')" class="flex flex-col items-center gap-1.5 group">
+                        <div class="w-12 h-12 rounded-2xl icon-soft-box flex items-center justify-center text-white text-lg group-active:scale-95 transition-transform">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </div>
+                        <span class="text-xs font-semibold text-slate-700">Stor</span>
+                    </button>
+
+                    <button onclick="navigateTo('riwayat')" class="flex flex-col items-center gap-1.5 group">
+                        <div class="w-12 h-12 rounded-2xl icon-soft-box flex items-center justify-center text-white text-lg group-active:scale-95 transition-transform">
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                        </div>
+                        <span class="text-xs font-semibold text-slate-700">Riwayat</span>
+                    </button>
+
+                    <button onclick="openModal('Email Checker', 'Gunakan tachi69gmail tool untuk memeriksa status email secara otomatis')" class="flex flex-col items-center gap-1.5 group">
+                        <div class="w-12 h-12 rounded-2xl icon-soft-box flex items-center justify-center text-white text-lg group-active:scale-95 transition-transform">
+                            <i class="fa-solid fa-magnifying-glass font-bold"></i>
+                        </div>
+                        <span class="text-xs font-semibold text-slate-700">Checker</span>
+                    </button>
+
+                    <button onclick="navigateTo('saldo')" class="flex flex-col items-center gap-1.5 group">
+                        <div class="w-12 h-12 rounded-2xl icon-soft-box flex items-center justify-center text-white text-lg group-active:scale-95 transition-transform">
+                            <i class="fa-solid fa-wallet"></i>
+                        </div>
+                        <span class="text-xs font-semibold text-slate-700">Saldo</span>
+                    </button>
+
+                    <button onclick="openModal('Rules & Peraturan', '1. Gmail harus fresh\n2. Tidak bermasalah saat login\n3. Pembayaran instant setelah dicek')" class="flex flex-col items-center gap-1.5 group">
+                        <div class="w-12 h-12 rounded-2xl icon-soft-box flex items-center justify-center text-white text-lg group-active:scale-95 transition-transform">
+                            <i class="fa-solid fa-file-lines"></i>
+                        </div>
+                        <span class="text-xs font-semibold text-slate-700">Rules</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Pengumuman Slider Card -->
+            <div class="bg-white rounded-2xl p-4 card-soft-shadow border border-slate-100 flex flex-col gap-3">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2 font-bold text-slate-800 text-sm">
+                        <div class="w-8 h-8 rounded-xl bg-sky-100 text-sky-600 flex items-center justify-center text-sm">
+                            <i class="fa-solid fa-bullhorn"></i>
+                        </div>
+                        <span>Pengumuman</span>
+                    </div>
+                    <span id="announcementBadge" class="text-xs font-bold text-blue-600 bg-blue-50 border border-blue-200/60 px-2.5 py-0.5 rounded-full">1/2</span>
+                </div>
+
+                <div class="bg-slate-50/80 border border-slate-200/60 rounded-xl p-3 min-h-[52px] flex items-center">
+                    <p id="announcementText" class="text-xs font-bold text-slate-700 tracking-wide">RATE NAIK. 4,5K</p>
+                </div>
+
+                <div class="flex items-center justify-between pt-1">
+                    <span class="text-[11px] font-medium text-slate-400">Geser untuk slide berikutnya</span>
+                    <div class="flex items-center gap-1.5">
+                        <button onclick="prevSlide()" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-xs font-bold active:scale-90 transition">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </button>
+                        <button onclick="nextSlide()" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-xs font-bold active:scale-90 transition">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Layanan Lainnya Section -->
+            <div>
+                <h2 class="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2.5 px-1">Layanan Lainnya</h2>
+                <div class="flex items-center justify-between px-1">
+                    <button onclick="showToast('Menghubungi Customer Support tachi69gmail')" class="w-12 h-12 rounded-2xl bg-white border border-slate-200/70 shadow-sm flex items-center justify-center text-blue-600 text-lg active:scale-95 transition">
+                        <i class="fa-solid fa-headset"></i>
+                    </button>
+                    <button onclick="showToast('Membuka grup diskusi tachi69gmail')" class="w-12 h-12 rounded-2xl bg-white border border-slate-200/70 shadow-sm flex items-center justify-center text-blue-600 text-lg active:scale-95 transition">
+                        <i class="fa-solid fa-comments"></i>
+                    </button>
+                    <button onclick="showToast('Papan Peringkat Minggu Ini')" class="w-12 h-12 rounded-2xl bg-white border border-slate-200/70 shadow-sm flex items-center justify-center text-blue-600 text-lg active:scale-95 transition">
+                        <i class="fa-solid fa-trophy"></i>
+                    </button>
+                    <button onclick="showToast('Klaim Bonus Hari Ini')" class="w-12 h-12 rounded-2xl bg-white border border-slate-200/70 shadow-sm flex items-center justify-center text-blue-600 text-lg active:scale-95 transition">
+                        <i class="fa-solid fa-gift"></i>
+                    </button>
+                    <button onclick="showToast('Statistik Penjualan')" class="w-12 h-12 rounded-2xl bg-white border border-slate-200/70 shadow-sm flex items-center justify-center text-blue-600 text-lg active:scale-95 transition">
+                        <i class="fa-solid fa-chart-simple"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Syarat & Ketentuan Peek Card -->
+            <div onclick="openModal('Syarat & Ketentuan tachi69gmail', '1. Platform ini khusus untuk transaksi jual beli email valid.\n2. Email yang disetor akan diproses otomatis.\n3. Keputusan admin tachi69gmail mutlak.')" class="bg-white rounded-2xl p-3.5 card-soft-shadow border border-slate-100 flex items-center justify-between cursor-pointer active:scale-98 transition">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-base">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xs font-bold text-slate-800">Syarat & Ketentuan</h3>
+                        <p class="text-[11px] text-slate-500 font-medium">Baca ketentuan penggunaan platform</p>
+                    </div>
+                </div>
+                <i class="fa-solid fa-chevron-right text-blue-500 text-xs"></i>
+            </div>
+        </div>
+
+
+        <!-- ==================== VIEW 4: STOR PAGE (image1) ==================== -->
+        <div id="view-stor" class="hidden flex-col gap-4 pb-24 w-full">
+            
+            <!-- Top App Header Bar -->
+            <header class="flex items-center justify-between py-1">
+                <div class="flex items-center gap-2.5">
+                    <button onclick="navigateTo('dashboard')" class="w-9 h-9 rounded-xl bg-white border border-slate-200/80 flex items-center justify-center text-slate-700 shadow-sm active:scale-90 transition">
+                        <i class="fa-solid fa-chevron-left text-xs"></i>
+                    </button>
+                    <div>
+                        <h1 class="font-extrabold text-base text-slate-900 tracking-tight leading-tight">
+                            Setor Daftar Gmail
+                        </h1>
+                        <p class="text-[11px] text-slate-500 font-medium">Kirim Gmail untuk diverifikasi</p>
+                    </div>
+                </div>
+
+                <button onclick="logout()" class="flex items-center gap-1 bg-rose-50 border border-rose-200/80 px-2.5 py-1.5 rounded-full text-xs font-semibold text-rose-600 shadow-sm active:scale-95 transition-transform">
+                    <i class="fa-solid fa-right-from-bracket text-xs"></i>
+                    <span>Keluar</span>
+                </button>
+            </header>
+
+            <!-- Info Alert Box -->
+            <div class="bg-sky-50 border border-sky-200/80 rounded-2xl p-3.5 flex items-center gap-3">
+                <div class="w-8 h-8 rounded-xl bg-sky-500 text-white flex items-center justify-center text-sm shrink-0">
+                    <i class="fa-solid fa-circle-info"></i>
+                </div>
+                <p class="text-xs text-sky-900 font-bold leading-relaxed">
+                    Generate mati: setor Gmail apa saja, password tetap password kampanye.
+                </p>
+            </div>
+
+            <!-- Rules Banner Box -->
+            <div class="bg-white rounded-2xl p-4 card-soft-shadow border border-slate-100 flex items-start justify-between gap-3">
+                <div class="flex items-start gap-3">
+                    <div class="w-10 h-10 rounded-xl icon-soft-box flex items-center justify-center text-white text-base shrink-0">
+                        <i class="fa-solid fa-clipboard-list"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xs font-extrabold text-slate-800">Cek Rules dulu sebelum stor</h3>
+                        <p class="text-[11px] text-slate-500 font-medium mt-0.5">Wajib dibaca agar Gmail tidak ditolak.</p>
+                        <button onclick="openModal('Rules & Peraturan Storan', '1. Gmail harus berstatus fresh.\n2. Wajib menggunakan password yang dicantumkan di bawah.\n3. Email bermasalah saat login tidak akan dihitung.')" class="mt-2.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 active:scale-95 transition">
+                            <i class="fa-solid fa-list-check text-xs"></i>
+                            <span>Buka Rules</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mandatory Password Card -->
+            <div class="bg-white rounded-2xl p-4 card-soft-shadow border border-slate-100 flex flex-col gap-2">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-xl icon-soft-box flex items-center justify-center text-white text-sm shrink-0">
+                        <i class="fa-solid fa-key"></i>
+                    </div>
+                    <h3 class="text-xs font-extrabold text-slate-800">Password wajib untuk Gmail yang disetor</h3>
+                </div>
+
+                <div class="custom-input rounded-xl px-3.5 py-2 flex items-center justify-between mt-1">
+                    <span id="requiredPasswordText" class="text-xs font-bold text-slate-800 tracking-wider">sgsg1122</span>
+                    <button onclick="copyToClipboard('sgsg1122')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold flex items-center gap-1 active:scale-95 transition">
+                        <i class="fa-regular fa-copy"></i>
+                        <span>Salin</span>
+                    </button>
+                </div>
+                <p class="text-[11px] text-orange-600 font-medium mt-0.5">Gmail dengan password berbeda akan ditolak.</p>
+            </div>
+
+            <!-- Generate Gmail Trigger Option -->
+            <div onclick="showToast('Fitur Generate Gmail otomatis dibuka')" class="bg-white rounded-2xl p-3.5 card-soft-shadow border border-slate-100 flex items-center justify-between cursor-pointer active:scale-98 transition">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl icon-soft-box flex items-center justify-center text-white text-base">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xs font-extrabold text-slate-800">Generate Gmail</h3>
+                        <p class="text-[11px] text-slate-500 font-medium">Ambil nama email dari stok admin</p>
+                    </div>
+                </div>
+                <div class="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-xs">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </div>
+            </div>
+
+            <!-- Textarea Storan Box -->
+            <div class="bg-white rounded-2xl p-4 card-soft-shadow border border-slate-100 flex flex-col gap-3">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-sm font-bold">
+                            <i class="fa-regular fa-envelope"></i>
+                        </div>
+                        <h3 class="text-xs font-extrabold text-slate-800">Daftar Gmail</h3>
+                    </div>
+                    <span id="lineCounterBadge" class="text-xs font-extrabold text-blue-600 bg-blue-50 border border-blue-200 px-2.5 py-0.5 rounded-full">0 baris</span>
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-500 mb-1.5">Tempel daftar Gmail (satu per baris)</label>
+                    <textarea id="gmailListInput" oninput="updateLineCounter()" rows="5" placeholder="contoh1@gmail.com&#10;contoh2@gmail.com" class="w-full custom-input rounded-2xl p-3.5 text-xs text-slate-800 placeholder-slate-400 font-mono focus:outline-none resize-none leading-relaxed"></textarea>
+                </div>
+
+                <button onclick="submitGmailStoran()" class="btn-glossy w-full text-white font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-2 mt-1 active:scale-98 transition-transform">
+                    <i class="fa-solid fa-paper-plane text-xs"></i>
+                    <span>Kirim setoran</span>
+                </button>
+            </div>
+        </div>
+
+
+        <!-- ==================== VIEW 5: SALDO PAGE (image2) ==================== -->
+        <div id="view-saldo" class="hidden flex-col gap-4 pb-24 w-full">
+            
+            <!-- Top App Header Bar -->
+            <header class="flex items-center justify-between py-1">
+                <div class="flex items-center gap-2.5">
+                    <button onclick="navigateTo('dashboard')" class="w-9 h-9 rounded-xl bg-white border border-slate-200/80 flex items-center justify-center text-slate-700 shadow-sm active:scale-90 transition">
+                        <i class="fa-solid fa-chevron-left text-xs"></i>
+                    </button>
+                    <div>
+                        <h1 class="font-extrabold text-base text-slate-900 tracking-tight leading-tight">
+                            Saldo & Penarikan
+                        </h1>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <span class="bg-emerald-50 border border-emerald-200 text-emerald-600 text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                        <span>Aktif</span>
+                    </span>
+
+                    <button onclick="logout()" class="flex items-center gap-1 bg-rose-50 border border-rose-200/80 px-2.5 py-1.5 rounded-full text-xs font-semibold text-rose-600 shadow-sm active:scale-95 transition-transform">
+                        <i class="fa-solid fa-right-from-bracket text-xs"></i>
+                        <span>Keluar</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Total Saldo Gradient Card -->
+            <div class="card-saldo-bg rounded-3xl p-5 text-white shadow-xl shadow-blue-500/20">
+                <div class="flex justify-between items-start">
+                    <div class="flex items-center gap-2 text-blue-100 text-[11px] font-bold tracking-wider uppercase">
+                        <i class="fa-solid fa-wallet text-blue-200"></i>
+                        <span>TOTAL SALDO TERSEDIA</span>
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner overflow-hidden">
+                        <img src="https://files.catbox.moe/dysigb.jpeg" 
+                             alt="tachi logo" 
+                             class="w-full h-full object-cover animate-logo-spin"
+                             onerror="this.onerror=null; this.src='https://placehold.co/40x40/2563eb/ffffff?text=T'">
+                    </div>
+                </div>
+
+                <div class="mt-1">
+                    <div class="text-3xl font-black tracking-tight text-white">
+                        Rp0
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 mt-4">
+                    <div class="bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl p-2.5">
+                        <span class="text-[10px] text-blue-200 font-semibold block">Dicairkan:</span>
+                        <span class="text-sm font-bold text-white">Rp0</span>
+                    </div>
+                    <div class="bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl p-2.5">
+                        <span class="text-[10px] text-blue-200 font-semibold block">Pending:</span>
+                        <span class="text-sm font-bold text-white">Rp0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Penarikan Badge -->
+            <div class="bg-emerald-50 border border-emerald-200/80 rounded-2xl p-3 flex items-center justify-center gap-2 text-xs font-extrabold text-emerald-700">
+                <i class="fa-solid fa-circle-check text-emerald-500"></i>
+                <span>Status Penarikan: • Dibuka</span>
+            </div>
+
+            <!-- Formulir Tarik Saldo Card -->
+            <div class="bg-white rounded-2xl p-4 card-soft-shadow border border-slate-100 flex flex-col gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl icon-soft-box flex items-center justify-center text-white text-base shrink-0">
+                        <i class="fa-solid fa-circle-arrow-down"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xs font-extrabold text-slate-800">Formulir Tarik Saldo</h3>
+                        <p class="text-[11px] text-slate-500 font-medium">Dana dikirim ke rekening di Profil</p>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Jumlah Penarikan (Rp)</label>
+                    <div class="custom-input rounded-xl px-3.5 py-2.5 flex items-center gap-2">
+                        <span class="text-xs font-bold text-blue-600">Rp</span>
+                        <input id="withdrawalAmountInput" type="number" placeholder="Minimal penarikan Rp4.000" class="bg-transparent text-xs text-slate-800 placeholder-slate-400 focus:outline-none w-full font-medium">
+                    </div>
+                </div>
+
+                <div class="bg-sky-50 border border-sky-200/80 rounded-xl p-3 flex items-start gap-2.5">
+                    <i class="fa-solid fa-circle-info text-sky-500 text-sm mt-0.5"></i>
+                    <p class="text-xs text-sky-900 font-medium leading-relaxed">
+                        Minimal penarikan Rp4.000. Aturan ini sama dengan setelan admin.
+                    </p>
+                </div>
+
+                <div class="bg-slate-50 rounded-xl p-3 border border-slate-200/70 text-xs flex flex-col gap-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-500 font-medium">Rekening Tujuan</span>
+                        <span id="summaryRekening" class="font-bold text-slate-800">-</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-500 font-medium">Atas Nama</span>
+                        <span id="summaryAtasNama" class="font-bold text-slate-800">-</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-500 font-medium">Fee -</span>
+                        <span class="font-bold text-slate-800">Rp0</span>
+                    </div>
+                    <div class="border-t border-slate-200/80 pt-2 text-[10px] text-slate-400">
+                        Saldo terpotong = nominal penarikan + fee admin.
+                    </div>
+                </div>
+
+                <button onclick="handleTarikSaldo()" class="btn-glossy w-full text-white font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-2 mt-1 active:scale-98 transition-transform">
+                    <span>Isi rekening di Profil dulu</span>
+                </button>
+            </div>
+
+            <!-- Riwayat Penarikan Box -->
+            <div class="bg-white rounded-2xl p-4 card-soft-shadow border border-slate-100 flex flex-col gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl icon-soft-box flex items-center justify-center text-white text-sm shrink-0">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                    </div>
+                    <h3 class="text-xs font-extrabold text-slate-800">Riwayat Penarikan Terakhir</h3>
+                </div>
+
+                <div class="py-6 text-center text-xs text-slate-400 font-medium">
+                    Belum ada penarikan
+                </div>
+            </div>
+        </div>
+
+
+        <!-- ==================== VIEW 6: PROFIL PAGE (image3) ==================== -->
+        <div id="view-profil" class="hidden flex-col gap-4 pb-24 w-full">
+            
+            <!-- Top App Header Bar -->
+            <header class="flex items-center justify-between py-1">
+                <div class="flex items-center gap-2.5">
+                    <button onclick="navigateTo('dashboard')" class="w-9 h-9 rounded-xl bg-white border border-slate-200/80 flex items-center justify-center text-slate-700 shadow-sm active:scale-90 transition">
+                        <i class="fa-solid fa-chevron-left text-xs"></i>
+                    </button>
+                    <div>
+                        <h1 class="font-extrabold text-base text-slate-900 tracking-tight leading-tight">
+                            Profil & Pengaturan
+                        </h1>
+                    </div>
+                </div>
+
+                <button onclick="logout()" class="flex items-center gap-1 bg-rose-50 border border-rose-200/80 px-2.5 py-1.5 rounded-full text-xs font-semibold text-rose-600 shadow-sm active:scale-95 transition-transform">
+                    <i class="fa-solid fa-right-from-bracket text-xs"></i>
+                    <span>Keluar</span>
+                </button>
+            </header>
+
+            <!-- User Status Card -->
+            <div class="bg-white rounded-2xl p-4 card-soft-shadow border border-slate-100 flex items-center gap-4">
+                <div class="w-16 h-16 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white text-2xl shadow-md shrink-0">
+                    <i class="fa-solid fa-circle-user"></i>
+                </div>
+                <div class="flex flex-col gap-1">
+                    <span class="text-[10px] font-extrabold text-amber-800 bg-amber-100 border border-amber-200 px-2.5 py-0.5 rounded-full w-max flex items-center gap-1">
+                        <i class="fa-solid fa-crown text-[10px]"></i>
+                        <span>STATUS: MEMBER REGULER</span>
+                    </span>
+                    <h2 id="profileDisplayName" class="text-lg font-black text-slate-800 tracking-tight">ryuu</h2>
+                    <p id="profileUsername" class="text-xs font-medium text-slate-400">Username: @ryuu</p>
+                </div>
+            </div>
+
+            <!-- Keamanan Akun Card -->
+            <div class="bg-white rounded-2xl p-4 card-soft-shadow border border-slate-100 flex flex-col gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl icon-soft-box flex items-center justify-center text-white text-base shrink-0">
+                        <i class="fa-solid fa-lock"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xs font-extrabold text-slate-800">Keamanan Akun</h3>
+                        <p class="text-[11px] text-slate-500 font-medium">Perbarui kata sandi secara berkala</p>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Kata Sandi Lama</label>
+                    <div class="custom-input rounded-xl px-3.5 py-2.5 flex items-center gap-3">
+                        <i class="fa-solid fa-lock text-blue-500 text-sm"></i>
+                        <input id="old-password" type="password" placeholder="••••••••" class="bg-transparent text-xs text-slate-800 placeholder-slate-400 focus:outline-none w-full font-medium">
+                        <button type="button" onclick="togglePasswordVisibility('old-password', this)" class="text-slate-400 hover:text-slate-600 text-xs">
+                            <i class="fa-regular fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Kata Sandi Baru</label>
+                    <div class="custom-input rounded-xl px-3.5 py-2.5 flex items-center gap-3">
+                        <i class="fa-solid fa-key text-blue-500 text-sm"></i>
+                        <input id="new-password" type="password" placeholder="••••••••" class="bg-transparent text-xs text-slate-800 placeholder-slate-400 focus:outline-none w-full font-medium">
+                        <button type="button" onclick="togglePasswordVisibility('new-password', this)" class="text-slate-400 hover:text-slate-600 text-xs">
+                            <i class="fa-regular fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button onclick="updatePassword()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-2 mt-1 active:scale-98 transition-transform shadow-md">
+                    <i class="fa-solid fa-shield-check"></i>
+                    <span>Perbarui Kata Sandi</span>
+                </button>
+            </div>
+
+            <!-- Rekening Penarikan Dana Card -->
+            <div class="bg-white rounded-2xl p-4 card-soft-shadow border border-slate-100 flex flex-col gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl icon-soft-box flex items-center justify-center text-white text-base shrink-0">
+                        <i class="fa-solid fa-building-columns"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xs font-extrabold text-slate-800">Rekening Penarikan Dana</h3>
+                        <p class="text-[11px] text-slate-500 font-medium">Dipakai saat menarik saldo</p>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Pilih Bank / E-Wallet</label>
+                    <div class="custom-input rounded-xl px-3.5 py-2.5 flex items-center">
+                        <select id="bankSelect" class="bg-transparent text-xs text-slate-800 font-bold focus:outline-none w-full">
+                            <option value="DANA" selected>DANA</option>
+                            <option value="OVO">OVO</option>
+                            <option value="GoPay">GoPay</option>
+                            <option value="ShopeePay">ShopeePay</option>
+                            <option value="BCA">Bank BCA</option>
+                            <option value="BRI">Bank BRI</option>
+                            <option value="Mandiri">Bank Mandiri</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Nomor Rekening / E-Wallet</label>
+                    <div class="custom-input rounded-xl px-3.5 py-2.5 flex items-center gap-3">
+                        <i class="fa-regular fa-id-card text-blue-500 text-sm"></i>
+                        <input id="rekeningInput" type="text" placeholder="081234567890" class="bg-transparent text-xs text-slate-800 placeholder-slate-400 focus:outline-none w-full font-medium">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Nama Pemilik Rekening</label>
+                    <div class="custom-input rounded-xl px-3.5 py-2.5 flex items-center gap-3">
+                        <i class="fa-regular fa-user text-blue-500 text-sm"></i>
+                        <input id="atasNamaInput" type="text" placeholder="Sesuai buku tabungan" class="bg-transparent text-xs text-slate-800 placeholder-slate-400 focus:outline-none w-full font-medium">
+                    </div>
+                </div>
+
+                <button onclick="saveBankDetails()" class="btn-glossy w-full text-white font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-2 mt-1 active:scale-98 transition-transform">
+                    <i class="fa-solid fa-check"></i>
+                    <span>Simpan Data Rekening</span>
+                </button>
+            </div>
+        </div>
+
+
+        <!-- ==================== VIEW 7: RIWAYAT PAGE (image4) ==================== -->
+        <div id="view-riwayat" class="hidden flex-col gap-4 pb-24 w-full min-h-[80vh]">
+            
+            <!-- Top App Header Bar -->
+            <header class="flex items-center justify-between py-1">
+                <div class="flex items-center gap-2.5">
+                    <button onclick="navigateTo('dashboard')" class="w-9 h-9 rounded-xl bg-white border border-slate-200/80 flex items-center justify-center text-slate-700 shadow-sm active:scale-90 transition">
+                        <i class="fa-solid fa-chevron-left text-xs"></i>
+                    </button>
+                    <div>
+                        <h1 class="font-extrabold text-base text-slate-900 tracking-tight leading-tight">
+                            Riwayat Setoran
+                        </h1>
+                        <p class="text-[11px] text-slate-500 font-medium">Status verifikasi Gmail kamu</p>
+                    </div>
+                </div>
+
+                <button onclick="logout()" class="flex items-center gap-1 bg-rose-50 border border-rose-200/80 px-2.5 py-1.5 rounded-full text-xs font-semibold text-rose-600 shadow-sm active:scale-95 transition-transform">
+                    <i class="fa-solid fa-right-from-bracket text-xs"></i>
+                    <span>Keluar</span>
+                </button>
+            </header>
+
+            <!-- Filter Status Tab Bar -->
+            <div class="bg-white/80 backdrop-blur-md rounded-2xl p-1.5 card-soft-shadow border border-slate-100 flex items-center justify-between gap-1">
+                <button onclick="filterRiwayat('semua', this)" class="riwayat-tab-btn flex-1 py-2 text-xs font-extrabold rounded-xl bg-blue-600 text-white transition text-center shadow-sm">
+                    Semua
+                </button>
+                <button onclick="filterRiwayat('diterima', this)" class="riwayat-tab-btn flex-1 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 rounded-xl transition text-center">
+                    Diterima
+                </button>
+                <button onclick="filterRiwayat('pending', this)" class="riwayat-tab-btn flex-1 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 rounded-xl transition text-center">
+                    Pending
+                </button>
+                <button onclick="filterRiwayat('gagal', this)" class="riwayat-tab-btn flex-1 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 rounded-xl transition text-center">
+                    Gagal
+                </button>
+            </div>
+
+            <!-- Content Area List -->
+            <div id="riwayatListContainer" class="flex flex-col gap-3 my-auto py-12 text-center">
+                <div class="w-16 h-16 rounded-3xl bg-blue-50 text-blue-500 flex items-center justify-center text-2xl mx-auto mb-2">
+                    <i class="fa-regular fa-folder-open"></i>
+                </div>
+                <h3 class="text-sm font-extrabold text-slate-700">Belum ada riwayat setoran</h3>
+                <p class="text-xs text-slate-400 font-medium max-w-[220px] mx-auto">Setor Gmail kamu sekarang untuk mulai mendapatkan saldo!</p>
+            </div>
+        </div>
+
+        <!-- Dynamic Floating Bottom Navigation Bar -->
+        <nav id="bottomAppNav" class="hidden fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white/95 backdrop-blur-md border-t border-slate-200/80 px-4 py-2 items-center justify-between z-40 shadow-lg">
+            <!-- Beranda -->
+            <button onclick="navigateTo('dashboard')" id="nav-item-dashboard" class="nav-button flex flex-col items-center gap-1 text-blue-600 w-14">
+                <i class="fa-solid fa-house text-lg"></i>
+                <span class="text-[10px] font-bold">Beranda</span>
+            </button>
+
+            <!-- Riwayat -->
+            <button onclick="navigateTo('riwayat')" id="nav-item-riwayat" class="nav-button flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 w-14">
+                <i class="fa-solid fa-clock-rotate-left text-lg"></i>
+                <span class="text-[10px] font-semibold">Riwayat</span>
+            </button>
+
+            <!-- Elevated Floating Center Stor Button -->
+            <div class="relative -top-5 flex flex-col items-center">
+                <button onclick="navigateTo('stor')" class="w-13 h-13 w-12 h-12 rounded-full nav-center-btn flex items-center justify-center text-white text-xl border-4 border-white active:scale-90 transition-transform">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+                <span class="text-[10px] font-extrabold text-blue-600 mt-0.5">Stor</span>
+            </div>
+
+            <!-- Saldo -->
+            <button onclick="navigateTo('saldo')" id="nav-item-saldo" class="nav-button flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 w-14">
+                <i class="fa-solid fa-wallet text-lg"></i>
+                <span class="text-[10px] font-semibold">Saldo</span>
+            </button>
+
+            <!-- Profil -->
+            <button onclick="navigateTo('profil')" id="nav-item-profil" class="nav-button flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 w-14">
+                <i class="fa-solid fa-user text-lg"></i>
+                <span class="text-[10px] font-semibold">Profil</span>
+            </button>
+        </nav>
+
+    </div>
+
+    <!-- Reusable Dynamic Modal -->
+    <div id="appModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 w-full max-w-xs shadow-2xl transition-all">
+            <div class="flex justify-between items-center mb-3">
+                <h3 id="modalTitle" class="font-extrabold text-base text-slate-800">Modal Title</h3>
+                <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-xs">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <p id="modalBody" class="text-xs text-slate-600 whitespace-pre-line leading-relaxed mb-5">Modal description text goes here...</p>
+            <button onclick="closeModal()" class="w-full bg-blue-600 text-white font-bold py-2.5 rounded-xl text-xs active:scale-95 transition">Tutup</button>
+        </div>
+    </div>
+
+    <!-- Notification Toast Element -->
+    <div id="toast" class="fixed top-12 left-1/2 -translate-x-1/2 bg-slate-900/90 backdrop-blur text-white text-xs font-semibold px-4 py-2.5 rounded-full shadow-xl z-50 opacity-0 transition-opacity pointer-events-none flex items-center gap-2 border border-slate-700">
+        <i class="fa-solid fa-circle-info text-blue-400"></i>
+        <span id="toastMsg">Notifikasi</span>
+    </div>
+
+    <script>
+        
+        // Announcement carousel data
+        const announcements = [
+            { id: "1/2", text: "RATE NAIK. 4,5K" },
+            { id: "2/2", text: "STOK GMAIL FRESH DIPROSES SANGAT CEPAT!" }
+        ];
+        let currentSlideIndex = 0;
+
+        function updateSlide() {
+            const badge = document.getElementById('announcementBadge');
+            const text = document.getElementById('announcementText');
+            if (badge && text) {
+                badge.innerText = announcements[currentSlideIndex].id;
+                text.innerText = announcements[currentSlideIndex].text;
+            }
+        }
+
+        function nextSlide() {
+            currentSlideIndex = (currentSlideIndex + 1) % announcements.length;
+            updateSlide();
+        }
+
+        function prevSlide() {
+            currentSlideIndex = (currentSlideIndex - 1 + announcements.length) % announcements.length;
+            updateSlide();
+        }
+
+        // View Navigation Handler
+        function navigateTo(viewName) {
+            const views = ['login', 'register', 'dashboard', 'stor', 'saldo', 'profil', 'riwayat'];
+            
+            views.forEach(v => {
+                const el = document.getElementById(`view-${v}`);
+                const btn = document.getElementById(`btn-switch-${v}`);
+                
+                if (el) {
+                    if (v === viewName) {
+                        el.classList.remove('hidden');
+                        el.classList.add('flex');
+                    } else {
+                        el.classList.add('hidden');
+                        el.classList.remove('flex');
+                    }
+                }
+                
+                if (btn) {
+                    if (v === viewName) {
+                        btn.className = "px-2 py-0.5 rounded-md text-[10px] font-semibold bg-blue-600 text-white transition shrink-0";
+                    } else {
+                        btn.className = "px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600 transition shrink-0";
+                    }
+                }
+            });
+
+            // Handle bottom nav visibility and active state highlight
+            const bottomNav = document.getElementById('bottomAppNav');
+            if (viewName === 'login' || viewName === 'register') {
+                bottomNav.classList.add('hidden');
+                bottomNav.classList.remove('flex');
+            } else {
+                bottomNav.classList.remove('hidden');
+                bottomNav.classList.add('flex');
+
+                // Update bottom nav button active highlight
+                const navItems = ['dashboard', 'riwayat', 'saldo', 'profil'];
+                navItems.forEach(item => {
+                    const navBtn = document.getElementById(`nav-item-${item}`);
+                    if (navBtn) {
+                        if (item === viewName) {
+                            navBtn.className = "nav-button flex flex-col items-center gap-1 text-blue-600 w-14";
+                            const txt = navBtn.querySelector('span');
+                            if (txt) txt.className = "text-[10px] font-bold";
+                        } else {
+                            navBtn.className = "nav-button flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 w-14";
+                            const txt = navBtn.querySelector('span');
+                            if (txt) txt.className = "text-[10px] font-semibold";
+                        }
+                    }
+                });
+            }
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Form Submission logic
+        function handleAuthSubmit(event, targetView) {
+            event.preventDefault();
+            showToast('Berhasil diproses! Mengalihkan...');
+            setTimeout(() => {
+                navigateTo(targetView);
+            }, 500);
+        }
+
+        function logout() {
+            showToast('Berhasil keluar dari akun');
+            setTimeout(() => {
+                navigateTo('login');
+            }, 500);
+        }
+
+        // Password visibility toggle helper
+        function togglePasswordVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            const icon = btn.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fa-regular fa-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'fa-regular fa-eye';
+            }
+        }
+
+        // Clipboard copy function
+        function copyToClipboard(text) {
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text);
+            } else {
+                let textArea = document.createElement("textarea");
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                } catch (err) {}
+                document.body.removeChild(textArea);
+            }
+            showToast('Password berhasil disalin!');
+        }
+
+        // Line counter for Stor Email textarea
+        function updateLineCounter() {
+            const input = document.getElementById('gmailListInput');
+            const badge = document.getElementById('lineCounterBadge');
+            if (input && badge) {
+                const text = input.value.trim();
+                const lines = text ? text.split('\n').filter(line => line.trim() !== '').length : 0;
+                badge.innerText = `${lines} baris`;
+            }
+        }
+
+        function submitGmailStoran() {
+            const input = document.getElementById('gmailListInput');
+            if (!input.value.trim()) {
+                showToast('Masukkan setidaknya 1 alamat Gmail!');
+                return;
+            }
+            showToast('Setoran Gmail berhasil dikirim!');
+            input.value = '';
+            updateLineCounter();
+            setTimeout(() => {
+                navigateTo('riwayat');
+            }, 800);
+        }
+
+        // Account / Bank Details saving logic
+        function saveBankDetails() {
+            const bank = document.getElementById('bankSelect').value;
+            const rek = document.getElementById('rekeningInput').value.trim();
+            const nama = document.getElementById('atasNamaInput').value.trim();
+
+            if (!rek || !nama) {
+                showToast('Lengkapi nomor rekening dan nama pemilik!');
+                return;
+            }
+
+            document.getElementById('summaryRekening').innerText = `${bank} - ${rek}`;
+            document.getElementById('summaryAtasNama').innerText = nama;
+            showToast('Data rekening berhasil disimpan!');
+        }
+
+        function handleTarikSaldo() {
+            const amount = document.getElementById('withdrawalAmountInput').value;
+            if (!amount || amount < 4000) {
+                showToast('Minimal penarikan adalah Rp4.000!');
+                return;
+            }
+            showToast('Permintaan penarikan diproses!');
+            document.getElementById('withdrawalAmountInput').value = '';
+        }
+
+        function updatePassword() {
+            const oldP = document.getElementById('old-password').value;
+            const newP = document.getElementById('new-password').value;
+
+            if (!oldP || !newP) {
+                showToast('Isi kata sandi lama dan kata sandi baru!');
+                return;
+            }
+            showToast('Kata sandi berhasil diperbarui!');
+            document.getElementById('old-password').value = '';
+            document.getElementById('new-password').value = '';
+        }
+
+        // Riwayat status filter tab switcher
+        function filterRiwayat(filter, btn) {
+            document.querySelectorAll('.riwayat-tab-btn').forEach(b => {
+                b.className = "riwayat-tab-btn flex-1 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 rounded-xl transition text-center";
+            });
+            btn.className = "riwayat-tab-btn flex-1 py-2 text-xs font-extrabold rounded-xl bg-blue-600 text-white transition text-center shadow-sm";
+            showToast(`Filter: ${filter.toUpperCase()}`);
+        }
+
+        // Dynamic Modal handlers
+        function openModal(title, body) {
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalBody').innerText = body;
+            document.getElementById('appModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('appModal').classList.add('hidden');
+        }
+
+        // Notification Toast Handler
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            if (toast && toastMsg) {
+                toastMsg.innerText = message;
+                toast.classList.remove('opacity-0');
+                setTimeout(() => {
+                    toast.classList.add('opacity-0');
+                }, 2500);
+            }
+        }
+    </script>
+<script>
+/* ==== Integrasi Admin (tidak mengubah tampilan user) ==== */
+(function(){
+const KEY='tachi69_db';
+const load=()=>{try{return JSON.parse(localStorage.getItem(KEY))}catch{return null}};
+const save=d=>localStorage.setItem(KEY,JSON.stringify(d));
+const wib=()=>new Date(Date.now()+7*3600e3).toISOString().slice(0,10);
+function db(){let d=load();if(!d){d={settings:{storOpen:true,tarikOpen:true,checkerOpen:true,rate:4500,minTarik:4000,fee:0,campaignPass:'sgsg1122',limit:1,dailyMax:500,announcement:''},daily:{date:wib(),count:0},users:[],setoran:[],withdrawals:[]};save(d)}
+  if(d.daily.date!==wib()){d.daily={date:wib(),count:0};save(d)}return d}
+const me=()=>sessionStorage.getItem('tachi_user');
+window.handleAuthSubmit=function(e,target){e.preventDefault();const f=e.target;const t=[...f.querySelectorAll('input')];
+  const isReg=t.length>2;let d=db();
+  if(!isReg){const u=t[0].value.trim(),p=t[1].value;
+    if(u==='ryueiei'&&p==='Hanzz0508'){sessionStorage.setItem('adm','1');showToast('Login Admin berhasil! Mengalihkan...');setTimeout(()=>location.href='admin.html',500);return}
+    const usr=d.users.find(x=>x.username===u);
+    if(!usr||usr.password!==p){showToast('Username atau password salah!');return}
+    sessionStorage.setItem('tachi_user',u)}
+  else{const name=t[0].value.trim(),u=t[1].value.trim(),p=t[3].value;
+    if(!/^[a-zA-Z0-9_.]{3,30}$/.test(u)){showToast('Username 3-30 karakter (huruf/angka/_/.)');return}
+    if(u==='ryueiei'||d.users.some(x=>x.username===u)){showToast('Username sudah dipakai!');return}
+    if(p.length<6){showToast('Password minimal 6 karakter');return}
+    d.users.push({username:u,password:p,saldo:0,withdrawn:0,wallet:{name:name.slice(0,100),dana:''},vip:false});save(d);sessionStorage.setItem('tachi_user',u)}
+  showToast('Berhasil diproses! Mengalihkan...');setTimeout(()=>navigateTo(target),500)};
+const _logout=window.logout;window.logout=function(){sessionStorage.removeItem('tachi_user');_logout()};
+const _nav=window.navigateTo;window.navigateTo=function(v){
+  if(!['login','register'].includes(v)&&!me()){v='login'}
+  _nav(v);setTimeout(()=>applyState(v),30)};
+function lockBox(el,msg){if(!el||el.parentElement.querySelector('.adm-lock'))return;const b=document.createElement('div');
+  b.className='adm-lock text-center text-xs font-extrabold text-red-600 bg-red-50 border border-red-200 rounded-2xl p-3 mb-3';b.innerHTML='<i class="fa fa-lock mr-1"></i>'+msg;el.parentElement.insertBefore(b,el)}
+function applyState(){const d=db();document.querySelectorAll('.adm-lock').forEach(x=>x.remove());
+  const g=document.getElementById('gmailListInput');if(g){g.disabled=!d.settings.storOpen;if(!d.settings.storOpen)lockBox(g,'Setoran Ditutup oleh Admin')}
+  const w=document.getElementById('withdrawalAmountInput');if(w){w.disabled=!d.settings.tarikOpen;w.placeholder='Minimal penarikan Rp'+d.settings.minTarik.toLocaleString('id-ID');if(!d.settings.tarikOpen)lockBox(w.closest('div'),'Penarikan Ditutup')}
+  const u=d.users.find(x=>x.username===me());
+  if(u&&u.wallet.dana){const r=document.getElementById('summaryRekening'),n=document.getElementById('summaryAtasNama');if(r)r.innerText='DANA - '+u.wallet.dana;if(n)n.innerText=u.wallet.name}}
+window.submitGmailStoran=function(){const d=db(),s=d.settings,input=document.getElementById('gmailListInput');
+  if(!s.storOpen)return showToast('Setoran Ditutup oleh Admin');
+  const em=[...new Set(input.value.split(/\s+/).map(x=>x.trim().toLowerCase()).filter(Boolean))];
+  if(!em.length)return showToast('Masukkan setidaknya 1 alamat Gmail!');
+  const bad=em.find(x=>!/^[a-z0-9._%+-]{1,64}@gmail\.com$/.test(x));if(bad)return showToast('Format salah: '+bad);
+  const max=Math.min(50,s.limit);if(em.length>max)return showToast('Maksimal '+max+' akun per transaksi!');
+  if(d.daily.count+em.length>s.dailyMax)return showToast('Kuota setoran hari ini habis (reset 00:00 WIB)');
+  d.setoran.push({id:'STR'+Date.now().toString(36).toUpperCase().slice(-6)+Math.floor(Math.random()*90+10),date:Date.now(),user:me(),emails:em,status:'pending'});
+  d.daily.count+=em.length;save(d);showToast('Setoran Gmail berhasil dikirim!');input.value='';updateLineCounter();setTimeout(()=>navigateTo('riwayat'),800)};
+window.saveBankDetails=function(){const rek=document.getElementById('rekeningInput').value.trim(),nama=document.getElementById('atasNamaInput').value.trim();
+  if(!/^[0-9]{8,16}$/.test(rek)||!nama)return showToast('Lengkapi nomor (8-16 digit) dan nama pemilik!');
+  const d=db(),u=d.users.find(x=>x.username===me());if(u){u.wallet={name:nama.slice(0,100),dana:rek};save(d)}
+  const bank=document.getElementById('bankSelect').value;document.getElementById('summaryRekening').innerText=`${bank} - ${rek}`;document.getElementById('summaryAtasNama').innerText=nama;showToast('Data rekening berhasil disimpan!')};
+window.handleTarikSaldo=function(){const d=db(),s=d.settings,u=d.users.find(x=>x.username===me());const el=document.getElementById('withdrawalAmountInput');const a=parseInt(el.value);
+  if(!s.tarikOpen)return showToast('Penarikan Ditutup');
+  if(!(a>=s.minTarik))return showToast('Minimal penarikan adalah Rp'+s.minTarik.toLocaleString('id-ID')+'!');
+  if(!u)return; if(!u.wallet.dana)return showToast('Isi data rekening DANA dulu!');if(a>u.saldo)return showToast('Saldo tidak cukup!');
+  u.saldo-=a;d.withdrawals.push({id:'WD'+Date.now().toString(36).toUpperCase().slice(-6),date:Date.now(),user:u.username,name:u.wallet.name,dana:u.wallet.dana,amount:a,fee:Math.min(s.fee,a),status:'pending'});
+  save(d);showToast('Permintaan penarikan diproses!');el.value=''};
+window.updatePassword=function(){const o=document.getElementById('old-password').value,n=document.getElementById('new-password').value;
+  if(!o||!n)return showToast('Isi kata sandi lama dan kata sandi baru!');const d=db(),u=d.users.find(x=>x.username===me());
+  if(!u||u.password!==o)return showToast('Kata sandi lama salah!');if(n.length<6)return showToast('Minimal 6 karakter');u.password=n;save(d);
+  showToast('Kata sandi berhasil diperbarui!');document.getElementById('old-password').value='';document.getElementById('new-password').value=''};
+window.addEventListener('storage',e=>{if(e.key===KEY)applyState()});
+if(me())applyState();
+})();
+</script>
+</body>
+
+</html>
