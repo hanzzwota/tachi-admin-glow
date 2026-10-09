@@ -168,7 +168,7 @@ setInterval(()=>{const d=db.daily.date;resetDaily();if(d!==db.daily.date)renderA
 // AUTH
 function doLogin(e){e.preventDefault();
   if(lu.value.trim()==='ryueiei'&&lp.value==='Hanzz0508'){sessionStorage.setItem('adm','1');showApp()}else lerr.classList.remove('hidden')}
-function logout(){sessionStorage.removeItem('adm');location.reload()}
+function logout(){sessionStorage.removeItem('adm');location.href='app.html'}
 function showApp(){loginView.classList.add('hidden');appView.classList.remove('hidden');resetDaily();renderAll()}
 let userMode=false;
 function switchMode(){userMode=!userMode;adminMode.classList.toggle('hidden',userMode);userModeEl().classList.toggle('hidden',!userMode);
