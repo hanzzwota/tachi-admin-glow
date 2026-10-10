@@ -1137,8 +1137,7 @@
         
         // Announcement carousel data (sinkron dengan pengaturan Admin)
         function getAnnouncements() {
-            const d = (typeof db === 'function') ? db() : null;
-            const adminMsg = d && d.settings && d.settings.announcement ? d.settings.announcement.trim() : '';
+            const adminMsg = window.tachiApiState?.settings?.announcement?.trim() || '';
             const list = adminMsg ? [adminMsg] : ["UPDATE HARGA GMAIL TERBARU", "STOK GMAIL FRESH DIPROSES SANGAT CEPAT!"];
             return list.map((text, i) => ({ id: (i + 1) + "/" + list.length, text }));
         }
@@ -1171,8 +1170,7 @@
 
         // Rate dinamis: ubah satu nilai ini saat harga Gmail diperbarui admin.
         function getGmailRate() {
-            const d = (typeof db === 'function') ? db() : null;
-            return (d && d.settings && d.settings.rate) ? d.settings.rate : 4500;
+            return Number(window.tachiApiState?.settings?.rate || 4500);
         }
         const currentGmailRate = getGmailRate();
 
@@ -1384,7 +1382,6 @@
             }
 
             userBankData = { bank: bank, rekening: rek, nama: nama };
-            localStorage.setItem('tachi69gmail-bank-data', JSON.stringify(userBankData));
             document.getElementById('summaryRekening').innerText = `${bank} - ${rek}`;
             document.getElementById('summaryAtasNama').innerText = nama;
             updateTarikSaldoButton();
@@ -1425,7 +1422,7 @@
             copyToClipboard(data?.settings?.campaignPass || '');
         }
 
-        // Render riwayat setoran dari localStorage dan filter berdasarkan status.
+        // Riwayat setoran dirender dari state API Supabase.
         window.activeRiwayatFilter = 'semua';
         function renderRiwayat(filter = 'semua') {
             const container = document.getElementById('riwayatListContainer');
@@ -1487,74 +1484,7 @@
         }
     </script>
 <script>
-/* ==== Integrasi Admin (tidak mengubah tampilan user) ==== */
-(function(){
-const KEY='tachi69_db';
-const load=()=>{try{return JSON.parse(localStorage.getItem(KEY))}catch{return null}};
-const save=d=>localStorage.setItem(KEY,JSON.stringify(d));
-const wib=()=>new Date(Date.now()+7*3600e3).toISOString().slice(0,10);
-function db(){let d=load();if(!d){d={settings:{storOpen:true,tarikOpen:true,checkerOpen:true,rate:4500,minTarik:4000,fee:0,campaignPass:'sgsg1122',limit:1,dailyMax:500,announcement:''},daily:{date:wib(),count:0},users:[],setoran:[],withdrawals:[]};save(d)}
-  if(d.daily.date!==wib()){d.daily={date:wib(),count:0};save(d)}return d}
-const me=()=>sessionStorage.getItem('tachi_user');
-  const requestedView=new URLSearchParams(location.search).get('view');
-window.handleAuthSubmit=function(e,target){e.preventDefault();const f=e.target;const t=[...f.querySelectorAll('input')];
-  const isReg=t.length>2;let d=db();
-  if(!isReg){const u=t[0].value.trim(),p=t[1].value;
-    const usr=d.users.find(x=>x.username===u);
-    if(!usr||usr.password!==p){showToast('Username atau password salah!');return}
-    sessionStorage.setItem('tachi_user',u)}
-  else{const name=t[0].value.trim(),u=t[1].value.trim(),p=t[3].value;
-    if(!/^[a-zA-Z0-9_.]{3,30}$/.test(u)){showToast('Username 3-30 karakter (huruf/angka/_/.)');return}
-    if(u==='ryueiei'||d.users.some(x=>x.username===u)){showToast('Username sudah dipakai!');return}
-    if(p.length<6){showToast('Password minimal 6 karakter');return}
-    d.users.push({username:u,password:p,saldo:0,withdrawn:0,wallet:{name:name.slice(0,100),dana:''},vip:false});save(d);sessionStorage.setItem('tachi_user',u)}
-  showToast('Berhasil diproses! Mengalihkan...');setTimeout(()=>navigateTo(target),500)};
-const _logout=window.logout;window.logout=function(){sessionStorage.removeItem('tachi_user');sessionStorage.removeItem('adm');_logout()};
-/* Admin dashboard memakai session server-side Supabase. */
-const _nav=window.navigateTo;window.navigateTo=function(v){
-  if(!['login','register'].includes(v)&&!me()){v='login'}
-  _nav(v);setTimeout(()=>applyState(v),30)};
-function lockBox(el,msg){if(!el||el.parentElement.querySelector('.adm-lock'))return;const b=document.createElement('div');
-  b.className='adm-lock text-center text-xs font-extrabold text-red-600 bg-red-50 border border-red-200 rounded-2xl p-3 mb-3';b.innerHTML='<i class="fa fa-lock mr-1"></i>'+msg;el.parentElement.insertBefore(b,el)}
-function applyState(){const d=db();document.querySelectorAll('.adm-lock').forEach(x=>x.remove());
-  const rateLabel='Rp'+d.settings.rate.toLocaleString('id-ID')+' / Gmail';
-  ['gmailRateTop','gmailRateSaldo'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerText=rateLabel});
-  const u=d.users.find(x=>x.username===me());
-  const balance=u?.saldo||0;
-  ['dashboardBalance','saldoBalance','withdrawAvailableBalance'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerText='Rp'+balance.toLocaleString('id-ID')});
-  const passEl=document.getElementById('requiredPasswordText');if(passEl)passEl.innerText=d.settings.campaignPass||'-';
-  if(typeof renderRiwayat==='function')renderRiwayat(window.activeRiwayatFilter||'semua');
-  if(typeof updateSlide==='function')updateSlide();
-  const g=document.getElementById('gmailListInput');if(g){g.disabled=!d.settings.storOpen;if(!d.settings.storOpen)lockBox(g,'Setoran Ditutup oleh Admin')}
-  const w=document.getElementById('withdrawalAmountInput');if(w){w.disabled=!d.settings.tarikOpen;w.placeholder='Minimal penarikan Rp'+d.settings.minTarik.toLocaleString('id-ID');if(!d.settings.tarikOpen)lockBox(w.closest('div'),'Penarikan Ditutup')}
-  const u=d.users.find(x=>x.username===me());
-  if(u&&u.wallet.dana){const r=document.getElementById('summaryRekening'),n=document.getElementById('summaryAtasNama');if(r)r.innerText='DANA - '+u.wallet.dana;if(n)n.innerText=u.wallet.name}}
-window.submitGmailStoran=function(){const d=db(),s=d.settings,input=document.getElementById('gmailListInput');
-  if(!s.storOpen)return showToast('Setoran Ditutup oleh Admin');
-  const em=[...new Set(input.value.split(/\s+/).map(x=>x.trim().toLowerCase()).filter(Boolean))];
-  if(!em.length)return showToast('Masukkan setidaknya 1 alamat Gmail!');
-  const bad=em.find(x=>!/^[a-z0-9._%+-]{1,64}@gmail\.com$/.test(x));if(bad)return showToast('Format salah: '+bad);
-  const max=Math.min(50,s.limit);if(em.length>max)return showToast('Maksimal '+max+' akun per transaksi!');
-  if(d.daily.count+em.length>s.dailyMax)return showToast('Kuota setoran hari ini habis (reset 00:00 WIB)');
-  d.setoran.push({id:'STR'+Date.now().toString(36).toUpperCase().slice(-6)+Math.floor(Math.random()*90+10),date:Date.now(),user:me(),emails:em,status:'pending'});
-  d.daily.count+=em.length;save(d);showToast('Setoran Gmail berhasil dikirim!');input.value='';updateLineCounter();setTimeout(()=>navigateTo('riwayat'),800)};
-window.saveBankDetails=function(){const rek=document.getElementById('rekeningInput').value.trim(),nama=document.getElementById('atasNamaInput').value.trim();
-  if(!/^[0-9]{8,16}$/.test(rek)||!nama)return showToast('Lengkapi nomor (8-16 digit) dan nama pemilik!');
-  const d=db(),u=d.users.find(x=>x.username===me());if(u){u.wallet={name:nama.slice(0,100),dana:rek};save(d)}
-  const bank=document.getElementById('bankSelect').value;document.getElementById('summaryRekening').innerText=`${bank} - ${rek}`;document.getElementById('summaryAtasNama').innerText=nama;showToast('Data rekening berhasil disimpan!')};
-window.handleTarikSaldo=function(){const d=db(),s=d.settings,u=d.users.find(x=>x.username===me());const el=document.getElementById('withdrawalAmountInput');const a=parseInt(el.value);
-  if(!s.tarikOpen)return showToast('Penarikan Ditutup');
-  if(!(a>=s.minTarik))return showToast('Minimal penarikan adalah Rp'+s.minTarik.toLocaleString('id-ID')+'!');
-  if(!u)return; if(!u.wallet.dana)return showToast('Isi data rekening DANA dulu!');if(a>u.saldo)return showToast('Saldo tidak cukup!');
-  u.saldo-=a;d.withdrawals.push({id:'WD'+Date.now().toString(36).toUpperCase().slice(-6),date:Date.now(),user:u.username,name:u.wallet.name,dana:u.wallet.dana,amount:a,fee:Math.min(s.fee,a),status:'pending'});
-  save(d);showToast('Permintaan penarikan diproses!');el.value=''};
-window.updatePassword=function(){const o=document.getElementById('old-password').value,n=document.getElementById('new-password').value;
-  if(!o||!n)return showToast('Isi kata sandi lama dan kata sandi baru!');const d=db(),u=d.users.find(x=>x.username===me());
-  if(!u||u.password!==o)return showToast('Kata sandi lama salah!');if(n.length<6)return showToast('Minimal 6 karakter');u.password=n;save(d);
-  showToast('Kata sandi berhasil diperbarui!');document.getElementById('old-password').value='';document.getElementById('new-password').value=''};
-window.addEventListener('storage',e=>{if(e.key===KEY)applyState()});
-if(me()){applyState();if(requestedView)setTimeout(()=>window.navigateTo(requestedView),50);}
-})();
+/* Backend data is managed by /api-client.js; no browser storage fallback. */
 </script>
   <script src="/api-client.js"></script>
 </body>

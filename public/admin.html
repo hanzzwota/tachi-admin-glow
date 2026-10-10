@@ -32,7 +32,7 @@ input,select,textarea{outline:none}
     <img src="https://files.catbox.moe/dysigb.jpeg" class="w-10 h-10 rounded-xl object-cover" alt="logo">
     <div class="flex-1 min-w-0">
       <div class="font-extrabold leading-tight truncate">tachi69gmail <span class="text-blue-600">Admin Console</span></div>
-      <div class="text-[11px] text-slate-500"><span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-1"></span>Logged in as: <b>ryueiei</b></div>
+      <div class="text-[11px] text-slate-500"><span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-1"></span>Logged in as: <b>Admin</b></div>
     </div>
     <button onclick="switchMode()" id="modeBtn" class="px-3 py-2 rounded-xl bg-white border border-blue-100 text-blue-600 text-xs font-bold"><i class="fa fa-repeat mr-1"></i><span>Dashboard User</span></button>
     <button onclick="logout()" class="px-3 py-2 rounded-xl bg-red-50 text-red-600 text-xs font-bold"><i class="fa fa-power-off"></i></button>
@@ -139,17 +139,14 @@ function seed(){
   };
 }
 function normalizeDb(value){const base=seed(),data=value&&typeof value==='object'?value:{};return { ...base, ...data, settings:{...base.settings,...(data.settings&&typeof data.settings==='object'?data.settings:{})}, daily:{...base.daily,...(data.daily&&typeof data.daily==='object'?data.daily:{})}, users:Array.isArray(data.users)?data.users:[], setoran:Array.isArray(data.setoran)?data.setoran:[], withdrawals:Array.isArray(data.withdrawals)?data.withdrawals:[] }}
-let db=load();(function(){const demo=['budi01','sari_vip','andre'];if(db.users.some(u=>demo.includes(u.username))){db.users=db.users.filter(u=>!demo.includes(u.username));db.setoran=db.setoran.filter(s=>!demo.includes(s.user));db.withdrawals=db.withdrawals.filter(w=>!demo.includes(w.user));localStorage.setItem(KEY,JSON.stringify(db))}})();
-function load(){try{return normalizeDb(JSON.parse(localStorage.getItem(KEY)))}catch{return normalizeDb(null)}}
-function save(){localStorage.setItem(KEY,JSON.stringify(db));renderAll()}
-window.reloadAdminDb=function(){db=load();renderAll()};
-function resetDaily(){if(db.daily.date!==wibDate()){db.daily={date:wibDate(),count:0};localStorage.setItem(KEY,JSON.stringify(db))}}
-window.addEventListener('storage',e=>{if(e.key===KEY){db=load();renderAll()}});
-setInterval(()=>{const d=db.daily.date;resetDaily();if(d!==db.daily.date)renderAll()},30000);
+let db=normalizeDb(null);
+function load(){return normalizeDb(null)}
+function save(){renderAll()}
+window.reloadAdminDb=function(){renderAll()};
 
 // AUTH
 function doLogin(e){e.preventDefault(); lerr.textContent='Memvalidasi akun…'; lerr.classList.remove('hidden')}
-function logout(){sessionStorage.removeItem('adm');location.href='/login'}
+function logout(){window.logout?.()}
 function showApp(){document.getElementById('loginView')?.classList.add('hidden');document.getElementById('appView')?.classList.remove('hidden');resetDaily();renderAll()}
 let userMode=false;
 function switchMode(){window.top.location.href='/dashboard';return;userMode=!userMode;adminMode.classList.toggle('hidden',userMode);userModeEl().classList.toggle('hidden',!userMode);
@@ -170,7 +167,7 @@ document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelect
   ['setoran','payout','users','settings'].forEach(t=>document.getElementById('t-'+t).classList.toggle('hidden',t!==b.dataset.t));
   if(b.dataset.t==='settings')document.getElementById('t-settings').classList.add('grid')});
 
-function renderAll(){if(sessionStorage.getItem('adm')!=='1')return;renderStats();renderSetoran();renderPayout();renderUsers();renderSettings();renderUser()}
+function renderAll(){renderStats();renderSetoran();renderPayout();renderUsers();renderSettings();renderUser()}
 
 function renderStats(){
   const pend=db.setoran.filter(s=>s.status==='pending').length;

@@ -35,5 +35,12 @@ ADMIN_PASSWORD=<password admin minimal 6 karakter>
 - `POST /api/admin/deposits/:id/approve`
 - `POST /api/admin/deposits/:id/reject`
 - `PATCH /api/admin/settings`
+- `PATCH /api/wallet`
+- `GET /api/withdrawals`
+- `POST /api/withdrawals`
+- `GET /api/admin/withdrawals`
+- `POST /api/admin/withdrawals/:id/approve`
+- `POST /api/admin/withdrawals/:id/reject`
+- `POST /api/stock/claim`
 
-Semua session memakai cookie `HttpOnly`, dan semua operasi saldo/approval dijalankan di server setelah validasi session admin.
+Semua session memakai cookie `HttpOnly; SameSite=None; Secure`, dan semua data akun, saldo, setoran, withdrawal, konfigurasi, serta stok Gmail dibaca/ditulis melalui server dan Supabase. Browser storage bukan sumber data aplikasi.

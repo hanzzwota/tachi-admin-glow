@@ -28,11 +28,10 @@ Buatkan aplikasi Dashboard Admin berbasis Web (Single Page Application / Full-St
 
   - Nama Brand: "tachi69gmail Admin Console".
 
-- **Kredensial Login Default Admin:**
+- **Kredensial Login Admin:**
 
-  - Username: ryueiei
-
-  - Password: Hanzz0508
+  - Atur `ADMIN_USERNAME` dan `ADMIN_PASSWORD` sebagai secret environment deployment.
+  - Kredensial tidak disimpan di source code atau dokumentasi repository.
 
 
 
