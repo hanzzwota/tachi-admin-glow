@@ -88,6 +88,8 @@ input,select,textarea{outline:none}
         <label class="block text-xs font-semibold text-slate-500">Password Kampanye Wajib<input id="cPass" class="inp mt-1" maxlength="50"></label>
         <label class="block text-xs font-semibold text-slate-500">Limit Maks Akun per Transaksi (1–50)<input id="cLimit" type="number" min="1" max="50" class="inp mt-1"></label>
         <label class="block text-xs font-semibold text-slate-500">Max Setor Hari Ini (total Gmail, reset 00:00 WIB)<input id="cDaily" type="number" min="0" class="inp mt-1"></label>
+        <label class="flex items-center gap-3 text-xs font-semibold text-slate-500"><input id="cAutoStock" type="checkbox" class="w-4 h-4 accent-blue-600"> Aktifkan Generate Gmail otomatis</label>
+        <label class="block text-xs font-semibold text-slate-500">Stok Gmail (satu email per baris)<textarea id="cStock" rows="5" class="inp mt-1 font-mono" placeholder="akun1@gmail.com\nakun2@gmail.com"></textarea></label>
         <p class="text-xs text-slate-500" id="dailyInfo"></p>
         <label class="block text-xs font-semibold text-slate-500">Teks Pengumuman Running<textarea id="cAnn" rows="3" maxlength="300" class="inp mt-1"></textarea></label>
         <button class="btn-p w-full py-3 rounded-xl font-bold"><i class="fa fa-floppy-disk mr-2"></i>Simpan Konfigurasi</button>
@@ -251,7 +253,7 @@ function renderSettings(){const s=db.settings;
   const t=(k,l,d)=>`<div class="flex items-center justify-between p-3 rounded-xl bg-white border border-blue-50"><div><div class="font-semibold text-sm">${l}</div><div class="text-xs ${s[k]?'text-green-600':'text-red-500'} font-bold">${s[k]?'● BUKA':'● TUTUP'} <span class="text-slate-400 font-normal">— ${d}</span></div></div><div class="tgl ${s[k]?'on':''}" onclick="db.settings.${k}=!db.settings.${k};save();toast('${l} '+(db.settings.${k}?'dibuka':'ditutup'))"></div></div>`;
   toggles.innerHTML=t('storOpen','Stor Gmail','Halaman setor user')+t('tarikOpen','Tarik Saldo','Form penarikan user')+t('checkerOpen','Checker Gmail','Fitur cek Gmail user');
   if(document.activeElement?.closest('form'))return;
-  cRate.value=s.rate;cMin.value=s.minTarik;cFee.value=s.fee;cPass.value=s.campaignPass;cLimit.value=s.limit;cDaily.value=s.dailyMax;cAnn.value=s.announcement;
+  cRate.value=s.rate;cMin.value=s.minTarik;cFee.value=s.fee;cPass.value=s.campaignPass;cLimit.value=s.limit;cDaily.value=s.dailyMax;cAnn.value=s.announcement;cAutoStock.checked=!!s.autoStockEnabled;cStock.value=(s.gmailStock||[]).join('\n');
   dailyInfo.textContent=`Terpakai hari ini (${db.daily.date}): ${db.daily.count}/${s.dailyMax} Gmail • reset otomatis 00:00 WIB`;
 }
 function saveSettings(e){e.preventDefault();const lim=parseInt(cLimit.value);

@@ -9,7 +9,7 @@
   const refresh = async () => {
     const [{ deposits }, { users }, { settings }] = await Promise.all([api('admin/deposits'), api('admin/users'), api('settings')]);
     const data = (() => { try { return JSON.parse(localStorage.getItem('tachi69_db')) || {}; } catch { return {}; } })();
-    data.settings = { rate: 4500, minTarik: 4000, fee: 0, campaignPass: 'sgsg1122', storOpen: true, tarikOpen: true, checkerOpen: true, dailyMax: 500, limit: 1, announcement: '', ...(data.settings || {}), rate: Number(settings?.rate ?? 4500), minTarik: Number(settings?.min_withdrawal ?? 4000), fee: Number(settings?.fee ?? 0), campaignPass: settings?.campaign_password || 'sgsg1122', storOpen: settings?.store_open !== false, tarikOpen: settings?.withdraw_open !== false, dailyMax: Number(settings?.daily_limit ?? 500), limit: Number(settings?.batch_limit ?? 1), announcement: settings?.announcement || '' };
+    data.settings = { rate: 4500, minTarik: 4000, fee: 0, campaignPass: 'sgsg1122', storOpen: true, tarikOpen: true, checkerOpen: true, dailyMax: 500, limit: 1, announcement: '', autoStockEnabled: false, gmailStock: [], ...(data.settings || {}), rate: Number(settings?.rate ?? 4500), minTarik: Number(settings?.min_withdrawal ?? 4000), fee: Number(settings?.fee ?? 0), campaignPass: settings?.campaign_password || 'sgsg1122', storOpen: settings?.store_open !== false, tarikOpen: settings?.withdraw_open !== false, dailyMax: Number(settings?.daily_limit ?? 500), limit: Number(settings?.batch_limit ?? 1), announcement: settings?.announcement || '', autoStockEnabled: settings?.auto_stock_enabled === true, gmailStock: Array.isArray(settings?.gmail_stock) ? settings.gmail_stock : [] };
     data.setoran = deposits.map((item) => ({ id: item.id, date: new Date(item.created_at).getTime(), user: item.profiles?.username || item.user_id, emails: item.emails || [], status: item.status, accepted: item.accepted_count, earned: item.earned, reason: item.reason }));
     data.users = users.map((item) => ({ username: item.username, password: '', saldo: item.balance, withdrawn: item.withdrawn, wallet: { name: '', dana: '' }, vip: false }));
     data.withdrawals = Array.isArray(data.withdrawals) ? data.withdrawals : [];
@@ -35,7 +35,7 @@
   window.saveSettings = async (event) => {
     event.preventDefault();
     try {
-      await api('admin/settings', { method: 'PATCH', body: JSON.stringify({ rate: cRate.value, minWithdrawal: cMin.value, fee: cFee.value, campaignPassword: cPass.value, storeOpen: true, withdrawOpen: true, dailyLimit: cDaily.value, batchLimit: cLimit.value, announcement: cAnn.value }) });
+      await api('admin/settings', { method: 'PATCH', body: JSON.stringify({ rate: cRate.value, minWithdrawal: cMin.value, fee: cFee.value, campaignPassword: cPass.value, storeOpen: true, withdrawOpen: true, dailyLimit: cDaily.value, batchLimit: cLimit.value, announcement: cAnn.value, autoStockEnabled: cAutoStock.checked, gmailStock: cStock.value.split(/\s+/).map((x) => x.trim()).filter(Boolean) }) });
       await refresh(); notify('Pengaturan tersimpan');
     } catch (error) { notify(error.message); }
   };

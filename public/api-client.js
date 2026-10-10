@@ -35,9 +35,9 @@
     sessionStorage.setItem('tachi_user', user.username);
     addAdminModeButton(user);
     const data = localDb();
-    data.settings = { ...(data.settings || {}), rate: settings.rate, minTarik: settings.min_withdrawal, fee: settings.fee, campaignPass: settings.campaign_password, storOpen: settings.store_open, tarikOpen: settings.withdraw_open, dailyMax: settings.daily_limit, limit: settings.batch_limit, announcement: settings.announcement };
+    data.settings = { ...(data.settings || {}), rate: settings.rate, minTarik: settings.min_withdrawal, fee: settings.fee, campaignPass: settings.campaign_password, storOpen: settings.store_open, tarikOpen: settings.withdraw_open, dailyMax: settings.daily_limit, limit: settings.batch_limit, announcement: settings.announcement, autoStockEnabled: settings.auto_stock_enabled === true, gmailStock: Array.isArray(settings.gmail_stock) ? settings.gmail_stock : [] };
     data.users = [...(data.users || []).filter((item) => item.username !== user.username), { username: user.username, password: '', saldo: user.balance, withdrawn: user.withdrawn, wallet: { name: '', dana: '' }, vip: false }];
-    data.setoran = deposits.map((item) => ({ id: item.id, date: new Date(item.created_at).getTime(), user: user.username, emails: item.emails || [], status: item.status, accepted: item.accepted_count, earned: item.earned, reason: item.reason }));
+    data.setoran = deposits.map((item) => ({ id: item.id, date: new Date(item.created_at).getTime(), user: user.username, emails: Array.isArray(item.emails) ? item.emails : [], status: item.status, accepted: Number(item.accepted_count || 0), earned: Number(item.earned || 0), reason: item.reason }));
     saveLocal(data);
     ['dashboardBalance', 'saldoBalance', 'withdrawAvailableBalance'].forEach((id) => { const element = document.getElementById(id); if (element) element.textContent = format(user.balance); });
     const profileBalance = document.getElementById('profileBalance');
@@ -90,6 +90,15 @@
 
   window.copyCampaignPassword = async () => {
     try { const { settings } = await api('settings'); await navigator.clipboard.writeText(settings.campaign_password); toast('Password berhasil disalin'); } catch (error) { toast(error.message); }
+  };
+
+  window.generateStockGmail = async () => {
+    try {
+      const { gmail } = await api('stock/claim', { method: 'POST' });
+      const input = document.getElementById('gmailListInput');
+      if (input) { input.value = input.value.trim() ? `${input.value.trim()}\n${gmail}` : gmail; input.dispatchEvent(new Event('input')); }
+      toast(`Gmail stok berhasil ditambahkan: ${gmail}`);
+    } catch (error) { toast(error.message); }
   };
 
   window.logout = async () => {

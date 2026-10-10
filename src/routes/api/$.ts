@@ -127,9 +127,20 @@ async function rejectDeposit(request: Request, id: string) {
 async function updateSettings(request: Request) {
   await requireAdmin(request);
   const payload = await body(request);
-  const allowed = { rate: Number(payload.rate), min_withdrawal: Number(payload.minWithdrawal), fee: Number(payload.fee), campaign_password: text(payload.campaignPassword), store_open: Boolean(payload.storeOpen), withdraw_open: Boolean(payload.withdrawOpen), daily_limit: Number(payload.dailyLimit), batch_limit: Number(payload.batchLimit), announcement: text(payload.announcement) };
+  const stock = Array.isArray(payload.gmailStock) ? payload.gmailStock : [];
+  const allowed = { rate: Number(payload.rate), min_withdrawal: Number(payload.minWithdrawal), fee: Number(payload.fee), campaign_password: text(payload.campaignPassword), store_open: Boolean(payload.storeOpen), withdraw_open: Boolean(payload.withdrawOpen), daily_limit: Number(payload.dailyLimit), batch_limit: Number(payload.batchLimit), announcement: text(payload.announcement), auto_stock_enabled: Boolean(payload.autoStockEnabled), gmail_stock: stock };
   await supabaseFetch("app_settings?id=eq.1", { method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify(allowed) });
   return json({ settings: await getSettings() });
+}
+async function claimGmailStock(request: Request) {
+  await requireUser(request);
+  const settings = await getSettings();
+  if (!settings?.auto_stock_enabled) return json({ error: "Generate Gmail sedang dimatikan admin" }, { status: 423 });
+  const stock = Array.isArray(settings.gmail_stock) ? settings.gmail_stock : [];
+  const item = stock.shift();
+  if (!item) return json({ error: "Stok Gmail sedang kosong" }, { status: 409 });
+  await supabaseFetch("app_settings?id=eq.1", { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ gmail_stock: stock }) });
+  return json({ gmail: item });
 }
 
 async function logout() {
@@ -149,6 +160,7 @@ async function handler(request: Request, path: string) {
   if (request.method === "POST" && path.startsWith("admin/deposits/") && path.endsWith("/approve")) return approveDeposit(request, path.split("/")[2]);
   if (request.method === "POST" && path.startsWith("admin/deposits/") && path.endsWith("/reject")) return rejectDeposit(request, path.split("/")[2]);
   if (request.method === "PATCH" && path === "admin/settings") return updateSettings(request);
+  if (request.method === "POST" && path === "stock/claim") return claimGmailStock(request);
   return json({ error: "API route tidak ditemukan" }, { status: 404 });
 }
 
