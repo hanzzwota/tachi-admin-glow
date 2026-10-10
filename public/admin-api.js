@@ -9,11 +9,12 @@
   const refresh = async () => {
     const [{ deposits }, { users }, { settings }] = await Promise.all([api('admin/deposits'), api('admin/users'), api('settings')]);
     const data = (() => { try { return JSON.parse(localStorage.getItem('tachi69_db')) || {}; } catch { return {}; } })();
-    data.settings = { ...(data.settings || {}), rate: settings.rate, minTarik: settings.min_withdrawal, fee: settings.fee, campaignPass: settings.campaign_password, storOpen: settings.store_open, tarikOpen: settings.withdraw_open, dailyMax: settings.daily_limit, limit: settings.batch_limit, announcement: settings.announcement };
+    data.settings = { rate: 4500, minTarik: 4000, fee: 0, campaignPass: 'sgsg1122', storOpen: true, tarikOpen: true, checkerOpen: true, dailyMax: 500, limit: 1, announcement: '', ...(data.settings || {}), rate: Number(settings?.rate ?? 4500), minTarik: Number(settings?.min_withdrawal ?? 4000), fee: Number(settings?.fee ?? 0), campaignPass: settings?.campaign_password || 'sgsg1122', storOpen: settings?.store_open !== false, tarikOpen: settings?.withdraw_open !== false, dailyMax: Number(settings?.daily_limit ?? 500), limit: Number(settings?.batch_limit ?? 1), announcement: settings?.announcement || '' };
     data.setoran = deposits.map((item) => ({ id: item.id, date: new Date(item.created_at).getTime(), user: item.profiles?.username || item.user_id, emails: item.emails || [], status: item.status, accepted: item.accepted_count, earned: item.earned, reason: item.reason }));
     data.users = users.map((item) => ({ username: item.username, password: '', saldo: item.balance, withdrawn: item.withdrawn, wallet: { name: '', dana: '' }, vip: false }));
+    data.withdrawals = Array.isArray(data.withdrawals) ? data.withdrawals : [];
     localStorage.setItem('tachi69_db', JSON.stringify(data));
-    window.renderAll?.();
+    window.reloadAdminDb?.();
   };
   window.doLogin = async (event) => {
     event.preventDefault();

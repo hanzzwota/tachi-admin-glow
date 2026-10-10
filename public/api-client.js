@@ -12,13 +12,13 @@
   const saveLocal = (data) => localStorage.setItem('tachi69_db', JSON.stringify(data));
   const format = (value) => `Rp${Number(value || 0).toLocaleString('id-ID')}`;
   const addAdminModeButton = (user) => {
-    if (user.role !== 'admin' || window.top !== window || document.getElementById('adminModeSwitch')) return;
+    if (user.role !== 'admin' || document.getElementById('adminModeSwitch')) return;
     const button = document.createElement('button');
     button.id = 'adminModeSwitch';
     button.type = 'button';
     button.textContent = 'Dashboard Admin';
     button.className = 'fixed top-3 right-3 z-50 rounded-xl bg-blue-600 px-3 py-2 text-[11px] font-extrabold text-white shadow-lg';
-    button.onclick = () => { location.href = '/admin'; };
+    button.onclick = () => { window.top.location.href = '/admin'; };
     document.body.appendChild(button);
   };
   const greeting = () => {
