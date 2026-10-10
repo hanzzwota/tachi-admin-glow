@@ -1509,14 +1509,7 @@ window.handleAuthSubmit=function(e,target){e.preventDefault();const f=e.target;c
     d.users.push({username:u,password:p,saldo:0,withdrawn:0,wallet:{name:name.slice(0,100),dana:''},vip:false});save(d);sessionStorage.setItem('tachi_user',u)}
   showToast('Berhasil diproses! Mengalihkan...');setTimeout(()=>navigateTo(target),500)};
 const _logout=window.logout;window.logout=function(){sessionStorage.removeItem('tachi_user');sessionStorage.removeItem('adm');_logout()};
-/* Admin bisa pindah ke Dashboard User */
-function ensureAdminUser(){const d=db();if(!d.users.some(x=>x.username==='ryueiei')){d.users.push({username:'ryueiei',password:'',saldo:0,withdrawn:0,wallet:{name:'Admin',dana:''},vip:false,admin:true});save(d)}}
-if(sessionStorage.getItem('adm')==='1'){
-  const b=document.createElement('button');b.innerHTML='<i class="fa fa-user-shield mr-1"></i>Dashboard Admin';
-  b.style.cssText='position:fixed;right:12px;bottom:90px;z-index:9999;background:#2563eb;color:#fff;font:700 12px Inter,sans-serif;padding:10px 14px;border-radius:14px;box-shadow:0 8px 20px rgba(37,99,235,.35)';
-  b.onclick=()=>location.href='admin.html';document.addEventListener('DOMContentLoaded',()=>document.body.appendChild(b));if(document.body)document.body.appendChild(b);
-  if(new URLSearchParams(location.search).get('as')==='admin'){ensureAdminUser();sessionStorage.setItem('tachi_user','ryueiei');setTimeout(()=>window.navigateTo('dashboard'),50)}
-}
+/* Admin dashboard memakai session server-side Supabase. */
 const _nav=window.navigateTo;window.navigateTo=function(v){
   if(!['login','register'].includes(v)&&!me()){v='login'}
   _nav(v);setTimeout(()=>applyState(v),30)};

@@ -300,7 +300,6 @@ function uTarikDo(){const s=db.settings,u=db.users.find(x=>x.username===uSel.val
   if(!(a>=s.minTarik))return toast('Minimal '+rp(s.minTarik));if(a>u.saldo)return toast('Saldo tidak cukup');
   u.saldo-=a;db.withdrawals.push({id:uid('WD'),date:Date.now(),user:u.username,name:u.wallet.name,dana:u.wallet.dana,amount:a,fee:Math.min(s.fee,a),status:'pending'});save();toast('Penarikan diajukan')}
 
-if(sessionStorage.getItem('adm')==='1')showApp();
 </script>
   <script src="/admin-api.js"></script>
 </body>
