@@ -40,6 +40,8 @@
           username: item.username,
           saldo: Number(item.balance || 0),
           withdrawn: Number(item.withdrawn || 0),
+          id: item.id,
+          blocked: item.is_blocked === true,
           wallet: { name: item.wallet_name || "", dana: item.wallet_number || "" },
           vip: false,
         }))
@@ -163,10 +165,12 @@
   };
   window.doAcc = async (id) => {
     try {
-      const count = Number(document.getElementById("accN")?.value || 0);
+      const acceptedEmails = [
+        ...document.querySelectorAll("input[name='acceptedEmail']:checked"),
+      ].map((input) => input.value);
       await api(`admin/deposits/${id}/approve`, {
         method: "POST",
-        body: JSON.stringify({ acceptedCount: count }),
+        body: JSON.stringify({ acceptedEmails }),
       });
       closeModal();
       await refresh();
@@ -178,9 +182,12 @@
   window.doRej = async (id) => {
     try {
       const reason = document.querySelector('input[name="rr"]:checked')?.value || "Ditolak admin";
+      const rejectedEmails = [
+        ...document.querySelectorAll("input[name='rejectedEmail']:checked"),
+      ].map((input) => input.value);
       await api(`admin/deposits/${id}/reject`, {
         method: "POST",
-        body: JSON.stringify({ reason }),
+        body: JSON.stringify({ reason, rejectedEmails }),
       });
       closeModal();
       await refresh();
@@ -212,6 +219,27 @@
     } catch (error) {
       notify(error.message);
     }
+  };
+  const userAction = async (id, action) => {
+    try {
+      await api(`admin/users/${id}/${action}`, { method: "POST" });
+      await refresh();
+      notify(
+        action === "delete"
+          ? "Akun dihapus"
+          : action === "block"
+            ? "Akun diblokir"
+            : "Akun dibuka kembali",
+      );
+    } catch (error) {
+      notify(error.message);
+    }
+  };
+  window.blockUser = (id) => userAction(id, "block");
+  window.unblockUser = (id) => userAction(id, "unblock");
+  window.deleteUser = (id) => {
+    if (confirm("Hapus akun user beserta riwayatnya? Tindakan ini tidak dapat dibatalkan."))
+      userAction(id, "delete");
   };
   window.saveSettings = async (event) => {
     event.preventDefault();

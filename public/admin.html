@@ -12,9 +12,10 @@ body{font-family:'Inter',sans-serif;-webkit-tap-highlight-color:transparent}
 .glass{background:rgba(255,255,255,.8);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.6);box-shadow:0 10px 15px -3px rgba(59,130,246,.05)}
 .btn-p{background:linear-gradient(to right,#2563eb,#4f46e5);color:#fff;box-shadow:0 6px 16px -6px rgba(37,99,235,.6)}
 .btn-p:hover{filter:brightness(1.08)}
-.tgl{width:52px;height:28px;border-radius:999px;background:#fca5a5;position:relative;transition:.2s;cursor:pointer}
+.tgl{width:52px;height:28px;border-radius:999px;background:#fca5a5;position:relative;transition:background-color .28s cubic-bezier(.4,0,.2,1),transform .18s ease;cursor:pointer;will-change:background-color}
 .tgl.on{background:#22c55e}
-.tgl::after{content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 2px 4px rgba(0,0,0,.2)}
+.tgl::after{content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:left .28s cubic-bezier(.4,0,.2,1),box-shadow .2s ease;box-shadow:0 2px 4px rgba(0,0,0,.2)}
+.tgl:active{transform:scale(.96)}
 .tgl.on::after{left:27px}
 .marquee{white-space:nowrap;animation:mq 18s linear infinite;display:inline-block;padding-left:100%}
 @keyframes mq{to{transform:translateX(-100%)}}
@@ -206,16 +207,15 @@ function viewSetoran(id){const s=db.setoran.find(x=>x.id===id);
   openModal('Detail '+id,`<div class="text-xs text-slate-500 mb-2">${esc(s.user)} • ${s.emails.length} akun</div><textarea readonly rows="10" class="inp font-mono text-xs">${esc(s.emails.join('\n'))}</textarea>
   <button onclick="copy(${esc(JSON.stringify(s.emails.join('\n')))})" class="btn-p w-full py-2 rounded-xl mt-3 font-bold text-sm"><i class="fa fa-copy mr-1"></i>Salin Semua</button>`)}
 function accModal(id){const s=db.setoran.find(x=>x.id===id);
-  openModal('Terima Setoran '+id,`<p class="text-sm mb-2">Total disetor: <b>${s.emails.length}</b> Gmail. Rate: <b>${rp(db.settings.rate)}</b></p>
-  <label class="text-xs font-semibold text-slate-500">Jumlah Gmail Valid</label><input id="accN" type="number" min="1" max="${s.emails.length}" value="${s.emails.length}" oninput="accPrev.textContent='${''}'+(${db.settings.rate}*(+this.value||0)).toLocaleString('id-ID')" class="inp mt-1">
-  <p class="text-sm mt-2">Saldo user bertambah: <b>Rp<span id="accPrev">${(db.settings.rate*s.emails.length).toLocaleString('id-ID')}</span></b></p>
+  openModal('Pilih Gmail yang Diterima '+id,`<p class="text-sm mb-2">Centang Gmail valid. Yang tidak dicentang otomatis ditolak. Rate: <b>${rp(db.settings.rate)}</b></p><div class="max-h-64 overflow-y-auto space-y-2">${s.emails.map((email)=>`<label class="flex items-center gap-2 rounded-xl border border-blue-50 bg-white p-2 text-xs"><input type="checkbox" name="acceptedEmail" value="${esc(email)}" checked><span class="font-mono">${esc(email)}</span></label>`).join('')}</div>
+  <p class="text-sm mt-2">Saldo dihitung dari Gmail yang dicentang.</p>
   <button onclick="doAcc('${id}')" class="w-full py-3 rounded-xl mt-4 font-bold bg-green-500 text-white">Konfirmasi ACC</button>`)}
 function doAcc(id){const s=db.setoran.find(x=>x.id===id);const n=parseInt(accN.value);
   if(!(n>=1&&n<=s.emails.length))return toast('Jumlah tidak valid (1–'+s.emails.length+')');
   const u=db.users.find(x=>x.username===s.user);s.status='diterima';s.accepted=n;s.verifiedAt=Date.now();s.earned=n*db.settings.rate;if(u)u.saldo+=s.earned;
   closeModal();save();toast('Setoran diterima, saldo +'+rp(s.earned))}
-function rejModal(id){
-  openModal('Tolak Setoran '+id,`<p class="text-sm mb-3">Pilih alasan penolakan:</p><div class="space-y-2">
+function rejModal(id){const s=db.setoran.find(x=>x.id===id);
+  openModal('Pilih Gmail yang Ditolak '+id,`<p class="text-sm mb-3">Centang Gmail yang ditolak. Yang tidak dicentang otomatis diterima.</p><div class="max-h-48 overflow-y-auto space-y-2">${s.emails.map((email)=>`<label class="flex items-center gap-2 rounded-xl border border-blue-50 bg-white p-2 text-xs"><input type="checkbox" name="rejectedEmail" value="${esc(email)}"><span class="font-mono">${esc(email)}</span></label>`).join('')}</div><p class="text-sm mb-3 mt-3">Pilih alasan:</p><div class="space-y-2">
   ${['Captcha','Disable','Unregist','Error','Alasan Lain'].map((r,i)=>`<label class="flex items-center gap-2 p-3 rounded-xl border border-blue-100 bg-white cursor-pointer"><input type="radio" name="rr" value="${r}" ${i===0?'checked':''} onchange="rCustom.classList.toggle('hidden',this.value!=='Alasan Lain')"><span class="text-sm font-semibold">${i+1}. ${r}</span></label>`).join('')}</div>
   <textarea id="rCustom" rows="3" maxlength="200" class="inp mt-3 hidden" placeholder="Tulis alasan kustom..."></textarea>
   <button onclick="doRej('${id}')" class="w-full py-3 rounded-xl mt-4 font-bold bg-red-500 text-white">Tolak Setoran</button>`)}
@@ -242,9 +242,11 @@ function renderUsers(){
   usersBody.innerHTML=db.users.filter(u=>!u.admin).map(u=>{const st=db.setoran.filter(s=>s.user===u.username);
   return `<tr class="border-t border-blue-50"><td class="p-2 font-semibold">${esc(u.username)}</td><td class="p-2 text-xs">${esc(u.wallet.name)}<br><span class="font-mono">DANA ${esc(u.wallet.dana)}</span></td>
   <td class="p-2 font-bold">${rp(u.saldo)}</td><td class="p-2 text-xs"><button onclick="userHist('${esc(u.username)}')" class="text-blue-600 underline">${st.length} transaksi</button></td>
-  <td class="p-2"><button onclick="toggleVip('${esc(u.username)}')" class="px-2 py-1 rounded-lg text-xs font-bold ${u.vip?'bg-amber-100 text-amber-700':'bg-slate-100 text-slate-600'}">${u.vip?'<i class="fa fa-crown mr-1"></i>VIP':'Reguler'}</button></td>
+  <td class="p-2"><button onclick="toggleVip('${esc(u.username)}')" class="px-2 py-1 rounded-lg text-xs font-bold ${u.vip?'bg-amber-100 text-amber-700':'bg-slate-100 text-slate-600'}">${u.vip?'<i class="fa fa-crown mr-1"></i>VIP':'Reguler'}</button><div class="mt-1 text-[10px] font-bold ${u.blocked?'text-red-600':'text-green-600'}">${u.blocked?'DIBLOKIR':'AKTIF'}</div></td>
   <td class="p-2 text-right whitespace-nowrap"><button onclick="saldoModal('${esc(u.username)}')" class="px-2 py-1.5 rounded-lg btn-p text-xs font-bold">Saldo</button>
-  <button onclick="resetPw('${esc(u.username)}')" class="px-2 py-1.5 rounded-lg bg-slate-100 text-xs font-bold">Reset PW</button></td></tr>`}).join('');
+  <button onclick="resetPw('${esc(u.username)}')" class="px-2 py-1.5 rounded-lg bg-slate-100 text-xs font-bold">Reset PW</button>
+  ${u.blocked?`<button onclick="unblockUser('${u.id}')" class="px-2 py-1.5 rounded-lg bg-green-100 text-green-700 text-xs font-bold">Unblock</button>`:`<button onclick="blockUser('${u.id}')" class="px-2 py-1.5 rounded-lg bg-amber-100 text-amber-700 text-xs font-bold">Block</button>`}
+  <button onclick="deleteUser('${u.id}')" class="px-2 py-1.5 rounded-lg bg-red-100 text-red-700 text-xs font-bold">Hapus</button></td></tr>`}).join('');
 }
 function userHist(n){const st=db.setoran.filter(s=>s.user===n).sort((a,b)=>b.date-a.date);
   openModal('Riwayat '+n,st.map(s=>`<div class="flex justify-between items-center p-2 border-b border-blue-50 text-sm"><div><div class="font-mono text-xs">${s.id}</div><div class="text-xs text-slate-500">${fmt(s.date)} • ${s.emails.length} akun</div></div>${badge(s.status)}</div>`).join('')||'<p class="text-sm text-slate-400">Belum ada</p>')}

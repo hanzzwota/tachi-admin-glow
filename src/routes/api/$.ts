@@ -79,6 +79,7 @@ async function login(request: Request) {
       return json({ error: "Username atau password salah" }, { status: 401 });
   }
   if (!user) return json({ error: "Username atau password salah" }, { status: 401 });
+  if (user.is_blocked === true) return json({ error: "Akun ini diblokir admin" }, { status: 403 });
   const session = await createSession(String(user.id));
   return json({ user: publicUser(user) }, { headers: { "set-cookie": session.cookie } });
 }
@@ -152,7 +153,7 @@ async function userDeposits(request: Request, admin = false) {
 async function adminUsers(request: Request) {
   await requireAdmin(request);
   const users = await supabaseFetch<Record<string, unknown>[]>(
-    "profiles?select=id,username,display_name,role,balance,withdrawn,wallet_bank,wallet_name,wallet_number&role=eq.user&order=created_at.desc&limit=500",
+    "profiles?select=id,username,display_name,role,balance,withdrawn,wallet_bank,wallet_name,wallet_number,is_blocked&role=eq.user&order=created_at.desc&limit=500",
   );
   return json({ users });
 }
@@ -190,19 +191,27 @@ async function approveDeposit(request: Request, id: string) {
   if (!deposit || deposit.status !== "pending")
     return json({ error: "Setoran tidak ditemukan atau sudah diproses" }, { status: 409 });
   const settings = await getSettings();
-  const emailCount = Array.isArray(deposit.emails) ? deposit.emails.length : 0;
-  const acceptedCount = Math.max(
-    0,
-    Math.min(emailCount, Number(payload.acceptedCount ?? emailCount)),
-  );
+  const emailList = Array.isArray(deposit.emails) ? deposit.emails.map(text) : [];
+  const requested = Array.isArray(payload.acceptedEmails)
+    ? [...new Set(payload.acceptedEmails.map(text))]
+    : emailList.slice(
+        0,
+        Math.max(0, Math.min(emailList.length, Number(payload.acceptedCount ?? emailList.length))),
+      );
+  const acceptedEmails = requested.filter((email) => emailList.includes(email));
+  const rejectedEmails = emailList.filter((email) => !acceptedEmails.includes(email));
+  const acceptedCount = acceptedEmails.length;
   const earned = acceptedCount * Number(settings?.rate ?? 0);
   await supabaseFetch(`deposits?id=eq.${encodeURIComponent(id)}`, {
     method: "PATCH",
     headers: { Prefer: "return=minimal" },
     body: JSON.stringify({
-      status: "diterima",
+      status: acceptedCount ? "diterima" : "ditolak",
       accepted_count: acceptedCount,
+      accepted_emails: acceptedEmails,
+      rejected_emails: rejectedEmails,
       earned,
+      reason: rejectedEmails.length ? `${rejectedEmails.length} Gmail tidak diterima` : null,
       verified_at: new Date().toISOString(),
     }),
   });
@@ -224,16 +233,43 @@ async function approveDeposit(request: Request, id: string) {
 async function rejectDeposit(request: Request, id: string) {
   await requireAdmin(request);
   const payload = await body(request);
+  const rows = await supabaseFetch<Record<string, unknown>[]>(
+    `deposits?select=*&id=eq.${encodeURIComponent(id)}&status=eq.pending&limit=1`,
+  );
+  const deposit = rows[0];
+  if (!deposit)
+    return json({ error: "Setoran tidak ditemukan atau sudah diproses" }, { status: 409 });
+  const emailList = Array.isArray(deposit.emails) ? deposit.emails.map(text) : [];
+  const rejectedEmails = Array.isArray(payload.rejectedEmails)
+    ? [...new Set(payload.rejectedEmails.map(text))].filter((email) => emailList.includes(email))
+    : emailList;
+  const acceptedEmails = emailList.filter((email) => !rejectedEmails.includes(email));
+  const settings = await getSettings();
+  const earned = acceptedEmails.length * Number(settings?.rate ?? 0);
   await supabaseFetch(`deposits?id=eq.${encodeURIComponent(id)}&status=eq.pending`, {
     method: "PATCH",
     headers: { Prefer: "return=minimal" },
     body: JSON.stringify({
-      status: "ditolak",
+      status: acceptedEmails.length ? "diterima" : "ditolak",
+      accepted_count: acceptedEmails.length,
+      accepted_emails: acceptedEmails,
+      rejected_emails: rejectedEmails,
+      earned,
       reason: text(payload.reason) || "Ditolak admin",
       verified_at: new Date().toISOString(),
     }),
   });
-  return json({ ok: true });
+  if (earned) {
+    const userRows = await supabaseFetch<Record<string, unknown>[]>(
+      `profiles?select=balance&id=eq.${encodeURIComponent(String(deposit.user_id))}&limit=1`,
+    );
+    await supabaseFetch(`profiles?id=eq.${encodeURIComponent(String(deposit.user_id))}`, {
+      method: "PATCH",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify({ balance: Number(userRows[0]?.balance ?? 0) + earned }),
+    });
+  }
+  return json({ ok: true, earned });
 }
 
 async function updateSettings(request: Request) {
@@ -376,6 +412,29 @@ async function processWithdrawal(request: Request, id: string, status: "selesai"
   return json({ ok: true });
 }
 
+async function setUserBlocked(request: Request, id: string, blocked: boolean) {
+  await requireAdmin(request);
+  await supabaseFetch(`profiles?id=eq.${encodeURIComponent(id)}&role=eq.user`, {
+    method: "PATCH",
+    headers: { Prefer: "return=minimal" },
+    body: JSON.stringify({ is_blocked: blocked }),
+  });
+  if (blocked)
+    await supabaseFetch(`sessions?profile_id=eq.${encodeURIComponent(id)}`, { method: "DELETE" });
+  return json({ ok: true, blocked });
+}
+
+async function deleteUser(request: Request, id: string) {
+  await requireAdmin(request);
+  await supabaseFetch(`sessions?profile_id=eq.${encodeURIComponent(id)}`, { method: "DELETE" });
+  await supabaseFetch(`deposits?user_id=eq.${encodeURIComponent(id)}`, { method: "DELETE" });
+  await supabaseFetch(`withdrawals?user_id=eq.${encodeURIComponent(id)}`, { method: "DELETE" });
+  await supabaseFetch(`profiles?id=eq.${encodeURIComponent(id)}&role=eq.user`, {
+    method: "DELETE",
+  });
+  return json({ ok: true });
+}
+
 async function logout() {
   return json({ ok: true }, { headers: { "set-cookie": clearSessionCookie() } });
 }
@@ -396,6 +455,12 @@ async function handler(request: Request, path: string) {
     return approveDeposit(request, path.split("/")[2]);
   if (request.method === "POST" && path.startsWith("admin/deposits/") && path.endsWith("/reject"))
     return rejectDeposit(request, path.split("/")[2]);
+  if (request.method === "POST" && path.startsWith("admin/users/") && path.endsWith("/block"))
+    return setUserBlocked(request, path.split("/")[2], true);
+  if (request.method === "POST" && path.startsWith("admin/users/") && path.endsWith("/unblock"))
+    return setUserBlocked(request, path.split("/")[2], false);
+  if (request.method === "POST" && path.startsWith("admin/users/") && path.endsWith("/delete"))
+    return deleteUser(request, path.split("/")[2]);
   if (request.method === "PATCH" && path === "admin/settings") return updateSettings(request);
   if (request.method === "POST" && path === "stock/claim") return claimGmailStock(request);
   if (request.method === "PATCH" && path === "wallet") return updateWallet(request);

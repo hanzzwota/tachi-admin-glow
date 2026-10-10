@@ -14,7 +14,12 @@
   const state = { user: null, settings: null, deposits: [], withdrawals: [] };
   window.tachiApiState = state;
   const addAdminModeButton = (user) => {
-    if (user.role !== "admin" || document.getElementById("adminModeSwitch")) return;
+    const existing = document.getElementById("adminModeSwitch");
+    if (user.role !== "admin") {
+      existing?.remove();
+      return;
+    }
+    if (existing) return;
     const button = document.createElement("button");
     button.id = "adminModeSwitch";
     button.type = "button";
@@ -95,7 +100,9 @@
       .map((item) => {
         const [label, style] = labels[item.status] || labels.pending;
         const earned = Number(item.earned || 0);
-        return `<article class="bg-white rounded-2xl p-4 border border-slate-100 card-soft-shadow text-left"><div class="flex items-center justify-between gap-3"><div><p class="font-mono text-xs font-bold text-slate-700">${item.id}</p><p class="text-[11px] text-slate-400 mt-1">${new Date(item.created_at).toLocaleString("id-ID")}</p></div><span class="${style} rounded-full px-2.5 py-1 text-[11px] font-extrabold">${label}</span></div><div class="mt-3 flex justify-between text-xs"><span class="text-slate-500">${Array.isArray(item.emails) ? item.emails.length : 0} Gmail</span><strong>${item.status === "diterima" ? `+${format(earned)}` : item.status === "ditolak" ? "Tidak dibayar" : "Diproses"}</strong></div>${item.reason ? `<p class="text-[11px] text-rose-600 mt-2">Alasan: ${item.reason}</p>` : ""}</article>`;
+        const accepted = Array.isArray(item.accepted_emails) ? item.accepted_emails : [];
+        const rejected = Array.isArray(item.rejected_emails) ? item.rejected_emails : [];
+        return `<article class="bg-white rounded-2xl p-4 border border-slate-100 card-soft-shadow text-left"><div class="flex items-center justify-between gap-3"><div><p class="font-mono text-xs font-bold text-slate-700">${item.id}</p><p class="text-[11px] text-slate-400 mt-1">${new Date(item.created_at).toLocaleString("id-ID")}</p></div><span class="${style} rounded-full px-2.5 py-1 text-[11px] font-extrabold">${label}</span></div><div class="mt-3 flex justify-between text-xs"><span class="text-slate-500">${Array.isArray(item.emails) ? item.emails.length : 0} Gmail</span><strong>${item.status === "diterima" ? `+${format(earned)}` : item.status === "ditolak" ? "Tidak dibayar" : "Diproses"}</strong></div>${accepted.length ? `<div class="mt-3 rounded-lg bg-emerald-50 p-2 text-[11px] text-emerald-700"><b>Diterima:</b><br>${accepted.join("<br>")}</div>` : ""}${rejected.length ? `<div class="mt-2 rounded-lg bg-rose-50 p-2 text-[11px] text-rose-700"><b>Ditolak:</b><br>${rejected.join("<br>")}</div>` : ""}${item.reason ? `<p class="text-[11px] text-rose-600 mt-2">Alasan: ${item.reason}</p>` : ""}</article>`;
       })
       .join("");
   };
