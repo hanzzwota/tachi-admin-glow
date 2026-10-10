@@ -47,7 +47,7 @@ input,select,textarea{outline:none}
       <div class="font-extrabold leading-tight truncate">tachi69gmail <span class="text-blue-600">Admin Console</span></div>
       <div class="text-[11px] text-slate-500"><span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-1"></span>Logged in as: <b>ryueiei</b></div>
     </div>
-    <button onclick="switchMode()" id="modeBtn" class="px-3 py-2 rounded-xl bg-white border border-blue-100 text-blue-600 text-xs font-bold"><i class="fa fa-repeat mr-1"></i><span>User Mode</span></button>
+    <button onclick="switchMode()" id="modeBtn" class="px-3 py-2 rounded-xl bg-white border border-blue-100 text-blue-600 text-xs font-bold"><i class="fa fa-repeat mr-1"></i><span>Dashboard User</span></button>
     <button onclick="logout()" class="px-3 py-2 rounded-xl bg-red-50 text-red-600 text-xs font-bold"><i class="fa fa-power-off"></i></button>
   </header>
 
@@ -146,19 +146,10 @@ function seed(){
     settings:{storOpen:true,tarikOpen:true,checkerOpen:true,rate:4500,minTarik:4000,fee:0,campaignPass:'sgsg1122',limit:1,dailyMax:500,
       announcement:'Selamat datang di tachi69gmail! Rate setoran Rp4.500/Gmail. Pencairan cepat via DANA.'},
     daily:{date:wibDate(),count:0},
-    users:[
-      {username:'budi01',password:'123456',saldo:13500,withdrawn:9000,wallet:{name:'Budi Santoso',dana:'081234567890'},vip:false},
-      {username:'sari_vip',password:'123456',saldo:45000,withdrawn:120000,wallet:{name:'Sari Dewi',dana:'085711112222'},vip:true},
-      {username:'andre',password:'123456',saldo:0,withdrawn:0,wallet:{name:'Andre P',dana:'089900001111'},vip:false}],
-    setoran:[
-      {id:'STR8KQ2A1',date:now-3600e3,user:'budi01',emails:['budi.a1@gmail.com','budi.a2@gmail.com','budi.a3@gmail.com'],status:'pending'},
-      {id:'STR8KQ2B7',date:now-7200e3,user:'sari_vip',emails:['sari.x1@gmail.com','sari.x2@gmail.com'],status:'diterima',accepted:2},
-      {id:'STR8KQ2C3',date:now-9000e3,user:'andre',emails:['andre.z@gmail.com'],status:'ditolak',reason:'Captcha'}],
-    withdrawals:[
-      {id:'WD7HJ21',date:now-1800e3,user:'budi01',name:'Budi Santoso',dana:'081234567890',amount:9000,fee:0,status:'pending'}]
+    users:[],setoran:[],withdrawals:[]
   };
 }
-let db=load();
+let db=load();(function(){const demo=['budi01','sari_vip','andre'];if(db.users.some(u=>demo.includes(u.username))){db.users=db.users.filter(u=>!demo.includes(u.username));db.setoran=db.setoran.filter(s=>!demo.includes(s.user));db.withdrawals=db.withdrawals.filter(w=>!demo.includes(w.user));localStorage.setItem(KEY,JSON.stringify(db))}})();
 function load(){try{return JSON.parse(localStorage.getItem(KEY))||seed()}catch{return seed()}}
 function save(){localStorage.setItem(KEY,JSON.stringify(db));renderAll()}
 function resetDaily(){if(db.daily.date!==wibDate()){db.daily={date:wibDate(),count:0};localStorage.setItem(KEY,JSON.stringify(db))}}
@@ -171,7 +162,7 @@ function doLogin(e){e.preventDefault();
 function logout(){sessionStorage.removeItem('adm');location.href='app.html'}
 function showApp(){loginView.classList.add('hidden');appView.classList.remove('hidden');resetDaily();renderAll()}
 let userMode=false;
-function switchMode(){userMode=!userMode;adminMode.classList.toggle('hidden',userMode);userModeEl().classList.toggle('hidden',!userMode);
+function switchMode(){location.href='app.html?as=admin';return;userMode=!userMode;adminMode.classList.toggle('hidden',userMode);userModeEl().classList.toggle('hidden',!userMode);
   modeBtn.querySelector('span').textContent=userMode?'Admin Mode':'User Mode';renderAll()}
 const userModeEl=()=>document.getElementById('userMode');
 
@@ -250,7 +241,7 @@ function rejWd(id){const r=wdR.value.trim();if(!r)return toast('Alasan wajib dii
   const w=db.withdrawals.find(x=>x.id===id);w.status='ditolak';w.reason=r;const u=db.users.find(x=>x.username===w.user);if(u)u.saldo+=w.amount;closeModal();save();toast('Penarikan ditolak, saldo dikembalikan')}
 
 function renderUsers(){
-  usersBody.innerHTML=db.users.map(u=>{const st=db.setoran.filter(s=>s.user===u.username);
+  usersBody.innerHTML=db.users.filter(u=>!u.admin).map(u=>{const st=db.setoran.filter(s=>s.user===u.username);
   return `<tr class="border-t border-blue-50"><td class="p-2 font-semibold">${esc(u.username)}</td><td class="p-2 text-xs">${esc(u.wallet.name)}<br><span class="font-mono">DANA ${esc(u.wallet.dana)}</span></td>
   <td class="p-2 font-bold">${rp(u.saldo)}</td><td class="p-2 text-xs"><button onclick="userHist('${esc(u.username)}')" class="text-blue-600 underline">${st.length} transaksi</button></td>
   <td class="p-2"><button onclick="toggleVip('${esc(u.username)}')" class="px-2 py-1 rounded-lg text-xs font-bold ${u.vip?'bg-amber-100 text-amber-700':'bg-slate-100 text-slate-600'}">${u.vip?'<i class="fa fa-crown mr-1"></i>VIP':'Reguler'}</button></td>
