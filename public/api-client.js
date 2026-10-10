@@ -52,7 +52,12 @@
         ? { displayName: fields[0].value, username: fields[1].value, password: fields[3].value }
         : { username: fields[0].value, password: fields[1].value };
       const result = await api(isRegister ? 'auth/register' : 'auth/login', { method: 'POST', body: JSON.stringify(payload) });
-      if (result.user.role === 'admin') { location.href = '/admin'; return; }
+      if (result.user.role === 'admin') {
+        sessionStorage.setItem('adm', '1');
+        sessionStorage.setItem('tachi_user', result.user.username);
+        location.href = '/admin';
+        return;
+      }
       await syncAppData();
       toast(isRegister ? 'Akun berhasil dibuat' : 'Login berhasil');
       setTimeout(() => window.navigateTo?.('dashboard'), 250);
