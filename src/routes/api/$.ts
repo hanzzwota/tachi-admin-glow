@@ -240,6 +240,8 @@ async function rejectDeposit(request: Request, id: string) {
   if (!deposit)
     return json({ error: "Setoran tidak ditemukan atau sudah diproses" }, { status: 409 });
   const emailList = Array.isArray(deposit.emails) ? deposit.emails.map(text) : [];
+  if (Array.isArray(payload.rejectedEmails) && payload.rejectedEmails.length === 0)
+    return json({ error: "Pilih minimal satu Gmail untuk ditolak" }, { status: 400 });
   const rejectedEmails = Array.isArray(payload.rejectedEmails)
     ? [...new Set(payload.rejectedEmails.map(text))].filter((email) => emailList.includes(email))
     : emailList;
