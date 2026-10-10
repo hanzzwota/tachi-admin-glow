@@ -1134,14 +1134,19 @@
 
     <script>
         
-        // Announcement carousel data
-        const announcements = [
-            { id: "1/2", text: "UPDATE HARGA GMAIL TERBARU" },
-            { id: "2/2", text: "STOK GMAIL FRESH DIPROSES SANGAT CEPAT!" }
-        ];
+        // Announcement carousel data (sinkron dengan pengaturan Admin)
+        function getAnnouncements() {
+            const d = (typeof db === 'function') ? db() : null;
+            const adminMsg = d && d.settings && d.settings.announcement ? d.settings.announcement.trim() : '';
+            const list = adminMsg ? [adminMsg] : ["UPDATE HARGA GMAIL TERBARU", "STOK GMAIL FRESH DIPROSES SANGAT CEPAT!"];
+            return list.map((text, i) => ({ id: (i + 1) + "/" + list.length, text }));
+        }
+        let announcements = getAnnouncements();
         let currentSlideIndex = 0;
 
         function updateSlide() {
+            announcements = getAnnouncements();
+            if (currentSlideIndex >= announcements.length) currentSlideIndex = 0;
             const badge = document.getElementById('announcementBadge');
             const text = document.getElementById('announcementText');
             if (badge && text) {
@@ -1164,7 +1169,11 @@
         let userBankData = { bank: '', rekening: '', nama: '' };
 
         // Rate dinamis: ubah satu nilai ini saat harga Gmail diperbarui admin.
-        const currentGmailRate = 4500;
+        function getGmailRate() {
+            const d = (typeof db === 'function') ? db() : null;
+            return (d && d.settings && d.settings.rate) ? d.settings.rate : 4500;
+        }
+        const currentGmailRate = getGmailRate();
 
         function isRekeningTerisi() {
             return userBankData.rekening.trim() !== '' && userBankData.nama.trim() !== '';
@@ -1480,6 +1489,9 @@ const _nav=window.navigateTo;window.navigateTo=function(v){
 function lockBox(el,msg){if(!el||el.parentElement.querySelector('.adm-lock'))return;const b=document.createElement('div');
   b.className='adm-lock text-center text-xs font-extrabold text-red-600 bg-red-50 border border-red-200 rounded-2xl p-3 mb-3';b.innerHTML='<i class="fa fa-lock mr-1"></i>'+msg;el.parentElement.insertBefore(b,el)}
 function applyState(){const d=db();document.querySelectorAll('.adm-lock').forEach(x=>x.remove());
+  const rateLabel='Rp'+d.settings.rate.toLocaleString('id-ID')+' / Gmail';
+  ['gmailRateTop','gmailRateSaldo'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerText=rateLabel});
+  if(typeof updateSlide==='function')updateSlide();
   const g=document.getElementById('gmailListInput');if(g){g.disabled=!d.settings.storOpen;if(!d.settings.storOpen)lockBox(g,'Setoran Ditutup oleh Admin')}
   const w=document.getElementById('withdrawalAmountInput');if(w){w.disabled=!d.settings.tarikOpen;w.placeholder='Minimal penarikan Rp'+d.settings.minTarik.toLocaleString('id-ID');if(!d.settings.tarikOpen)lockBox(w.closest('div'),'Penarikan Ditutup')}
   const u=d.users.find(x=>x.username===me());
