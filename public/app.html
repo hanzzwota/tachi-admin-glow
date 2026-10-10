@@ -1062,7 +1062,7 @@
             </header>
 
             <!-- Filter Status Tab Bar -->
-            <div class="bg-white/80 backdrop-blur-md rounded-2xl p-1.5 card-soft-shadow border border-slate-100 flex items-center justify-between gap-1">
+            <div class="sticky top-2 z-20 bg-white/95 backdrop-blur-md rounded-2xl p-1.5 card-soft-shadow border border-slate-100 flex items-center justify-between gap-1 flex-shrink-0">
                 <button onclick="filterRiwayat('semua', this)" class="riwayat-tab-btn flex-1 py-2 text-xs font-extrabold rounded-xl bg-blue-600 text-white transition text-center shadow-sm">
                     Semua
                 </button>
@@ -1078,7 +1078,7 @@
             </div>
 
             <!-- Content Area List -->
-            <div id="riwayatListContainer" class="flex flex-col gap-3 my-auto py-12 text-center">
+            <div id="riwayatListContainer" class="flex flex-col gap-3 py-6 text-center">
                 <div class="w-16 h-16 rounded-3xl bg-blue-50 text-blue-500 flex items-center justify-center text-2xl mx-auto mb-2">
                     <i class="fa-regular fa-folder-open"></i>
                 </div>
@@ -1425,6 +1425,11 @@
         // Riwayat setoran dirender dari state API Supabase.
         window.activeRiwayatFilter = 'semua';
         function renderRiwayat(filter = 'semua') {
+            if (window.tachiApiState && typeof window.renderRiwayat === 'function') {
+                window.activeRiwayatFilter = filter;
+                window.renderRiwayat(filter);
+                return;
+            }
             const container = document.getElementById('riwayatListContainer');
             if (!container || typeof db !== 'function') return;
             window.activeRiwayatFilter = filter;
