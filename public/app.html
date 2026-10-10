@@ -1499,7 +1499,6 @@ const me=()=>sessionStorage.getItem('tachi_user');
 window.handleAuthSubmit=function(e,target){e.preventDefault();const f=e.target;const t=[...f.querySelectorAll('input')];
   const isReg=t.length>2;let d=db();
   if(!isReg){const u=t[0].value.trim(),p=t[1].value;
-    if(u==='ryueiei'&&p==='Hanzz0508'){sessionStorage.setItem('adm','1');sessionStorage.removeItem('tachi_user');showToast('Login Admin berhasil! Mengalihkan...');setTimeout(()=>location.href='admin.html',500);return}
     const usr=d.users.find(x=>x.username===u);
     if(!usr||usr.password!==p){showToast('Username atau password salah!');return}
     sessionStorage.setItem('tachi_user',u)}

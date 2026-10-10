@@ -157,8 +157,7 @@ window.addEventListener('storage',e=>{if(e.key===KEY){db=load();renderAll()}});
 setInterval(()=>{const d=db.daily.date;resetDaily();if(d!==db.daily.date)renderAll()},30000);
 
 // AUTH
-function doLogin(e){e.preventDefault();
-  if(lu.value.trim()==='ryueiei'&&lp.value==='Hanzz0508'){sessionStorage.setItem('adm','1');showApp()}else lerr.classList.remove('hidden')}
+function doLogin(e){e.preventDefault(); lerr.textContent='Memvalidasi akun…'; lerr.classList.remove('hidden')}
 function logout(){sessionStorage.removeItem('adm');location.href='app.html'}
 function showApp(){loginView.classList.add('hidden');appView.classList.remove('hidden');resetDaily();renderAll()}
 let userMode=false;
