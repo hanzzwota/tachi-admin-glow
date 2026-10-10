@@ -86,8 +86,11 @@
   window.addEventListener('DOMContentLoaded', async () => {
     try {
       const { user } = await api('auth/me');
-      if (user) await syncAppData();
-      else if (!['login', 'register'].includes(new URLSearchParams(location.search).get('view') || 'login')) window.navigateTo?.('login');
+      const requestedView = new URLSearchParams(location.search).get('view');
+      if (user) {
+        await syncAppData();
+        if (requestedView && !['login', 'register'].includes(requestedView)) setTimeout(() => window.navigateTo?.(requestedView), 0);
+      } else if (!['login', 'register'].includes(requestedView || 'login')) window.navigateTo?.('login');
     } catch (error) { console.warn('Backend belum siap:', error.message); }
   });
 })();
