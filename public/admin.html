@@ -158,10 +158,10 @@ setInterval(()=>{const d=db.daily.date;resetDaily();if(d!==db.daily.date)renderA
 
 // AUTH
 function doLogin(e){e.preventDefault(); lerr.textContent='Memvalidasi akun…'; lerr.classList.remove('hidden')}
-function logout(){sessionStorage.removeItem('adm');location.href='app.html'}
+function logout(){sessionStorage.removeItem('adm');location.href='/login'}
 function showApp(){loginView.classList.add('hidden');appView.classList.remove('hidden');resetDaily();renderAll()}
 let userMode=false;
-function switchMode(){location.href='app.html?as=admin';return;userMode=!userMode;adminMode.classList.toggle('hidden',userMode);userModeEl().classList.toggle('hidden',!userMode);
+function switchMode(){window.top.location.href='/dashboard';return;userMode=!userMode;adminMode.classList.toggle('hidden',userMode);userModeEl().classList.toggle('hidden',!userMode);
   modeBtn.querySelector('span').textContent=userMode?'Admin Mode':'User Mode';renderAll()}
 const userModeEl=()=>document.getElementById('userMode');
 

@@ -38,5 +38,17 @@
       await refresh(); notify('Pengaturan tersimpan');
     } catch (error) { notify(error.message); }
   };
-  window.addEventListener('DOMContentLoaded', () => { if (sessionStorage.getItem('adm') === '1') refresh().catch((error) => notify(error.message)); });
+  window.addEventListener('DOMContentLoaded', async () => {
+    try {
+      const { user } = await api('auth/me');
+      if (!user || user.role !== 'admin') {
+        sessionStorage.removeItem('adm');
+        return;
+      }
+      sessionStorage.setItem('adm', '1');
+      sessionStorage.setItem('tachi_user', user.username);
+      await refresh();
+      showApp();
+    } catch (error) { notify(error.message); }
+  });
 })();

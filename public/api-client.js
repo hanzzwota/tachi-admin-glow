@@ -11,6 +11,16 @@
   };
   const saveLocal = (data) => localStorage.setItem('tachi69_db', JSON.stringify(data));
   const format = (value) => `Rp${Number(value || 0).toLocaleString('id-ID')}`;
+  const addAdminModeButton = (user) => {
+    if (user.role !== 'admin' || window.top !== window || document.getElementById('adminModeSwitch')) return;
+    const button = document.createElement('button');
+    button.id = 'adminModeSwitch';
+    button.type = 'button';
+    button.textContent = 'Dashboard Admin';
+    button.className = 'fixed top-3 right-3 z-50 rounded-xl bg-blue-600 px-3 py-2 text-[11px] font-extrabold text-white shadow-lg';
+    button.onclick = () => { location.href = '/admin'; };
+    document.body.appendChild(button);
+  };
   const greeting = () => {
     const hour = new Date().getHours();
     if (hour >= 4 && hour < 11) return 'Selamat pagi';
@@ -23,6 +33,7 @@
     const [{ user }, { settings }, { deposits }] = await Promise.all([api('auth/me'), api('settings'), api('deposits')]);
     if (!user) return null;
     sessionStorage.setItem('tachi_user', user.username);
+    addAdminModeButton(user);
     const data = localDb();
     data.settings = { ...(data.settings || {}), rate: settings.rate, minTarik: settings.min_withdrawal, fee: settings.fee, campaignPass: settings.campaign_password, storOpen: settings.store_open, tarikOpen: settings.withdraw_open, dailyMax: settings.daily_limit, limit: settings.batch_limit, announcement: settings.announcement };
     data.users = [...(data.users || []).filter((item) => item.username !== user.username), { username: user.username, password: '', saldo: user.balance, withdrawn: user.withdrawn, wallet: { name: '', dana: '' }, vip: false }];
