@@ -516,7 +516,7 @@
                     </div>
 
                     <div class="mt-1">
-                        <div class="text-3xl font-black tracking-tight text-white">Rp0</div>
+                        <div id="dashboardBalance" class="text-3xl font-black tracking-tight text-white">Rp0</div>
                     </div>
 
                     <div class="flex items-center gap-3 mt-5">
@@ -720,8 +720,8 @@
                 </div>
 
                 <div class="custom-input rounded-xl px-3.5 py-2 flex items-center justify-between mt-1">
-                    <span id="requiredPasswordText" class="text-xs font-bold text-slate-800 tracking-wider">sgsg1122</span>
-                    <button onclick="copyToClipboard('sgsg1122')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold flex items-center gap-1 active:scale-95 transition">
+                    <span id="requiredPasswordText" class="text-xs font-bold text-slate-800 tracking-wider">-</span>
+                    <button onclick="copyCampaignPassword()" class="btn-glossy px-2.5 py-1 text-white rounded-lg text-xs font-bold flex items-center gap-1 active:scale-95 transition">
                         <i class="fa-regular fa-copy"></i>
                         <span>Salin</span>
                     </button>
@@ -821,7 +821,7 @@
                     </div>
 
                     <div class="mt-1">
-                        <div class="text-3xl font-black tracking-tight text-white">Rp0</div>
+                        <div id="saldoBalance" class="text-3xl font-black tracking-tight text-white">Rp0</div>
                     </div>
 
                     <div class="flex items-center gap-3 mt-5">
@@ -881,7 +881,7 @@
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-slate-500 font-medium">Fee -</span>
-                        <span class="font-bold text-slate-800">Rp0</span>
+                        <span id="withdrawAvailableBalance" class="font-bold text-slate-800">Rp0</span>
                     </div>
                     <div class="border-t border-slate-200/80 pt-2 text-[10px] text-slate-400">
                         Saldo terpotong = nominal penarikan + fee admin.
@@ -1418,13 +1418,47 @@
             document.getElementById('new-password').value = '';
         }
 
-        // Riwayat status filter tab switcher
+        // Password kampanye selalu mengikuti pengaturan admin terbaru.
+        function copyCampaignPassword() {
+            const data = typeof db === 'function' ? db() : null;
+            copyToClipboard(data?.settings?.campaignPass || '');
+        }
+
+        // Render riwayat setoran dari localStorage dan filter berdasarkan status.
+        window.activeRiwayatFilter = 'semua';
+        function renderRiwayat(filter = 'semua') {
+            const container = document.getElementById('riwayatListContainer');
+            if (!container || typeof db !== 'function') return;
+            window.activeRiwayatFilter = filter;
+            const data = db();
+            const username = me();
+            const statusMap = { diterima: 'diterima', pending: 'pending', gagal: 'ditolak' };
+            const records = (data.setoran || [])
+                .filter(item => item.user === username)
+                .filter(item => filter === 'semua' || item.status === statusMap[filter])
+                .sort((a, b) => (b.date || 0) - (a.date || 0));
+            if (!records.length) {
+                const label = filter === 'semua' ? 'Belum ada riwayat setoran' : `Belum ada setoran ${filter}`;
+                container.innerHTML = `<div class="w-16 h-16 rounded-3xl bg-blue-50 text-blue-500 flex items-center justify-center text-2xl mx-auto mb-2"><i class="fa-regular fa-folder-open"></i></div><h3 class="text-sm font-extrabold text-slate-700">${label}</h3><p class="text-xs text-slate-400 font-medium max-w-[220px] mx-auto">Setor Gmail kamu sekarang untuk mulai mendapatkan saldo!</p>`;
+                return;
+            }
+            const status = {
+                pending: ['Menunggu', 'bg-amber-50 text-amber-700', 'fa-hourglass-half'],
+                diterima: ['Diterima', 'bg-emerald-50 text-emerald-700', 'fa-circle-check'],
+                ditolak: ['Gagal', 'bg-rose-50 text-rose-700', 'fa-circle-xmark']
+            };
+            container.classList.remove('my-auto', 'py-12', 'text-center');
+            container.innerHTML = records.map(item => {
+                const meta = status[item.status] || status.pending;
+                const earned = item.earned ?? ((item.accepted || 0) * (data.settings.rate || 0));
+                const reason = item.reason ? `<p class="text-[11px] text-rose-600 mt-2">Alasan: ${String(item.reason).replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}</p>` : '';
+                return `<article class="bg-white rounded-2xl p-4 border border-slate-100 card-soft-shadow text-left"><div class="flex items-center justify-between gap-3"><div><p class="font-mono text-xs font-bold text-slate-700">${item.id}</p><p class="text-[11px] text-slate-400 mt-1">${new Date(item.date).toLocaleString('id-ID')}</p></div><span class="${meta[1]} rounded-full px-2.5 py-1 text-[11px] font-extrabold flex items-center gap-1"><i class="fa-solid ${meta[2]}"></i>${meta[0]}</span></div><div class="mt-3 flex justify-between text-xs"><span class="text-slate-500">${item.emails.length} Gmail</span><strong class="${item.status === 'diterima' ? 'text-emerald-600' : 'text-slate-700'}">${item.status === 'diterima' ? '+' + 'Rp' + earned.toLocaleString('id-ID') : item.status === 'ditolak' ? 'Tidak dibayar' : 'Diproses'}</strong></div>${reason}</article>`;
+            }).join('');
+        }
         function filterRiwayat(filter, btn) {
-            document.querySelectorAll('.riwayat-tab-btn').forEach(b => {
-                b.className = "riwayat-tab-btn flex-1 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 rounded-xl transition text-center";
-            });
-            btn.className = "riwayat-tab-btn flex-1 py-2 text-xs font-extrabold rounded-xl bg-blue-600 text-white transition text-center shadow-sm";
-            showToast(`Filter: ${filter.toUpperCase()}`);
+            document.querySelectorAll('.riwayat-tab-btn').forEach(b => b.className = "riwayat-tab-btn flex-1 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 rounded-xl transition text-center");
+            if (btn) btn.className = "riwayat-tab-btn flex-1 py-2 text-xs font-extrabold rounded-xl bg-blue-600 text-white transition text-center shadow-sm";
+            renderRiwayat(filter);
         }
 
         // Dynamic Modal handlers
@@ -1461,6 +1495,7 @@ const wib=()=>new Date(Date.now()+7*3600e3).toISOString().slice(0,10);
 function db(){let d=load();if(!d){d={settings:{storOpen:true,tarikOpen:true,checkerOpen:true,rate:4500,minTarik:4000,fee:0,campaignPass:'sgsg1122',limit:1,dailyMax:500,announcement:''},daily:{date:wib(),count:0},users:[],setoran:[],withdrawals:[]};save(d)}
   if(d.daily.date!==wib()){d.daily={date:wib(),count:0};save(d)}return d}
 const me=()=>sessionStorage.getItem('tachi_user');
+  const requestedView=new URLSearchParams(location.search).get('view');
 window.handleAuthSubmit=function(e,target){e.preventDefault();const f=e.target;const t=[...f.querySelectorAll('input')];
   const isReg=t.length>2;let d=db();
   if(!isReg){const u=t[0].value.trim(),p=t[1].value;
@@ -1491,6 +1526,11 @@ function lockBox(el,msg){if(!el||el.parentElement.querySelector('.adm-lock'))ret
 function applyState(){const d=db();document.querySelectorAll('.adm-lock').forEach(x=>x.remove());
   const rateLabel='Rp'+d.settings.rate.toLocaleString('id-ID')+' / Gmail';
   ['gmailRateTop','gmailRateSaldo'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerText=rateLabel});
+  const u=d.users.find(x=>x.username===me());
+  const balance=u?.saldo||0;
+  ['dashboardBalance','saldoBalance','withdrawAvailableBalance'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerText='Rp'+balance.toLocaleString('id-ID')});
+  const passEl=document.getElementById('requiredPasswordText');if(passEl)passEl.innerText=d.settings.campaignPass||'-';
+  if(typeof renderRiwayat==='function')renderRiwayat(window.activeRiwayatFilter||'semua');
   if(typeof updateSlide==='function')updateSlide();
   const g=document.getElementById('gmailListInput');if(g){g.disabled=!d.settings.storOpen;if(!d.settings.storOpen)lockBox(g,'Setoran Ditutup oleh Admin')}
   const w=document.getElementById('withdrawalAmountInput');if(w){w.disabled=!d.settings.tarikOpen;w.placeholder='Minimal penarikan Rp'+d.settings.minTarik.toLocaleString('id-ID');if(!d.settings.tarikOpen)lockBox(w.closest('div'),'Penarikan Ditutup')}
@@ -1520,7 +1560,7 @@ window.updatePassword=function(){const o=document.getElementById('old-password')
   if(!u||u.password!==o)return showToast('Kata sandi lama salah!');if(n.length<6)return showToast('Minimal 6 karakter');u.password=n;save(d);
   showToast('Kata sandi berhasil diperbarui!');document.getElementById('old-password').value='';document.getElementById('new-password').value=''};
 window.addEventListener('storage',e=>{if(e.key===KEY)applyState()});
-if(me())applyState();
+if(me()){applyState();if(requestedView)setTimeout(()=>window.navigateTo(requestedView),50);}
 })();
 </script>
 </body>
