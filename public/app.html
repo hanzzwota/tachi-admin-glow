@@ -285,7 +285,7 @@
         }
 
         /* Semua item bottom bar sejajar dan tidak lagi berbentuk bulat/runcing */
-        .nav-shell { border-radius: 1.25rem 1.25rem 0 0; }
+        .nav-shell { border-radius: 1.25rem; bottom: max(12px, env(safe-area-inset-bottom)) !important; left: 50% !important; right: auto !important; width: min(calc(100% - 24px), 480px) !important; transform: translateX(-50%); margin: 0; }
         .nav-button { border-radius: .85rem; min-width: 3.5rem; padding: .35rem .25rem; }
         .nav-button:hover { background: rgba(59, 130, 246, .08); }
         .nav-stor-button { border-radius: .85rem !important; width: auto !important; height: auto !important; min-width: 3.5rem; padding: .35rem .25rem !important; border-width: 0 !important; box-shadow: none !important; background: transparent !important; color: #64748b; }
@@ -471,7 +471,7 @@
                         <h1 class="font-black text-lg text-slate-900 tracking-tight leading-none flex items-center gap-0.5">
                             tachi<span class="text-blue-600">69gmail</span>
                         </h1>
-                        <p class="text-[11px] text-slate-500 font-medium mt-0.5">Selamat malam, <span class="text-slate-800 font-bold">ryuu</span></p>
+                        <p id="welcomeGreeting" class="text-[11px] text-slate-500 font-medium mt-0.5">Selamat pagi, <span id="welcomeName" class="text-slate-800 font-bold">user</span></p>
                     </div>
                 </div>
 
@@ -942,7 +942,8 @@
                         <span>STATUS: MEMBER REGULER</span>
                     </span>
                     <h2 id="profileDisplayName" class="text-lg font-black text-slate-800 tracking-tight">ryuu</h2>
-                    <p id="profileUsername" class="text-xs font-medium text-slate-400">Username: @ryuu</p>
+                    <p id="profileUsername" class="text-xs font-medium text-slate-400">Username: @user</p>
+                    <p class="text-xs font-extrabold text-blue-600 mt-1">Saldo: <span id="profileBalance">Rp0</span></p>
                 </div>
             </div>
 
