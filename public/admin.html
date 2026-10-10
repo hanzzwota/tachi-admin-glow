@@ -43,6 +43,7 @@ input,select,textarea{outline:none}
     <section id="stats" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></section>
     <nav class="glass rounded-2xl p-1.5 flex gap-1 overflow-x-auto text-sm font-semibold">
       <button class="tab active px-4 py-2 rounded-xl whitespace-nowrap" data-t="setoran">Setoran Gmail</button>
+      <button class="tab px-4 py-2 rounded-xl whitespace-nowrap" data-t="riwayat">Rekapan Hari Ini</button>
       <button class="tab px-4 py-2 rounded-xl whitespace-nowrap" data-t="payout">Penarikan</button>
       <button class="tab px-4 py-2 rounded-xl whitespace-nowrap" data-t="users">Data User</button>
       <button class="tab px-4 py-2 rounded-xl whitespace-nowrap" data-t="settings">System Settings</button>
@@ -58,6 +59,16 @@ input,select,textarea{outline:none}
       <div class="overflow-x-auto"><table class="w-full text-sm"><thead class="text-left text-slate-500 text-xs uppercase"><tr>
         <th class="p-2">ID</th><th class="p-2">Tanggal</th><th class="p-2">User</th><th class="p-2">Gmail</th><th class="p-2">Status</th><th class="p-2 text-right">Aksi</th></tr></thead>
         <tbody id="setoranBody"></tbody></table></div>
+    </section>
+
+    <!-- DAILY RECAP -->
+    <section id="t-riwayat" class="glass rounded-2xl p-4 hidden space-y-4">
+      <div class="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+        <div><h3 class="font-bold"><i class="fa fa-calendar-day text-blue-600 mr-2"></i>Rekapan Setoran Hari Ini</h3><p class="text-xs text-slate-500">Semua Gmail yang disetor user hari ini berdasarkan waktu WIB.</p></div>
+        <div class="flex gap-2"><button type="button" onclick="copyDailyGmail()" class="rounded-xl bg-white border border-blue-100 px-3 py-2 text-xs font-bold text-blue-600"><i class="fa fa-copy mr-1"></i>Salin Semua Gmail</button><button type="button" onclick="exportDailyGmail()" class="btn-p rounded-xl px-3 py-2 text-xs font-bold"><i class="fa fa-file-export mr-1"></i>Export .txt</button></div>
+      </div>
+      <div id="dailyRecapStats" class="grid grid-cols-2 gap-3 md:grid-cols-4"></div>
+      <textarea id="dailyGmailText" readonly rows="12" class="inp w-full font-mono text-xs" placeholder="Belum ada Gmail disetor hari ini"></textarea>
     </section>
 
     <!-- PAYOUT -->
@@ -141,7 +152,7 @@ function seed(){
 function normalizeDb(value){const base=seed(),data=value&&typeof value==='object'?value:{};return { ...base, ...data, settings:{...base.settings,...(data.settings&&typeof data.settings==='object'?data.settings:{})}, daily:{...base.daily,...(data.daily&&typeof data.daily==='object'?data.daily:{})}, users:Array.isArray(data.users)?data.users:[], setoran:Array.isArray(data.setoran)?data.setoran:[], withdrawals:Array.isArray(data.withdrawals)?data.withdrawals:[] }}
 let db=normalizeDb(null);
 function load(){return normalizeDb(null)}
-function save(){renderAll()}
+function save(){renderAll();window.persistSettings?.()}
 window.reloadAdminDb=function(){renderAll()};
 
 // AUTH
@@ -164,10 +175,10 @@ const badge=s=>({pending:'<span class="px-2 py-1 rounded-lg text-xs font-bold bg
   selesai:'<span class="px-2 py-1 rounded-lg text-xs font-bold bg-green-100 text-green-700">Selesai</span>',
   ditolak:'<span class="px-2 py-1 rounded-lg text-xs font-bold bg-red-100 text-red-700">Ditolak</span>'}[s]);
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');
-  ['setoran','payout','users','settings'].forEach(t=>document.getElementById('t-'+t).classList.toggle('hidden',t!==b.dataset.t));
+  ['setoran','riwayat','payout','users','settings'].forEach(t=>document.getElementById('t-'+t).classList.toggle('hidden',t!==b.dataset.t));
   if(b.dataset.t==='settings')document.getElementById('t-settings').classList.add('grid')});
 
-function renderAll(){renderStats();renderSetoran();renderPayout();renderUsers();renderSettings();renderUser()}
+function renderAll(){renderStats();renderSetoran();renderPayout();renderUsers();renderSettings();renderUser();window.renderDailyRecap?.()}
 
 function renderStats(){
   const pend=db.setoran.filter(s=>s.status==='pending').length;

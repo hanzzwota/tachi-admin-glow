@@ -58,6 +58,59 @@
       : [],
     daily: { date: new Date().toISOString().slice(0, 10), count: 0 },
   });
+  const dailyDeposits = () => {
+    const today = new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10);
+    return db.setoran.filter((item) => {
+      const timestamp = new Date(item.created_at || item.date).getTime();
+      return new Date(timestamp + 7 * 3600e3).toISOString().slice(0, 10) === today;
+    });
+  };
+  window.renderDailyRecap = () => {
+    const rows = dailyDeposits();
+    const emails = [
+      ...new Set(rows.flatMap((item) => (Array.isArray(item.emails) ? item.emails : []))),
+    ];
+    const stats = document.getElementById("dailyRecapStats");
+    const text = document.getElementById("dailyGmailText");
+    if (stats)
+      stats.innerHTML = [
+        `${rows.length} transaksi`,
+        `${emails.length} Gmail`,
+        `${rows.filter((item) => item.status === "diterima").length} diterima`,
+        `${rows.filter((item) => item.status === "pending").length} pending`,
+      ]
+        .map(
+          (value) =>
+            `<div class="rounded-xl border border-blue-50 bg-white p-3 text-center text-sm font-extrabold text-blue-700">${value}</div>`,
+        )
+        .join("");
+    if (text) text.value = emails.join("\n");
+  };
+  window.copyDailyGmail = async () => {
+    const value = document.getElementById("dailyGmailText")?.value || "";
+    if (!value) return notify("Belum ada Gmail untuk disalin");
+    try {
+      await navigator.clipboard.writeText(value);
+      notify(`${value.split("\n").length} Gmail disalin`);
+    } catch {
+      notify("Gagal menyalin Gmail");
+    }
+  };
+  window.exportDailyGmail = () => {
+    const value = document.getElementById("dailyGmailText")?.value || "";
+    if (!value) return notify("Belum ada Gmail untuk diekspor");
+    const stamp = new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10);
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(
+      new Blob([`Rekapan Gmail Setoran ${stamp}\n\n${value}\n`], {
+        type: "text/plain;charset=utf-8",
+      }),
+    );
+    link.download = `rekapan-gmail-${stamp}.txt`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    notify("File rekapan berhasil diekspor");
+  };
   const refresh = async () => {
     const [{ deposits }, { users }, { settings }, { withdrawals }] = await Promise.all([
       api("admin/deposits"),
@@ -67,6 +120,30 @@
     ]);
     db = normalize(settings, deposits, users, withdrawals);
     window.reloadAdminDb?.();
+  };
+  window.persistSettings = async () => {
+    try {
+      await api("admin/settings", {
+        method: "PATCH",
+        body: JSON.stringify({
+          rate: db.settings.rate,
+          minWithdrawal: db.settings.minTarik,
+          fee: db.settings.fee,
+          campaignPassword: db.settings.campaignPass,
+          storeOpen: db.settings.storOpen,
+          withdrawOpen: db.settings.tarikOpen,
+          dailyLimit: db.settings.dailyMax,
+          batchLimit: db.settings.limit,
+          announcement: db.settings.announcement,
+          autoStockEnabled: db.settings.autoStockEnabled,
+          gmailStock: db.settings.gmailStock,
+        }),
+      });
+      await refresh();
+      notify("Status fitur diperbarui");
+    } catch (error) {
+      notify(error.message);
+    }
   };
   window.doLogin = async (event) => {
     event.preventDefault();
