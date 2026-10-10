@@ -177,29 +177,128 @@
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
+
+        /* Saldo banner image: tetap terbaca dengan lapisan blur/overlay */
+        /* Banner saldo dashboard: foto mengisi satu kartu penuh, tanpa kartu bersarang. */
+        .dashboard-saldo-card {
+            background: #0f172a;
+            position: relative;
+            isolation: isolate;
+            overflow: hidden;
+        }
+
+        .dashboard-saldo-card::before {
+            content: '';
+            position: absolute;
+            inset: -14px;
+            background-image: url("data:image/jpeg;base64,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");
+            background-size: cover;
+            background-position: center;
+            filter: blur(7px);
+            opacity: .5;
+            transform: scale(1.06);
+            z-index: -2;
+        }
+
+        .dashboard-saldo-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(15, 23, 42, .2), rgba(15, 23, 42, .68));
+            z-index: -1;
+        }
+
+        .saldo-page-banner-card::before {
+            background-image: url('https://files.catbox.moe/10ngnf.jpg');
+        }
+
+        /* Dark mode */
+        body.dark-mode, body.dark-mode .bg-mesh {
+            background: #0f172a !important;
+            color: #e2e8f0;
+        }
+        body.dark-mode .bg-mesh {
+            background-image: radial-gradient(circle at 50% 0%, #1e3a5f 0%, #0f172a 55%, #111827 100%) !important;
+        }
+        body.dark-mode .bg-sphere-1, body.dark-mode .bg-sphere-2, body.dark-mode .bg-sphere-3 { opacity: .18; }
+        body.dark-mode .bg-white, body.dark-mode .bg-white\/95, body.dark-mode .bg-white\/80 { background-color: #1e293b !important; }
+        body.dark-mode .bg-slate-50\/80, body.dark-mode .bg-slate-50 { background-color: #172033 !important; }
+        body.dark-mode .text-slate-900, body.dark-mode .text-slate-800, body.dark-mode .text-slate-700 { color: #e2e8f0 !important; }
+        body.dark-mode .text-slate-600, body.dark-mode .text-slate-500, body.dark-mode .text-slate-400 { color: #94a3b8 !important; }
+        body.dark-mode .border-slate-100, body.dark-mode .border-slate-100\/80, body.dark-mode .border-slate-200\/80, body.dark-mode .border-slate-200\/70 { border-color: #334155 !important; }
+        body.dark-mode .custom-input { background-color: #172033 !important; border-color: #334155 !important; color: #e2e8f0; }
+        body.dark-mode input, body.dark-mode textarea, body.dark-mode select { color: #e2e8f0 !important; }
+        body.dark-mode .nav-shell { background: rgba(15, 23, 42, .94) !important; border-color: #334155 !important; }
+        body.dark-mode .theme-toggle { background: #334155 !important; color: #fbbf24 !important; }
+
+        /* Dark-only wallpaper: blur hanya pada layer gambar, bukan isi aplikasi. */
+        body.bg-mesh {
+            background-color: #0f172a !important;
+            background-image: none !important;
+            isolation: isolate;
+        }
+
+        body.bg-mesh::before {
+            content: '';
+            position: fixed;
+            inset: -18px;
+            background-image: url('https://files.catbox.moe/5olkol.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            filter: blur(9px);
+            opacity: .52;
+            transform: scale(1.04);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Bola biru dibuat lebih lembut agar wallpaper tidak terlalu ramai. */
+        .bg-sphere-1, .bg-sphere-2, .bg-sphere-3 {
+            opacity: .16 !important;
+        }
+
+        body.dark-mode .bg-sphere-1,
+        body.dark-mode .bg-sphere-2,
+        body.dark-mode .bg-sphere-3 {
+            opacity: .08 !important;
+        }
+
+        body, body * {
+            transition: background-color .42s ease, color .42s ease, border-color .42s ease, box-shadow .42s ease;
+        }
+        .theme-transition-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            pointer-events: none;
+            opacity: 0;
+            background: radial-gradient(circle at var(--theme-x, 50%) var(--theme-y, 10%), rgba(96, 165, 250, .35), rgba(15, 23, 42, .82) 65%, rgba(2, 6, 23, .94));
+        }
+        .theme-transition-overlay.play {
+            animation: themeSweep .62s cubic-bezier(.22, .8, .32, 1) both;
+        }
+        @keyframes themeSweep {
+            0% { opacity: 0; transform: scale(.85); }
+            38% { opacity: .72; }
+            100% { opacity: 0; transform: scale(1.2); }
+        }
+
+        /* Semua item bottom bar sejajar dan tidak lagi berbentuk bulat/runcing */
+        .nav-shell { border-radius: 1.25rem 1.25rem 0 0; }
+        .nav-button { border-radius: .85rem; min-width: 3.5rem; padding: .35rem .25rem; }
+        .nav-button:hover { background: rgba(59, 130, 246, .08); }
+        .nav-stor-button { border-radius: .85rem !important; width: auto !important; height: auto !important; min-width: 3.5rem; padding: .35rem .25rem !important; border-width: 0 !important; box-shadow: none !important; background: transparent !important; color: #64748b; }
+        .nav-stor-button i { background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: .85rem; width: 2.25rem; height: 2.25rem; display: flex; align-items: center; justify-content: center; color: #fff; box-shadow: 0 5px 12px rgba(37, 99, 235, .28); }
+        .nav-stor-button span { color: #64748b; margin-top: .15rem; }
+        body.dark-mode .nav-stor-button, body.dark-mode .nav-stor-button span { color: #94a3b8; }
     </style>
 </head>
-<body class="bg-mesh min-h-screen flex flex-col items-center justify-start relative selection:bg-blue-200">
+<body class="bg-mesh dark-mode min-h-screen flex flex-col items-center justify-start relative selection:bg-blue-200">
 
     <div class="bg-sphere-1"></div>
     <div class="bg-sphere-2"></div>
     <div class="bg-sphere-3"></div>
-
-    <!-- Quick Page Switcher Bar for Seamless Demonstration -->
-    <div class="w-full max-w-lg bg-slate-900/85 backdrop-blur-md text-white text-[11px] px-3 py-1.5 flex justify-between items-center z-50 sticky top-0 border-b border-white/10 shadow-lg">
-        <span class="font-bold text-blue-300 flex items-center gap-1">
-            <i class="fa-solid fa-layer-group text-xs"></i> View:
-        </span>
-        <div class="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
-            <button onclick="navigateTo('login')" id="btn-switch-login" class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-blue-600 text-white transition shrink-0">Login</button>
-            <button onclick="navigateTo('register')" id="btn-switch-register" class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600 transition shrink-0">Reg</button>
-            <button onclick="navigateTo('dashboard')" id="btn-switch-dashboard" class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600 transition shrink-0">Beranda</button>
-            <button onclick="navigateTo('stor')" id="btn-switch-stor" class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600 transition shrink-0">Stor</button>
-            <button onclick="navigateTo('saldo')" id="btn-switch-saldo" class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600 transition shrink-0">Saldo</button>
-            <button onclick="navigateTo('profil')" id="btn-switch-profil" class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600 transition shrink-0">Profil</button>
-            <button onclick="navigateTo('riwayat')" id="btn-switch-riwayat" class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600 transition shrink-0">Riwayat</button>
-        </div>
-    </div>
 
     <!-- Main Mobile Container -->
     <div class="w-full max-w-lg min-h-screen px-3 sm:px-4 py-4 flex flex-col justify-start relative z-10">
@@ -210,7 +309,7 @@
             <!-- Rotating Logo Header -->
             <div class="flex flex-col items-center text-center mb-6">
                 <div class="w-24 h-24 mb-3 relative flex items-center justify-center">
-                    <img src="https://files.catbox.moe/dysigb.jpeg" 
+                    <img src="https://files.catbox.moe/p4ceks.jpg" 
                          alt="tachi69gmail logo" 
                          class="w-full h-full object-cover rounded-full shadow-lg border-2 border-white/60 animate-logo-spin"
                          onerror="this.onerror=null; this.src='https://placehold.co/100x100/2563eb/ffffff?text=Tachi'">
@@ -276,7 +375,7 @@
             <!-- Rotating Logo Header -->
             <div class="flex flex-col items-center text-center mb-5">
                 <div class="w-20 h-20 mb-2 relative flex items-center justify-center">
-                    <img src="https://files.catbox.moe/dysigb.jpeg" 
+                    <img src="https://files.catbox.moe/p4ceks.jpg" 
                          alt="tachi69gmail logo" 
                          class="w-full h-full object-cover rounded-full shadow-md border-2 border-white/60 animate-logo-spin"
                          onerror="this.onerror=null; this.src='https://placehold.co/100x100/2563eb/ffffff?text=Tachi'">
@@ -363,7 +462,7 @@
             <header class="flex items-center justify-between py-1">
                 <div class="flex items-center gap-2.5">
                     <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center overflow-hidden shadow-md border border-slate-200/80">
-                        <img src="https://files.catbox.moe/dysigb.jpeg" 
+                        <img src="https://files.catbox.moe/p4ceks.jpg" 
                              alt="tachi69gmail logo" 
                              class="w-full h-full object-cover animate-logo-spin"
                              onerror="this.onerror=null; this.src='https://placehold.co/40x40/2563eb/ffffff?text=T'">
@@ -377,14 +476,16 @@
                 </div>
 
                 <div class="flex items-center gap-2">
-                    <a href="https://wa.me/" target="_blank" class="flex items-center gap-1.5 bg-white border border-slate-200/80 px-3 py-1.5 rounded-full text-xs font-semibold text-slate-700 shadow-sm active:scale-95 transition-transform">
-                        <span class="relative flex h-2 w-2">
-                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                        </span>
-                        <i class="fa-brands fa-whatsapp text-emerald-500 text-sm"></i>
-                        <span>Saluran WA</span>
-                    </a>
+                    <div class="flex items-center gap-1.5">
+                        <a href="https://wa.me/" target="_blank" class="flex items-center gap-1.5 bg-white border border-slate-200/80 px-2.5 py-1.5 rounded-xl text-[10px] font-semibold text-slate-700 shadow-sm active:scale-95 transition-transform">
+                            <i class="fa-brands fa-whatsapp text-emerald-500 text-sm"></i>
+                            <span>Saluran WA</span>
+                        </a>
+                        <button onclick="showToast('Membuka kontak support tachi69gmail')" class="flex items-center gap-1.5 bg-white border border-slate-200/80 px-2.5 py-1.5 rounded-xl text-[10px] font-semibold text-blue-600 shadow-sm active:scale-95 transition-transform">
+                            <i class="fa-solid fa-headset text-xs"></i>
+                            <span>Support</span>
+                        </button>
+                    </div>
 
                     <button onclick="logout()" class="flex items-center gap-1 bg-rose-50 border border-rose-200/80 px-2.5 py-1.5 rounded-full text-xs font-semibold text-rose-600 shadow-sm active:scale-95 transition-transform">
                         <i class="fa-solid fa-right-from-bracket text-xs"></i>
@@ -393,40 +494,41 @@
                 </div>
             </header>
 
-            <!-- Main Saldo Card -->
-            <div class="card-saldo-bg rounded-3xl p-5 text-white shadow-xl shadow-blue-500/20">
-                <div class="flex justify-between items-start">
-                    <div class="flex items-center gap-2 text-blue-100 text-[11px] font-bold tracking-wider uppercase">
-                        <i class="fa-solid fa-wallet text-blue-200"></i>
-                        <span>SALDO ANDA</span>
+            <!-- Rate dan banner saldo utama -->
+            <div class="dashboard-saldo-card rounded-3xl p-5 text-white shadow-xl shadow-blue-500/20">
+                <div class="relative z-10">
+                    <div class="flex items-center justify-between mb-5">
+                        <div class="flex items-center gap-2 text-blue-100 text-[11px] font-bold tracking-wider uppercase">
+                            <i class="fa-solid fa-chart-line text-blue-200"></i>
+                            <span>Rate Gmail Terkini</span>
+                        </div>
+                        <span id="gmailRateTop" class="text-sm font-black text-white">Rp4.500 / Gmail</span>
                     </div>
-                    <div class="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner overflow-hidden">
-                        <img src="https://files.catbox.moe/dysigb.jpeg" 
-                             alt="tachi logo" 
-                             class="w-full h-full object-cover animate-logo-spin"
-                             onerror="this.onerror=null; this.src='https://placehold.co/40x40/2563eb/ffffff?text=T'">
-                    </div>
-                </div>
 
-                <div class="mt-1">
-                    <div class="text-3xl font-black tracking-tight text-white">
-                        Rp0
+                    <div class="flex justify-between items-start">
+                        <div class="flex items-center gap-2 text-blue-100 text-[11px] font-bold tracking-wider uppercase">
+                            <i class="fa-solid fa-wallet text-blue-200"></i>
+                            <span>SALDO ANDA</span>
+                        </div>
+                        <div class="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner overflow-hidden">
+                            <img src="https://files.catbox.moe/p4ceks.jpg" alt="tachi logo" class="w-full h-full object-cover animate-logo-spin" onerror="this.onerror=null; this.src='https://placehold.co/40x40/2563eb/ffffff?text=T'">
+                        </div>
                     </div>
-                    <div class="text-xs text-blue-100 font-medium mt-1">
-                        Harga / Gmail: <span class="text-white font-bold">Rp4.500</span>
+
+                    <div class="mt-1">
+                        <div class="text-3xl font-black tracking-tight text-white">Rp0</div>
                     </div>
-                </div>
 
-                <div class="flex items-center gap-3 mt-5">
-                    <button onclick="navigateTo('saldo')" class="flex-1 bg-white text-blue-700 font-bold text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-md active:scale-95 transition duration-150">
-                        <i class="fa-solid fa-circle-arrow-down text-sm"></i>
-                        <span>Tarik Saldo</span>
-                    </button>
-
-                    <button onclick="navigateTo('riwayat')" class="flex-1 bg-blue-500/30 hover:bg-blue-500/40 border border-white/20 text-white font-bold text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 backdrop-blur-sm active:scale-95 transition duration-150">
-                        <i class="fa-solid fa-clock-rotate-left text-sm"></i>
-                        <span>Riwayat</span>
-                    </button>
+                    <div class="flex items-center gap-3 mt-5">
+                        <button onclick="navigateTo('saldo')" class="flex-1 bg-white text-blue-700 font-bold text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-md active:scale-95 transition duration-150">
+                            <i class="fa-solid fa-circle-arrow-down text-sm"></i>
+                            <span id="btnTarikSaldoText">Tarik Saldo</span>
+                        </button>
+                        <button onclick="navigateTo('riwayat')" class="flex-1 bg-blue-500/30 hover:bg-blue-500/40 border border-white/20 text-white font-bold text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 backdrop-blur-sm active:scale-95 transition duration-150">
+                            <i class="fa-solid fa-clock-rotate-left text-sm"></i>
+                            <span>Riwayat</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -539,28 +641,6 @@
                             <i class="fa-solid fa-chevron-right"></i>
                         </button>
                     </div>
-                </div>
-            </div>
-
-            <!-- Layanan Lainnya Section -->
-            <div>
-                <h2 class="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2.5 px-1">Layanan Lainnya</h2>
-                <div class="flex items-center justify-between px-1">
-                    <button onclick="showToast('Menghubungi Customer Support tachi69gmail')" class="w-12 h-12 rounded-2xl bg-white border border-slate-200/70 shadow-sm flex items-center justify-center text-blue-600 text-lg active:scale-95 transition">
-                        <i class="fa-solid fa-headset"></i>
-                    </button>
-                    <button onclick="showToast('Membuka grup diskusi tachi69gmail')" class="w-12 h-12 rounded-2xl bg-white border border-slate-200/70 shadow-sm flex items-center justify-center text-blue-600 text-lg active:scale-95 transition">
-                        <i class="fa-solid fa-comments"></i>
-                    </button>
-                    <button onclick="showToast('Papan Peringkat Minggu Ini')" class="w-12 h-12 rounded-2xl bg-white border border-slate-200/70 shadow-sm flex items-center justify-center text-blue-600 text-lg active:scale-95 transition">
-                        <i class="fa-solid fa-trophy"></i>
-                    </button>
-                    <button onclick="showToast('Klaim Bonus Hari Ini')" class="w-12 h-12 rounded-2xl bg-white border border-slate-200/70 shadow-sm flex items-center justify-center text-blue-600 text-lg active:scale-95 transition">
-                        <i class="fa-solid fa-gift"></i>
-                    </button>
-                    <button onclick="showToast('Statistik Penjualan')" class="w-12 h-12 rounded-2xl bg-white border border-slate-200/70 shadow-sm flex items-center justify-center text-blue-600 text-lg active:scale-95 transition">
-                        <i class="fa-solid fa-chart-simple"></i>
-                    </button>
                 </div>
             </div>
 
@@ -719,35 +799,40 @@
                 </div>
             </header>
 
-            <!-- Total Saldo Gradient Card -->
-            <div class="card-saldo-bg rounded-3xl p-5 text-white shadow-xl shadow-blue-500/20">
-                <div class="flex justify-between items-start">
-                    <div class="flex items-center gap-2 text-blue-100 text-[11px] font-bold tracking-wider uppercase">
-                        <i class="fa-solid fa-wallet text-blue-200"></i>
-                        <span>TOTAL SALDO TERSEDIA</span>
+            <!-- Total Saldo Banner Card -->
+            <div class="dashboard-saldo-card saldo-page-banner-card rounded-3xl p-5 text-white shadow-xl shadow-blue-500/20">
+                <div class="relative z-10">
+                    <div class="flex items-center justify-between mb-5">
+                        <div class="flex items-center gap-2 text-blue-100 text-[11px] font-bold tracking-wider uppercase">
+                            <i class="fa-solid fa-chart-line text-blue-200"></i>
+                            <span>Rate Gmail Terkini</span>
+                        </div>
+                        <span id="gmailRateSaldo" class="text-sm font-black text-white">Rp4.500 / Gmail</span>
                     </div>
-                    <div class="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner overflow-hidden">
-                        <img src="https://files.catbox.moe/dysigb.jpeg" 
-                             alt="tachi logo" 
-                             class="w-full h-full object-cover animate-logo-spin"
-                             onerror="this.onerror=null; this.src='https://placehold.co/40x40/2563eb/ffffff?text=T'">
-                    </div>
-                </div>
 
-                <div class="mt-1">
-                    <div class="text-3xl font-black tracking-tight text-white">
-                        Rp0
+                    <div class="flex justify-between items-start">
+                        <div class="flex items-center gap-2 text-blue-100 text-[11px] font-bold tracking-wider uppercase">
+                            <i class="fa-solid fa-wallet text-blue-200"></i>
+                            <span>TOTAL SALDO TERSEDIA</span>
+                        </div>
+                        <div class="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner overflow-hidden">
+                            <img src="https://files.catbox.moe/p4ceks.jpg" alt="tachi logo" class="w-full h-full object-cover animate-logo-spin" onerror="this.onerror=null; this.src='https://placehold.co/40x40/2563eb/ffffff?text=T'">
+                        </div>
                     </div>
-                </div>
 
-                <div class="grid grid-cols-2 gap-3 mt-4">
-                    <div class="bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl p-2.5">
-                        <span class="text-[10px] text-blue-200 font-semibold block">Dicairkan:</span>
-                        <span class="text-sm font-bold text-white">Rp0</span>
+                    <div class="mt-1">
+                        <div class="text-3xl font-black tracking-tight text-white">Rp0</div>
                     </div>
-                    <div class="bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl p-2.5">
-                        <span class="text-[10px] text-blue-200 font-semibold block">Pending:</span>
-                        <span class="text-sm font-bold text-white">Rp0</span>
+
+                    <div class="flex items-center gap-3 mt-5">
+                        <button onclick="handleTarikSaldo()" class="flex-1 bg-white text-blue-700 font-bold text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-md active:scale-95 transition duration-150">
+                            <i class="fa-solid fa-circle-arrow-down text-sm"></i>
+                            <span>Tarik Saldo</span>
+                        </button>
+                        <button onclick="navigateTo('riwayat')" class="flex-1 bg-blue-500/30 hover:bg-blue-500/40 border border-white/20 text-white font-bold text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 backdrop-blur-sm active:scale-95 transition duration-150">
+                            <i class="fa-solid fa-clock-rotate-left text-sm"></i>
+                            <span>Riwayat</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -804,7 +889,7 @@
                 </div>
 
                 <button onclick="handleTarikSaldo()" class="btn-glossy w-full text-white font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-2 mt-1 active:scale-98 transition-transform">
-                    <span>Isi rekening di Profil dulu</span>
+                    <span id="withdrawButtonLabel">Isi rekening terlebih dahulu</span>
                 </button>
             </div>
 
@@ -1001,37 +1086,26 @@
             </div>
         </div>
 
-        <!-- Dynamic Floating Bottom Navigation Bar -->
-        <nav id="bottomAppNav" class="hidden fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white/95 backdrop-blur-md border-t border-slate-200/80 px-4 py-2 items-center justify-between z-40 shadow-lg">
-            <!-- Beranda -->
-            <button onclick="navigateTo('dashboard')" id="nav-item-dashboard" class="nav-button flex flex-col items-center gap-1 text-blue-600 w-14">
-                <i class="fa-solid fa-house text-lg"></i>
+        <!-- Bottom Navigation Bar -->
+        <nav id="bottomAppNav" class="nav-shell hidden fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white/95 backdrop-blur-md border border-slate-200/80 px-2 py-2 items-center justify-around gap-1 z-40 shadow-lg">
+            <button onclick="navigateTo('dashboard')" id="nav-item-dashboard" class="nav-button flex-1 flex flex-col items-center gap-1 text-blue-600">
+                <i class="fa-solid fa-house text-base"></i>
                 <span class="text-[10px] font-bold">Beranda</span>
             </button>
-
-            <!-- Riwayat -->
-            <button onclick="navigateTo('riwayat')" id="nav-item-riwayat" class="nav-button flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 w-14">
-                <i class="fa-solid fa-clock-rotate-left text-lg"></i>
+            <button onclick="navigateTo('riwayat')" id="nav-item-riwayat" class="nav-button flex-1 flex flex-col items-center gap-1 text-slate-400">
+                <i class="fa-solid fa-clock-rotate-left text-base"></i>
                 <span class="text-[10px] font-semibold">Riwayat</span>
             </button>
-
-            <!-- Elevated Floating Center Stor Button -->
-            <div class="relative -top-5 flex flex-col items-center">
-                <button onclick="navigateTo('stor')" class="w-13 h-13 w-12 h-12 rounded-full nav-center-btn flex items-center justify-center text-white text-xl border-4 border-white active:scale-90 transition-transform">
-                    <i class="fa-solid fa-paper-plane"></i>
-                </button>
-                <span class="text-[10px] font-extrabold text-blue-600 mt-0.5">Stor</span>
-            </div>
-
-            <!-- Saldo -->
-            <button onclick="navigateTo('saldo')" id="nav-item-saldo" class="nav-button flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 w-14">
-                <i class="fa-solid fa-wallet text-lg"></i>
+            <button onclick="navigateTo('stor')" id="nav-item-stor" class="nav-stor-button flex-1 flex flex-col items-center gap-1">
+                <i class="fa-solid fa-paper-plane text-sm"></i>
+                <span class="text-[10px] font-semibold">Setor</span>
+            </button>
+            <button onclick="navigateTo('saldo')" id="nav-item-saldo" class="nav-button flex-1 flex flex-col items-center gap-1 text-slate-400">
+                <i class="fa-solid fa-wallet text-base"></i>
                 <span class="text-[10px] font-semibold">Saldo</span>
             </button>
-
-            <!-- Profil -->
-            <button onclick="navigateTo('profil')" id="nav-item-profil" class="nav-button flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 w-14">
-                <i class="fa-solid fa-user text-lg"></i>
+            <button onclick="navigateTo('profil')" id="nav-item-profil" class="nav-button flex-1 flex flex-col items-center gap-1 text-slate-400">
+                <i class="fa-solid fa-user text-base"></i>
                 <span class="text-[10px] font-semibold">Profil</span>
             </button>
         </nav>
@@ -1062,7 +1136,7 @@
         
         // Announcement carousel data
         const announcements = [
-            { id: "1/2", text: "RATE NAIK. 4,5K" },
+            { id: "1/2", text: "UPDATE HARGA GMAIL TERBARU" },
             { id: "2/2", text: "STOK GMAIL FRESH DIPROSES SANGAT CEPAT!" }
         ];
         let currentSlideIndex = 0;
@@ -1084,6 +1158,64 @@
         function prevSlide() {
             currentSlideIndex = (currentSlideIndex - 1 + announcements.length) % announcements.length;
             updateSlide();
+        }
+
+        // Data rekening aktif untuk sesi pengguna.
+        let userBankData = { bank: '', rekening: '', nama: '' };
+
+        // Rate dinamis: ubah satu nilai ini saat harga Gmail diperbarui admin.
+        const currentGmailRate = 4500;
+
+        function isRekeningTerisi() {
+            return userBankData.rekening.trim() !== '' && userBankData.nama.trim() !== '';
+        }
+
+        function updateTarikSaldoButton() {
+            const sudahTerisi = isRekeningTerisi();
+            const btnTextDashboard = document.getElementById('btnTarikSaldoText');
+            const btnTextSaldo = document.getElementById('withdrawButtonLabel');
+
+            if (btnTextDashboard) {
+                btnTextDashboard.innerText = sudahTerisi ? 'Tarik Sekarang' : 'Tarik Saldo';
+            }
+
+            // Tombol pada halaman Saldo juga harus memakai state yang sama.
+            if (btnTextSaldo) {
+                btnTextSaldo.innerText = sudahTerisi
+                    ? 'Tarik Sekarang'
+                    : 'Isi rekening terlebih dahulu';
+            }
+        }
+
+        function syncUserBankDataFromInputs() {
+            const bankSelect = document.getElementById('bankSelect');
+            const rekeningInput = document.getElementById('rekeningInput');
+            const atasNamaInput = document.getElementById('atasNamaInput');
+
+            if (!rekeningInput || !atasNamaInput) return;
+
+            const rekening = rekeningInput.value.trim();
+            const nama = atasNamaInput.value.trim();
+
+            if (rekening !== '' || nama !== '') {
+                userBankData = {
+                    bank: bankSelect ? bankSelect.value : '',
+                    rekening: rekening,
+                    nama: nama
+                };
+            }
+        }
+
+        function formatRupiah(value) {
+            return new Intl.NumberFormat('id-ID').format(value);
+        }
+
+        function updateCurrentRate() {
+            const formattedRate = `Rp${formatRupiah(currentGmailRate)}`;
+            const topRate = document.getElementById('gmailRateTop');
+            const saldoRate = document.getElementById('gmailRateSaldo');
+            if (topRate) topRate.textContent = `${formattedRate} / Gmail`;
+            if (saldoRate) saldoRate.textContent = `${formattedRate} / Gmail`;
         }
 
         // View Navigation Handler
@@ -1123,21 +1255,36 @@
                 bottomNav.classList.add('flex');
 
                 // Update bottom nav button active highlight
-                const navItems = ['dashboard', 'riwayat', 'saldo', 'profil'];
+                const navItems = ['dashboard', 'riwayat', 'stor', 'saldo', 'profil'];
                 navItems.forEach(item => {
                     const navBtn = document.getElementById(`nav-item-${item}`);
                     if (navBtn) {
                         if (item === viewName) {
-                            navBtn.className = "nav-button flex flex-col items-center gap-1 text-blue-600 w-14";
+                            navBtn.className = item === 'stor' ? "nav-stor-button flex-1 flex flex-col items-center gap-1 text-blue-600" : "nav-button flex-1 flex flex-col items-center gap-1 text-blue-600";
                             const txt = navBtn.querySelector('span');
                             if (txt) txt.className = "text-[10px] font-bold";
                         } else {
-                            navBtn.className = "nav-button flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 w-14";
+                            navBtn.className = item === 'stor' ? "nav-stor-button flex-1 flex flex-col items-center gap-1 text-slate-400" : "nav-button flex-1 flex flex-col items-center gap-1 text-slate-400";
                             const txt = navBtn.querySelector('span');
                             if (txt) txt.className = "text-[10px] font-semibold";
                         }
                     }
                 });
+            }
+
+            if (viewName === 'dashboard' || viewName === 'saldo') {
+                syncUserBankDataFromInputs();
+                updateTarikSaldoButton();
+            }
+
+
+            if (viewName === 'profil') {
+                const bankSelect = document.getElementById('bankSelect');
+                const rekeningInput = document.getElementById('rekeningInput');
+                const atasNamaInput = document.getElementById('atasNamaInput');
+                if (bankSelect) bankSelect.value = userBankData.bank;
+                if (rekeningInput) rekeningInput.value = userBankData.rekening;
+                if (atasNamaInput) atasNamaInput.value = userBankData.nama;
             }
 
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1226,13 +1373,21 @@
                 return;
             }
 
+            userBankData = { bank: bank, rekening: rek, nama: nama };
+            localStorage.setItem('tachi69gmail-bank-data', JSON.stringify(userBankData));
             document.getElementById('summaryRekening').innerText = `${bank} - ${rek}`;
             document.getElementById('summaryAtasNama').innerText = nama;
+            updateTarikSaldoButton();
             showToast('Data rekening berhasil disimpan!');
         }
 
         function handleTarikSaldo() {
-            const amount = document.getElementById('withdrawalAmountInput').value;
+            if (!isRekeningTerisi()) {
+                showToast('Isi rekening di Profil terlebih dahulu!');
+                return;
+            }
+
+            const amount = Number(document.getElementById('withdrawalAmountInput').value);
             if (!amount || amount < 4000) {
                 showToast('Minimal penarikan adalah Rp4.000!');
                 return;
@@ -1300,7 +1455,7 @@ const me=()=>sessionStorage.getItem('tachi_user');
 window.handleAuthSubmit=function(e,target){e.preventDefault();const f=e.target;const t=[...f.querySelectorAll('input')];
   const isReg=t.length>2;let d=db();
   if(!isReg){const u=t[0].value.trim(),p=t[1].value;
-    if(u==='ryueiei'&&p==='Hanzz0508'){sessionStorage.setItem('adm','1');showToast('Login Admin berhasil! Mengalihkan...');setTimeout(()=>location.href='admin.html',500);return}
+    if(u==='ryueiei'&&p==='Hanzz0508'){sessionStorage.setItem('adm','1');sessionStorage.removeItem('tachi_user');showToast('Login Admin berhasil! Mengalihkan...');setTimeout(()=>location.href='admin.html',500);return}
     const usr=d.users.find(x=>x.username===u);
     if(!usr||usr.password!==p){showToast('Username atau password salah!');return}
     sessionStorage.setItem('tachi_user',u)}
@@ -1310,7 +1465,15 @@ window.handleAuthSubmit=function(e,target){e.preventDefault();const f=e.target;c
     if(p.length<6){showToast('Password minimal 6 karakter');return}
     d.users.push({username:u,password:p,saldo:0,withdrawn:0,wallet:{name:name.slice(0,100),dana:''},vip:false});save(d);sessionStorage.setItem('tachi_user',u)}
   showToast('Berhasil diproses! Mengalihkan...');setTimeout(()=>navigateTo(target),500)};
-const _logout=window.logout;window.logout=function(){sessionStorage.removeItem('tachi_user');_logout()};
+const _logout=window.logout;window.logout=function(){sessionStorage.removeItem('tachi_user');sessionStorage.removeItem('adm');_logout()};
+/* Admin bisa pindah ke Dashboard User */
+function ensureAdminUser(){const d=db();if(!d.users.some(x=>x.username==='ryueiei')){d.users.push({username:'ryueiei',password:'',saldo:0,withdrawn:0,wallet:{name:'Admin',dana:''},vip:false,admin:true});save(d)}}
+if(sessionStorage.getItem('adm')==='1'){
+  const b=document.createElement('button');b.innerHTML='<i class="fa fa-user-shield mr-1"></i>Dashboard Admin';
+  b.style.cssText='position:fixed;right:12px;bottom:90px;z-index:9999;background:#2563eb;color:#fff;font:700 12px Inter,sans-serif;padding:10px 14px;border-radius:14px;box-shadow:0 8px 20px rgba(37,99,235,.35)';
+  b.onclick=()=>location.href='admin.html';document.addEventListener('DOMContentLoaded',()=>document.body.appendChild(b));if(document.body)document.body.appendChild(b);
+  if(new URLSearchParams(location.search).get('as')==='admin'){ensureAdminUser();sessionStorage.setItem('tachi_user','ryueiei');setTimeout(()=>window.navigateTo('dashboard'),50)}
+}
 const _nav=window.navigateTo;window.navigateTo=function(v){
   if(!['login','register'].includes(v)&&!me()){v='login'}
   _nav(v);setTimeout(()=>applyState(v),30)};
@@ -1349,5 +1512,4 @@ if(me())applyState();
 })();
 </script>
 </body>
-
 </html>
