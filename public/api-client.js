@@ -99,6 +99,22 @@
       })
       .join("");
   };
+  const renderWithdrawals = () => {
+    const container = document.getElementById("withdrawalHistoryContainer");
+    if (!container) return;
+    if (!state.withdrawals.length) {
+      container.textContent = "Belum ada penarikan";
+      return;
+    }
+    container.className = "space-y-2";
+    container.innerHTML = state.withdrawals
+      .slice(0, 5)
+      .map(
+        (item) =>
+          `<div class="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 p-3 text-xs"><div><b>${format(item.amount)}</b><div class="text-slate-400">${new Date(item.created_at).toLocaleString("id-ID")}</div>${item.reason ? `<div class="text-rose-600">${item.reason}</div>` : ""}</div><span class="font-bold">${item.status === "selesai" ? "Selesai" : item.status === "ditolak" ? "Ditolak" : "Pending"}</span></div>`,
+      )
+      .join("");
+  };
   window.renderRiwayat = renderHistory;
   async function syncAppData() {
     const [{ user }, { settings }, { deposits }, { withdrawals }] = await Promise.all([
@@ -115,6 +131,7 @@
     addAdminModeButton(user);
     applyUserDom();
     renderHistory();
+    renderWithdrawals();
     window.updateSlide?.();
     return state;
   }
