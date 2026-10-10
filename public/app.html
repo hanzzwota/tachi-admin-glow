@@ -1145,6 +1145,8 @@
         let currentSlideIndex = 0;
 
         function updateSlide() {
+            announcements = getAnnouncements();
+            if (currentSlideIndex >= announcements.length) currentSlideIndex = 0;
             const badge = document.getElementById('announcementBadge');
             const text = document.getElementById('announcementText');
             if (badge && text) {
@@ -1167,7 +1169,11 @@
         let userBankData = { bank: '', rekening: '', nama: '' };
 
         // Rate dinamis: ubah satu nilai ini saat harga Gmail diperbarui admin.
-        const currentGmailRate = 4500;
+        function getGmailRate() {
+            const d = (typeof db === 'function') ? db() : null;
+            return (d && d.settings && d.settings.rate) ? d.settings.rate : 4500;
+        }
+        const currentGmailRate = getGmailRate();
 
         function isRekeningTerisi() {
             return userBankData.rekening.trim() !== '' && userBankData.nama.trim() !== '';
