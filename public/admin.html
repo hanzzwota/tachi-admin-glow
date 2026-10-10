@@ -149,7 +149,7 @@ function seed(){
     users:[],setoran:[],withdrawals:[]
   };
 }
-let db=load();
+let db=load();(function(){const demo=['budi01','sari_vip','andre'];if(db.users.some(u=>demo.includes(u.username))){db.users=db.users.filter(u=>!demo.includes(u.username));db.setoran=db.setoran.filter(s=>!demo.includes(s.user));db.withdrawals=db.withdrawals.filter(w=>!demo.includes(w.user));localStorage.setItem(KEY,JSON.stringify(db))}})();
 function load(){try{return JSON.parse(localStorage.getItem(KEY))||seed()}catch{return seed()}}
 function save(){localStorage.setItem(KEY,JSON.stringify(db));renderAll()}
 function resetDaily(){if(db.daily.date!==wibDate()){db.daily={date:wibDate(),count:0};localStorage.setItem(KEY,JSON.stringify(db))}}
