@@ -1,0 +1,1 @@
+{"routes":[{"path":"/","title":"Home"},{"path":"/login","title":"Login"},{"path":"/register","title":"Register"},{"path":"/dashboard","title":"Dashboard"},{"path":"/setor","title":"Setor Gmail"},{"path":"/saldo","title":"Saldo"},{"path":"/profil","title":"Profil"},{"path":"/riwayat","title":"Riwayat"},{"path":"/admin","title":"Admin"}]}
