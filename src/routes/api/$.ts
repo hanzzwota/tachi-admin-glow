@@ -34,8 +34,9 @@ async function login(request: Request) {
   if (username === adminUsername && adminPassword && password === adminPassword) {
     if (!user) {
       const hashed = await hashPassword(password);
-      users = await supabaseFetch<Record<string, unknown>[]>("profiles", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ username, display_name: "Administrator", password_hash: hashed.hash, password_salt: hashed.salt, role: "admin" }) });
-      user = users[0];
+      const created = await supabaseFetch<Record<string, unknown>[]>("profiles", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ username, display_name: "Administrator", password_hash: hashed.hash, password_salt: hashed.salt, role: "admin" }) });
+      users = created ?? [];
+      user = users[0] ?? (await supabaseFetch<Record<string, unknown>[]>(`profiles?select=*&username=eq.${encodeURIComponent(username)}&limit=1`))[0];
     } else if (user.role !== "admin") {
       await supabaseFetch(`profiles?username=eq.${encodeURIComponent(username)}`, { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ role: "admin" }) });
       user.role = "admin";
@@ -58,9 +59,11 @@ async function register(request: Request) {
   const existing = await supabaseFetch<Record<string, unknown>[]>(`profiles?select=id&username=eq.${encodeURIComponent(username)}&limit=1`);
   if (existing.length) return json({ error: "Username sudah dipakai" }, { status: 409 });
   const hashed = await hashPassword(password);
-  const rows = await supabaseFetch<Record<string, unknown>[]>("profiles", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ username, display_name: displayName.slice(0, 100), password_hash: hashed.hash, password_salt: hashed.salt }) });
-  const session = await createSession(String(rows[0].id));
-  return json({ user: publicUser(rows[0]) }, { status: 201, headers: { "set-cookie": session.cookie } });
+  const created = await supabaseFetch<Record<string, unknown>[]>("profiles", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ username, display_name: displayName.slice(0, 100), password_hash: hashed.hash, password_salt: hashed.salt }) });
+  const user = created?.[0] ?? (await supabaseFetch<Record<string, unknown>[]>(`profiles?select=*&username=eq.${encodeURIComponent(username)}&limit=1`))[0];
+  if (!user) return json({ error: "Akun gagal dibuat, silakan coba lagi" }, { status: 500 });
+  const session = await createSession(String(user.id));
+  return json({ user: publicUser(user) }, { status: 201, headers: { "set-cookie": session.cookie } });
 }
 
 function publicUser(user: Record<string, unknown>) {

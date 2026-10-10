@@ -27,7 +27,9 @@ export async function supabaseFetch<T = Row>(path: string, init: RequestInit = {
     throw new Error(`Supabase ${response.status}: ${message}`);
   }
   if (response.status === 204) return undefined as T;
-  return (await response.json()) as T;
+  const raw = await response.text();
+  if (!raw.trim()) return undefined as T;
+  return JSON.parse(raw) as T;
 }
 
 function bytesToBase64(bytes: Uint8Array) {
