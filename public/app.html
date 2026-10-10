@@ -1134,11 +1134,14 @@
 
     <script>
         
-        // Announcement carousel data
-        const announcements = [
-            { id: "1/2", text: "UPDATE HARGA GMAIL TERBARU" },
-            { id: "2/2", text: "STOK GMAIL FRESH DIPROSES SANGAT CEPAT!" }
-        ];
+        // Announcement carousel data (sinkron dengan pengaturan Admin)
+        function getAnnouncements() {
+            const d = (typeof db === 'function') ? db() : null;
+            const adminMsg = d && d.settings && d.settings.announcement ? d.settings.announcement.trim() : '';
+            const list = adminMsg ? [adminMsg] : ["UPDATE HARGA GMAIL TERBARU", "STOK GMAIL FRESH DIPROSES SANGAT CEPAT!"];
+            return list.map((text, i) => ({ id: (i + 1) + "/" + list.length, text }));
+        }
+        let announcements = getAnnouncements();
         let currentSlideIndex = 0;
 
         function updateSlide() {
