@@ -43,6 +43,7 @@
       const { user } = await api('auth/me');
       if (!user || user.role !== 'admin') {
         sessionStorage.removeItem('adm');
+        window.top.location.href = '/login';
         return;
       }
       sessionStorage.setItem('adm', '1');

@@ -26,21 +26,8 @@ input,select,textarea{outline:none}
 </head>
 <body class="min-h-screen bg-gradient-to-br from-blue-50 via-slate-50 to-blue-100 text-slate-800">
 
-<!-- LOGIN -->
-<div id="loginView" class="min-h-screen flex items-center justify-center p-4">
-  <form onsubmit="doLogin(event)" class="glass rounded-3xl p-8 w-full max-w-sm text-center">
-    <img src="https://files.catbox.moe/dysigb.jpeg" class="w-20 h-20 rounded-2xl mx-auto shadow-lg object-cover" alt="logo">
-    <h1 class="text-xl font-extrabold mt-4">tachi69gmail <span class="text-blue-600">Admin Console</span></h1>
-    <p class="text-xs text-slate-500 mb-6">Masuk untuk mengelola platform</p>
-    <input id="lu" class="inp mb-3" placeholder="Username" required>
-    <input id="lp" type="password" class="inp mb-3" placeholder="Password" required>
-    <p id="lerr" class="text-red-500 text-xs mb-2 hidden">Username / password salah</p>
-    <button class="btn-p w-full py-3 rounded-xl font-bold"><i class="fa fa-right-to-bracket mr-2"></i>Login</button>
-  </form>
-</div>
-
 <!-- APP -->
-<div id="appView" class="hidden">
+<div id="appView">
   <header class="glass sticky top-0 z-30 px-4 py-3 flex items-center gap-3">
     <img src="https://files.catbox.moe/dysigb.jpeg" class="w-10 h-10 rounded-xl object-cover" alt="logo">
     <div class="flex-1 min-w-0">

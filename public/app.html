@@ -285,7 +285,7 @@
         }
 
         /* Semua item bottom bar sejajar dan tidak lagi berbentuk bulat/runcing */
-        .nav-shell { border-radius: 1.25rem; bottom: max(12px, env(safe-area-inset-bottom)) !important; left: 50% !important; right: auto !important; width: min(calc(100% - 24px), 480px) !important; transform: translateX(-50%); margin: 0; }
+        .nav-shell { position: fixed !important; display: flex; border-radius: 1.25rem; bottom: max(12px, env(safe-area-inset-bottom)) !important; left: 50% !important; right: auto !important; width: min(calc(100% - 24px), 480px) !important; transform: translateX(-50%); margin: 0; z-index: 9999 !important; }
         .nav-button { border-radius: .85rem; min-width: 3.5rem; padding: .35rem .25rem; }
         .nav-button:hover { background: rgba(59, 130, 246, .08); }
         .nav-stor-button { border-radius: .85rem !important; width: auto !important; height: auto !important; min-width: 3.5rem; padding: .35rem .25rem !important; border-width: 0 !important; box-shadow: none !important; background: transparent !important; color: #64748b; }
