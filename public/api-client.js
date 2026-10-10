@@ -79,6 +79,52 @@
         : "Belum disimpan";
     const summaryName = document.getElementById("summaryAtasNama");
     if (summaryName) summaryName.textContent = bank.name || "-";
+    const storeClosed = settings.store_open === false;
+    const storeBanner = document.getElementById("storeStatusBanner");
+    const storeButton = document.querySelector('button[onclick="submitGmailStoran()"]');
+    if (storeBanner) {
+      storeBanner.className = storeClosed
+        ? "rounded-2xl border border-rose-200 bg-rose-50 p-3.5 flex items-center gap-3 text-xs font-bold text-rose-700"
+        : "hidden rounded-2xl border p-3.5 flex items-center gap-3 text-xs font-bold";
+      storeBanner.innerHTML = storeClosed
+        ? '<i class="fa-solid fa-lock text-rose-500"></i><span>Setoran sedang ditutup admin. Silakan coba lagi nanti.</span>'
+        : "";
+    }
+    if (storeButton) {
+      storeButton.disabled = storeClosed;
+      storeButton.classList.toggle("opacity-50", storeClosed);
+      storeButton.classList.toggle("cursor-not-allowed", storeClosed);
+      const label = storeButton.querySelector("span");
+      if (label) label.textContent = storeClosed ? "Setoran sedang ditutup" : "Kirim setoran";
+    }
+    const withdrawClosed = settings.withdraw_open === false;
+    const withdrawBanner = document.getElementById("withdrawStatusBanner");
+    const withdrawBadge = document.getElementById("withdrawStatusBadge");
+    const withdrawText = document.getElementById("withdrawStatusText");
+    const withdrawBannerText = document.getElementById("withdrawStatusBannerText");
+    if (withdrawBanner)
+      withdrawBanner.className = withdrawClosed
+        ? "bg-rose-50 border border-rose-200/80 rounded-2xl p-3 flex items-center justify-center gap-2 text-xs font-extrabold text-rose-700"
+        : "bg-emerald-50 border border-emerald-200/80 rounded-2xl p-3 flex items-center justify-center gap-2 text-xs font-extrabold text-emerald-700";
+    if (withdrawBannerText)
+      withdrawBannerText.textContent = withdrawClosed
+        ? "Status Penarikan: • Ditutup admin"
+        : "Status Penarikan: • Dibuka";
+    if (withdrawBadge)
+      withdrawBadge.className = withdrawClosed
+        ? "bg-rose-50 border border-rose-200 text-rose-600 text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1"
+        : "bg-emerald-50 border border-emerald-200 text-emerald-600 text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1";
+    if (withdrawText) withdrawText.textContent = withdrawClosed ? "Ditutup" : "Aktif";
+    document.querySelectorAll('button[onclick="handleTarikSaldo()"]').forEach((button) => {
+      button.disabled = withdrawClosed;
+      button.classList.toggle("opacity-50", withdrawClosed);
+      button.classList.toggle("cursor-not-allowed", withdrawClosed);
+    });
+    const checkerClosed = settings.checker_open === false;
+    const checkerButton = document.getElementById("checkerFeatureButton");
+    const checkerLabel = document.getElementById("checkerFeatureLabel");
+    if (checkerButton) checkerButton.classList.toggle("opacity-50", checkerClosed);
+    if (checkerLabel) checkerLabel.textContent = checkerClosed ? "Checker (Ditutup)" : "Checker";
   };
   const renderHistory = (filter = window.activeRiwayatFilter || "semua") => {
     const container = document.getElementById("riwayatListContainer");
@@ -172,6 +218,16 @@
     } catch (error) {
       toast(error.message);
     }
+  };
+  window.openChecker = () => {
+    if (state.settings?.checker_open === false) {
+      toast("Checker sedang ditutup admin. Silakan coba lagi nanti");
+      return;
+    }
+    window.openModal?.(
+      "Email Checker",
+      "Gunakan tachi69gmail tool untuk memeriksa status email secara otomatis",
+    );
   };
   window.submitGmailStoran = async () => {
     const input = document.getElementById("gmailListInput");

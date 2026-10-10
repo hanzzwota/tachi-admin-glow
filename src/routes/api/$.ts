@@ -285,6 +285,7 @@ async function updateSettings(request: Request) {
     campaign_password: text(payload.campaignPassword),
     store_open: Boolean(payload.storeOpen),
     withdraw_open: Boolean(payload.withdrawOpen),
+    checker_open: payload.checkerOpen !== false,
     daily_limit: Number(payload.dailyLimit),
     batch_limit: Number(payload.batchLimit),
     announcement: text(payload.announcement),
