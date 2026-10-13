@@ -165,33 +165,6 @@
     const records = state.deposits.filter(
       (item) => filter === "semua" || item.status === statusMap[filter],
     );
-    const wibDate = (value) =>
-      new Date(new Date(value).getTime() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10);
-    const today = new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10);
-    const yesterday = new Date(Date.now() + 7 * 60 * 60 * 1000 - 86400000)
-      .toISOString()
-      .slice(0, 10);
-    const recap = (date) =>
-      state.deposits
-        .filter((item) => wibDate(item.created_at) === date)
-        .reduce(
-          (result, item) => ({
-            gmail:
-              result.gmail +
-              (Array.isArray(item.accepted_emails)
-                ? item.accepted_emails.length
-                : Number(item.accepted_count || 0)),
-            earned: result.earned + Number(item.earned || 0),
-          }),
-          { gmail: 0, earned: 0 },
-        );
-    const todayRecap = recap(today);
-    const yesterdayRecap = recap(yesterday);
-    const todayEl = document.getElementById("recapToday");
-    const yesterdayEl = document.getElementById("recapYesterday");
-    if (todayEl) todayEl.textContent = `${todayRecap.gmail} Gmail · ${format(todayRecap.earned)}`;
-    if (yesterdayEl)
-      yesterdayEl.textContent = `${yesterdayRecap.gmail} Gmail · ${format(yesterdayRecap.earned)}`;
     if (!records.length) {
       container.innerHTML = `<div class="py-12 text-center text-sm font-bold text-slate-500">Belum ada riwayat setoran</div>`;
       return;

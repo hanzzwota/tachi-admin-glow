@@ -874,15 +874,7 @@
               <span class="text-xs font-semibold text-slate-700">Saldo</span>
             </button>
 
-            <button
-              onclick="
-                openModal(
-                  'Rules & Peraturan',
-                  '1. Gmail harus fresh\n2. Tidak bermasalah saat login\n3. Pembayaran instant setelah dicek',
-                )
-              "
-              class="flex flex-col items-center gap-1.5 group"
-            >
+            <button onclick="openRulesToday()" class="flex flex-col items-center gap-1.5 group">
               <div
                 class="w-12 h-12 rounded-2xl icon-soft-box flex items-center justify-center text-white text-lg group-active:scale-95 transition-transform"
               >
@@ -942,12 +934,7 @@
 
         <!-- Syarat & Ketentuan Peek Card -->
         <div
-          onclick="
-            openModal(
-              'Syarat & Ketentuan tachi69gmail',
-              '1. Platform ini khusus untuk transaksi jual beli email valid.\n2. Email yang disetor akan diproses otomatis.\n3. Keputusan admin tachi69gmail mutlak.',
-            )
-          "
+          onclick="openRulesToday()"
           class="bg-white rounded-2xl p-3.5 card-soft-shadow border border-slate-100 flex items-center justify-between cursor-pointer active:scale-98 transition"
         >
           <div class="flex items-center gap-3">
@@ -1028,12 +1015,7 @@
                 Wajib dibaca agar Gmail tidak ditolak.
               </p>
               <button
-                onclick="
-                  openModal(
-                    'Rules & Peraturan Storan',
-                    '1. Gmail harus berstatus fresh.\n2. Wajib menggunakan password yang dicantumkan di bawah.\n3. Email bermasalah saat login tidak akan dihitung.',
-                  )
-                "
+                onclick="openRulesToday()"
                 class="mt-2.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 active:scale-95 transition"
               >
                 <i class="fa-solid fa-list-check text-xs"></i>
@@ -1629,17 +1611,6 @@
           </button>
         </div>
 
-        <div class="grid grid-cols-2 gap-3">
-          <div class="rounded-2xl border border-blue-100 bg-blue-50 p-3">
-            <p class="text-[10px] font-extrabold uppercase tracking-wide text-blue-600">Hari ini</p>
-            <p id="recapToday" class="mt-1 text-sm font-black text-slate-800">0 Gmail · Rp0</p>
-          </div>
-          <div class="rounded-2xl border border-slate-200 bg-slate-100 p-3">
-            <p class="text-[10px] font-extrabold uppercase tracking-wide text-slate-500">Kemarin</p>
-            <p id="recapYesterday" class="mt-1 text-sm font-black text-slate-800">0 Gmail · Rp0</p>
-          </div>
-        </div>
-
         <!-- Content Area List -->
         <div id="riwayatListContainer" class="flex flex-col gap-3 py-6 text-center">
           <div
@@ -1749,6 +1720,13 @@
       }
       let announcements = getAnnouncements();
       let currentSlideIndex = 0;
+
+      function openRulesToday() {
+        const rules =
+          window.tachiApiState?.settings?.rules_text ||
+          "1. Gmail harus fresh.\n2. Wajib menggunakan password yang dicantumkan di bawah.\n3. Keputusan admin tachi69gmail mutlak.";
+        openModal("Rules Hari Ini", rules);
+      }
 
       function updateSlide() {
         announcements = getAnnouncements();

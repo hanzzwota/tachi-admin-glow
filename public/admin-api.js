@@ -9,8 +9,8 @@
     if (!response.ok) throw new Error(data.error || "Permintaan gagal");
     return data;
   };
-  const notify = (message) => window.toast?.(message);
-  const normalize = (settings, deposits, users, withdrawals) => ({
+  const notify = (message, icon = "success") => window.toast?.(message, icon);
+  const normalize = (settings, deposits, users, withdrawals, paymentFeesOverride = null) => ({
     settings: {
       rate: Number(settings?.rate || 0),
       minTarik: Number(settings?.min_withdrawal || 0),
@@ -18,7 +18,12 @@
       paymentFees: Object.fromEntries(
         ["DANA", "OVO", "GoPay", "ShopeePay", "BCA", "BRI", "Mandiri"].map((key) => [
           key,
-          Math.max(0, Number(settings?.payment_fees?.[key] ?? settings?.fee ?? 0)),
+          Math.max(
+            0,
+            Number(
+              paymentFeesOverride?.[key] ?? settings?.payment_fees?.[key] ?? settings?.fee ?? 0,
+            ),
+          ),
         ]),
       ),
       campaignPass: settings?.campaign_password || "",
@@ -28,6 +33,9 @@
       dailyMax: Number(settings?.daily_limit || 0),
       limit: Number(settings?.batch_limit || 0),
       announcement: settings?.announcement || "",
+      rulesText:
+        settings?.rules_text ||
+        "1. Gmail harus fresh.\n2. Wajib menggunakan password yang dicantumkan di bawah.\n3. Keputusan admin tachi69gmail mutlak.",
       autoStockEnabled: settings?.auto_stock_enabled === true,
       gmailStock: Array.isArray(settings?.gmail_stock) ? settings.gmail_stock : [],
     },
@@ -66,12 +74,25 @@
       : [],
     daily: { date: new Date().toISOString().slice(0, 10), count: 0 },
   });
+  const wibDate = (value = Date.now()) =>
+    new Date(new Date(value).getTime() + 7 * 3600e3).toISOString().slice(0, 10);
+  let recapDate = wibDate();
   const dailyDeposits = () => {
-    const today = new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10);
     return db.setoran.filter((item) => {
       const timestamp = new Date(item.created_at || item.date).getTime();
-      return new Date(timestamp + 7 * 3600e3).toISOString().slice(0, 10) === today;
+      return wibDate(timestamp) === recapDate;
     });
+  };
+  window.setRecapDate = (value) => {
+    recapDate =
+      value === "today"
+        ? wibDate()
+        : value === "yesterday"
+          ? wibDate(Date.now() - 86400000)
+          : value;
+    const input = document.getElementById("recapDate");
+    if (input) input.value = recapDate;
+    window.renderDailyRecap?.();
   };
   window.renderDailyRecap = () => {
     const rows = dailyDeposits();
@@ -82,7 +103,7 @@
     const text = document.getElementById("dailyGmailText");
     if (stats)
       stats.innerHTML = [
-        `${rows.length} transaksi`,
+        `${recapDate} · ${rows.length} transaksi`,
         `${emails.length} Gmail`,
         `${rows.filter((item) => item.status === "diterima").length} diterima`,
         `${rows.filter((item) => item.status === "pending").length} pending`,
@@ -107,7 +128,7 @@
   window.exportDailyGmail = () => {
     const value = document.getElementById("dailyGmailText")?.value || "";
     if (!value) return notify("Belum ada Gmail untuk diekspor");
-    const stamp = new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10);
+    const stamp = recapDate;
     const link = document.createElement("a");
     link.href = URL.createObjectURL(
       new Blob([`Rekapan Gmail Setoran ${stamp}\n\n${value}\n`], {
@@ -120,7 +141,7 @@
     notify("File rekapan berhasil diekspor");
   };
   let refreshInFlight = null;
-  const refresh = async () => {
+  const refresh = async (paymentFeesOverride = null) => {
     if (refreshInFlight) return refreshInFlight;
     refreshInFlight = (async () => {
       const [{ deposits }, { users }, { settings }, { withdrawals }] = await Promise.all([
@@ -129,7 +150,7 @@
         api("settings"),
         api("admin/withdrawals"),
       ]);
-      db = normalize(settings, deposits, users, withdrawals);
+      db = normalize(settings, deposits, users, withdrawals, paymentFeesOverride);
       ["DANA", "OVO", "GoPay", "ShopeePay", "BCA", "BRI", "Mandiri"].forEach((key) => {
         const input = document.getElementById(`fee${key}`);
         if (input) input.value = Number(db.settings.paymentFees[key] || 0);
@@ -158,6 +179,7 @@
           dailyLimit: db.settings.dailyMax,
           batchLimit: db.settings.limit,
           announcement: db.settings.announcement,
+          rulesText: db.settings.rulesText,
           autoStockEnabled: db.settings.autoStockEnabled,
           gmailStock: db.settings.gmailStock,
         }),
@@ -265,18 +287,19 @@
   window.saveSettings = async (event) => {
     event.preventDefault();
     try {
+      const paymentFees = Object.fromEntries(
+        ["DANA", "OVO", "GoPay", "ShopeePay", "BCA", "BRI", "Mandiri"].map((key) => [
+          key,
+          Math.max(0, Number(document.getElementById(`fee${key}`)?.value || 0)),
+        ]),
+      );
       await api("admin/settings", {
         method: "PATCH",
         body: JSON.stringify({
           rate: cRate.value,
           minWithdrawal: cMin.value,
           fee: cFee.value,
-          paymentFees: Object.fromEntries(
-            ["DANA", "OVO", "GoPay", "ShopeePay", "BCA", "BRI", "Mandiri"].map((key) => [
-              key,
-              Math.max(0, Number(document.getElementById(`fee${key}`)?.value || 0)),
-            ]),
-          ),
+          paymentFees,
           campaignPassword: cPass.value,
           storeOpen: db.settings.storOpen,
           withdrawOpen: db.settings.tarikOpen,
@@ -284,6 +307,7 @@
           dailyLimit: cDaily.value,
           batchLimit: cLimit.value,
           announcement: cAnn.value,
+          rulesText: cRules.value,
           autoStockEnabled: cAutoStock.checked,
           gmailStock: cStock.value
             .split(/\s+/)
@@ -291,7 +315,9 @@
             .filter(Boolean),
         }),
       });
-      await refresh();
+      db.settings.paymentFees = paymentFees;
+      db.settings.rulesText = cRules.value;
+      await refresh(paymentFees);
       notify("Pengaturan tersimpan");
     } catch (error) {
       notify(error.message, "error");
@@ -313,6 +339,7 @@
           dailyLimit: db.settings.dailyMax,
           batchLimit: db.settings.limit,
           announcement: db.settings.announcement,
+          rulesText: db.settings.rulesText,
           autoStockEnabled: db.settings.autoStockEnabled,
           gmailStock: db.settings.gmailStock,
         }),

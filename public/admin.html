@@ -205,11 +205,33 @@
           <div class="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
             <div>
               <h3 class="font-bold">
-                <i class="fa fa-calendar-day text-blue-600 mr-2"></i>Rekapan Setoran Hari Ini
+                <i class="fa fa-calendar-day text-blue-600 mr-2"></i>Rekapan Setoran
               </h3>
               <p class="text-xs text-slate-500">
-                Semua Gmail yang disetor user hari ini berdasarkan waktu WIB.
+                Pilih Hari Ini, Kemarin, atau tanggal tertentu berdasarkan waktu WIB.
               </p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onclick="setRecapDate('today')"
+                class="rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white"
+              >
+                Hari Ini
+              </button>
+              <button
+                type="button"
+                onclick="setRecapDate('yesterday')"
+                class="rounded-xl border border-blue-100 bg-white px-3 py-2 text-xs font-bold text-blue-600"
+              >
+                Kemarin
+              </button>
+              <input
+                id="recapDate"
+                type="date"
+                onchange="setRecapDate(this.value)"
+                class="inp w-auto text-xs"
+              />
             </div>
             <div class="flex gap-2">
               <button
@@ -235,10 +257,29 @@
             class="inp w-full font-mono text-xs"
             placeholder="Belum ada Gmail disetor hari ini"
           ></textarea>
+          <label class="block text-xs font-semibold text-slate-500">
+            Bulk search (satu email, username, atau ID per baris)
+            <textarea
+              id="sqBulk"
+              oninput="renderSetoran()"
+              rows="3"
+              class="inp mt-1 font-mono text-xs"
+              placeholder="user01@gmail.com\nuser02@gmail.com\nID transaksi"
+            ></textarea>
+          </label>
         </section>
 
         <!-- PAYOUT -->
         <section id="t-payout" class="glass rounded-2xl p-4 hidden">
+          <div class="relative mb-3">
+            <i class="fa fa-search absolute left-3 top-3.5 text-slate-400"></i>
+            <input
+              id="payoutSearch"
+              oninput="renderPayout()"
+              class="inp pl-9"
+              placeholder="Cari penarikan: ID, username, nama, nomor wallet, status..."
+            />
+          </div>
           <div class="overflow-x-auto">
             <table class="w-full text-sm">
               <thead class="text-left text-slate-500 text-xs uppercase">
@@ -369,6 +410,15 @@
                 rows="3"
                 maxlength="300"
                 class="inp mt-1"
+              ></textarea>
+            </label>
+            <label class="block text-xs font-semibold text-slate-500"
+              >Rules Hari Ini<textarea
+                id="cRules"
+                rows="5"
+                maxlength="1000"
+                class="inp mt-1"
+                placeholder="1. Gmail harus fresh.&#10;2. Wajib menggunakan password."
               ></textarea>
             </label>
             <button class="btn-p w-full py-3 rounded-xl font-bold">
@@ -641,26 +691,33 @@
           )
           .join("");
         const q = sq.value.trim().toLowerCase();
+        const bulkQueries = (document.getElementById("sqBulk")?.value || "")
+          .split(/\s+/)
+          .map((value) => value.trim().toLowerCase())
+          .filter(Boolean);
         const rows = db.setoran
           .filter(
             (s) =>
               (sf === "semua" || s.status === sf) &&
-              (!q ||
-                s.id.toLowerCase().includes(q) ||
-                s.user.toLowerCase().includes(q) ||
-                s.emails.some((e) => e.toLowerCase().includes(q))),
+              ((!q && !bulkQueries.length) ||
+                [q, ...bulkQueries].some((query) =>
+                  `${s.id} ${s.user} ${s.emails.join(" ")}`.toLowerCase().includes(query),
+                )),
           )
           .sort((a, b) => b.date - a.date);
         setoranBody.innerHTML =
           rows
             .map((s) => {
-              const hit = q
-                ? s.emails
-                    .filter((e) => e.toLowerCase().includes(q))
-                    .slice(0, 2)
-                    .map((e) => `<div class="text-[11px] text-blue-600">${esc(e)}</div>`)
-                    .join("")
-                : "";
+              const hit =
+                q || bulkQueries.length
+                  ? s.emails
+                      .filter((e) =>
+                        [q, ...bulkQueries].some((query) => e.toLowerCase().includes(query)),
+                      )
+                      .slice(0, 2)
+                      .map((e) => `<div class="text-[11px] text-blue-600">${esc(e)}</div>`)
+                      .join("")
+                  : "";
               return `<tr class="border-t border-blue-50"><td class="p-2 font-mono text-xs">${s.id}</td><td class="p-2 text-xs">${fmt(s.date)}</td><td class="p-2 font-semibold">${esc(s.user)}</td>
     <td class="p-2">${s.emails.length}${s.status === "diterima" ? ` <span class="text-xs text-green-600">(${s.accepted} valid)</span>` : ""}${hit}</td>
     <td class="p-2">${badge(s.status)}${s.reason ? `<div class="text-[11px] text-red-500 mt-1">${esc(s.reason)}</div>` : ""}</td>
@@ -687,7 +744,7 @@
         const s = db.setoran.find((x) => x.id === id);
         openModal(
           "Pilih Gmail yang Diterima " + id,
-          `<p class="text-sm mb-2">Centang Gmail valid. Yang tidak dicentang otomatis ditolak. Rate: <b>${rp(db.settings.rate)}</b></p><div class="max-h-64 overflow-y-auto space-y-2">${s.emails.map((email) => `<label class="flex items-center gap-2 rounded-xl border border-blue-50 bg-white p-2 text-xs"><input type="checkbox" name="acceptedEmail" value="${esc(email)}" checked><span class="font-mono">${esc(email)}</span></label>`).join("")}</div>
+          `<p class="text-sm mb-2">Centang Gmail yang ingin diterima. Gmail lain tetap pending dan tidak otomatis ditolak. Rate: <b>${rp(db.settings.rate)}</b></p><div class="max-h-64 overflow-y-auto space-y-2">${s.emails.map((email) => `<label class="flex items-center gap-2 rounded-xl border border-blue-50 bg-white p-2 text-xs"><input type="checkbox" name="acceptedEmail" value="${esc(email)}" ${s.accepted_emails?.includes(email) ? "checked" : ""}><span class="font-mono">${esc(email)}</span></label>`).join("")}</div>
   <p class="text-sm mt-2">Saldo dihitung dari Gmail yang dicentang.</p>
   <button onclick="doAcc('${id}')" class="w-full py-3 rounded-xl mt-4 font-bold bg-green-500 text-white">Konfirmasi ACC</button>`,
         );
@@ -733,8 +790,14 @@
       }
 
       function renderPayout() {
+        const query = (document.getElementById("payoutSearch")?.value || "").trim().toLowerCase();
         payoutBody.innerHTML =
           [...db.withdrawals]
+            .filter(
+              (w) =>
+                !query ||
+                `${w.id} ${w.user} ${w.name} ${w.dana} ${w.status}`.toLowerCase().includes(query),
+            )
             .sort((a, b) => b.date - a.date)
             .map(
               (
@@ -860,6 +923,7 @@
         cLimit.value = s.limit;
         cDaily.value = s.dailyMax;
         cAnn.value = s.announcement;
+        cRules.value = s.rulesText || "";
         cAutoStock.checked = !!s.autoStockEnabled;
         cStock.value = (s.gmailStock || []).join("\n");
         dailyInfo.textContent = `Terpakai hari ini (${db.daily.date}): ${db.daily.count}/${s.dailyMax} Gmail • reset otomatis 00:00 WIB`;

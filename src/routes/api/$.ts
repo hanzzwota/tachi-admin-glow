@@ -214,15 +214,23 @@ async function approveDeposit(request: Request, id: string) {
         0,
         Math.max(0, Math.min(emailList.length, Number(payload.acceptedCount ?? emailList.length))),
       );
-  const acceptedEmails = requested.filter((email) => emailList.includes(email));
-  const rejectedEmails = emailList.filter((email) => !acceptedEmails.includes(email));
+  const previousAccepted = Array.isArray(deposit.accepted_emails)
+    ? deposit.accepted_emails.map(text)
+    : [];
+  const acceptedEmails = [...new Set([...previousAccepted, ...requested])].filter((email) =>
+    emailList.includes(email),
+  );
+  const rejectedEmails = Array.isArray(deposit.rejected_emails)
+    ? deposit.rejected_emails.map(text).filter((email) => emailList.includes(email))
+    : [];
+  const newlyAccepted = acceptedEmails.filter((email) => !previousAccepted.includes(email));
   const acceptedCount = acceptedEmails.length;
-  const earned = acceptedCount * Number(settings?.rate ?? 0);
+  const earned = newlyAccepted.length * Number(settings?.rate ?? 0);
   await supabaseFetch(`deposits?id=eq.${encodeURIComponent(id)}`, {
     method: "PATCH",
     headers: { Prefer: "return=minimal" },
     body: JSON.stringify({
-      status: acceptedCount ? "diterima" : "ditolak",
+      status: acceptedCount === emailList.length ? "diterima" : "pending",
       accepted_count: acceptedCount,
       accepted_emails: acceptedEmails,
       rejected_emails: rejectedEmails,
@@ -307,6 +315,7 @@ async function updateSettings(request: Request) {
     daily_limit: Number(payload.dailyLimit),
     batch_limit: Number(payload.batchLimit),
     announcement: text(payload.announcement),
+    rules_text: text(payload.rulesText),
     auto_stock_enabled: Boolean(payload.autoStockEnabled),
     gmail_stock: stock,
   };
@@ -319,7 +328,15 @@ async function updateSettings(request: Request) {
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     if (!message.includes("payment_fees") && !message.includes("PGRST204")) throw error;
-    const { payment_fees: _paymentFees, ...legacyAllowed } = allowed;
+    const legacyAllowed = { ...allowed } as Record<string, unknown>;
+    const missingPaymentFees = message.includes("payment_fees");
+    const missingRulesText = message.includes("rules_text");
+    if (missingPaymentFees) delete legacyAllowed.payment_fees;
+    if (missingRulesText) delete legacyAllowed.rules_text;
+    if (message.includes("PGRST204") && !missingPaymentFees && !missingRulesText) {
+      delete legacyAllowed.payment_fees;
+      delete legacyAllowed.rules_text;
+    }
     await supabaseFetch("app_settings?id=eq.1", {
       method: "PATCH",
       headers: { Prefer: "return=representation" },
