@@ -1277,7 +1277,8 @@
           <div class="bg-sky-50 border border-sky-200/80 rounded-xl p-3 flex items-start gap-2.5">
             <i class="fa-solid fa-circle-info text-sky-500 text-sm mt-0.5"></i>
             <p id="withdrawMinInfo" class="text-xs text-sky-900 font-medium leading-relaxed">
-              Minimal penarikan DANA mengikuti setelan admin. OVO, GoPay, ShopeePay, BCA, BRI, dan Mandiri minimal Rp15.000.
+              Minimal penarikan DANA mengikuti setelan admin. OVO, GoPay, ShopeePay, BCA, BRI, dan
+              Mandiri minimal Rp15.000.
             </p>
           </div>
 
@@ -1748,26 +1749,38 @@
       }
       function openSupportModal() {
         const channels = window.tachiApiState?.settings?.support_channels || {};
-        const items = [
-          ...(Array.isArray(channels.whatsapp) ? channels.whatsapp : []).map((value) => [
-            "WhatsApp",
-            "whatsapp",
-            value,
-          ]),
-          ...(Array.isArray(channels.telegram) ? channels.telegram : []).map((value) => [
-            "Telegram",
-            "telegram",
-            value,
-          ]),
-        ].filter(([, , value]) => value);
-        const body = items.length
-          ? `<div class="space-y-2">${items
-              .map(([label, type, value]) => {
-                const href = escapeSupport(supportUrl(type, value));
-                return `<a href="${href}" target="_blank" rel="noopener" class="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold text-blue-600"><span><i class="fa-brands fa-${type === "whatsapp" ? "whatsapp text-emerald-500" : "telegram text-sky-500"} mr-2"></i>${label}</span><i class="fa-solid fa-arrow-up-right-from-square text-xs"></i></a>`;
+        const legacyAdmins = [0, 1].map((index) => ({
+          name: `Admin ${index + 1}`,
+          whatsapp: channels.whatsapp?.[index] || "",
+          telegram: channels.telegram?.[index] || "",
+          enabled: true,
+        }));
+        const admins = (Array.isArray(channels.admins) ? channels.admins : legacyAdmins)
+          .slice(0, 2)
+          .filter((admin) => admin?.enabled !== false)
+          .map((admin, index) => ({
+            name: escapeSupport(admin.name || `Admin ${index + 1}`),
+            whatsapp: admin.whatsapp || "",
+            telegram: admin.telegram || "",
+          }))
+          .filter((admin) => admin.whatsapp || admin.telegram);
+        const body = admins.length
+          ? `<div class="space-y-3"><p class="text-xs text-slate-500">Pilih admin support yang ingin dihubungi:</p>${admins
+              .map((admin) => {
+                const links = [
+                  admin.whatsapp
+                    ? `<a href="${escapeSupport(supportUrl("whatsapp", admin.whatsapp))}" target="_blank" rel="noopener" class="flex-1 rounded-xl bg-emerald-50 px-3 py-2.5 text-center text-xs font-bold text-emerald-700"><i class="fa-brands fa-whatsapp mr-1"></i>WhatsApp</a>`
+                    : "",
+                  admin.telegram
+                    ? `<a href="${escapeSupport(supportUrl("telegram", admin.telegram))}" target="_blank" rel="noopener" class="flex-1 rounded-xl bg-sky-50 px-3 py-2.5 text-center text-xs font-bold text-sky-700"><i class="fa-brands fa-telegram mr-1"></i>Telegram</a>`
+                    : "",
+                ]
+                  .filter(Boolean)
+                  .join("");
+                return `<div class="rounded-2xl border border-slate-200 bg-white p-3"><p class="mb-2 text-sm font-extrabold text-slate-800">${admin.name}</p><div class="flex gap-2">${links}</div></div>`;
               })
               .join("")}</div>`
-          : '<p class="text-sm text-slate-500">Saluran CS belum diatur admin.</p>';
+          : '<p class="text-sm text-slate-500">Belum ada admin support yang aktif.</p>';
         document.getElementById("modalTitle").innerText = "Support CS";
         document.getElementById("modalBody").innerHTML = body;
         document.getElementById("appModal").classList.remove("hidden");

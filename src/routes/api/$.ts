@@ -53,9 +53,22 @@ function withdrawalMinimums(adminMin: unknown) {
 }
 function canonicalSupportChannels(value: unknown) {
   const source = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
-  const list = (key: string) =>
-    Array.isArray(source[key]) ? source[key].map(text).filter(Boolean).slice(0, 2) : [];
-  return { whatsapp: list("whatsapp"), telegram: list("telegram") };
+  const legacyWhatsApp = Array.isArray(source.whatsapp) ? source.whatsapp : [];
+  const legacyTelegram = Array.isArray(source.telegram) ? source.telegram : [];
+  const rawAdmins = Array.isArray(source.admins) ? source.admins : [];
+  const admins = [0, 1].map((index) => {
+    const item =
+      rawAdmins[index] && typeof rawAdmins[index] === "object"
+        ? (rawAdmins[index] as Record<string, unknown>)
+        : {};
+    return {
+      name: text(item.name) || `Admin ${index + 1}`,
+      whatsapp: text(item.whatsapp) || text(legacyWhatsApp[index]),
+      telegram: text(item.telegram) || text(legacyTelegram[index]),
+      enabled: item.enabled !== false,
+    };
+  });
+  return { admins };
 }
 const idFromPath = (path: string) => path.split("/").filter(Boolean).at(-1) ?? "";
 

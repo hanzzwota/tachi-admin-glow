@@ -432,30 +432,55 @@
                 placeholder="1. Gmail harus fresh.&#10;2. Wajib menggunakan password."
               ></textarea>
             </label>
-            <div class="rounded-xl border border-blue-100 bg-blue-50/50 p-3 space-y-2">
-              <p class="text-xs font-bold text-slate-700">Saluran Support CS</p>
-              <p class="text-[11px] text-slate-500">
-                Isi nomor/link. Maksimal 2 WhatsApp dan 2 Telegram.
-              </p>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                <label class="text-[11px] font-semibold text-slate-500"
-                  >WhatsApp 1<input
-                    id="supportWa1"
-                    class="inp mt-1"
-                    placeholder="628123456789 atau https://wa.me/..."
-                /></label>
-                <label class="text-[11px] font-semibold text-slate-500"
-                  >WhatsApp 2<input id="supportWa2" class="inp mt-1" placeholder="Opsional"
-                /></label>
-                <label class="text-[11px] font-semibold text-slate-500"
-                  >Telegram 1<input
-                    id="supportTelegram1"
-                    class="inp mt-1"
-                    placeholder="@username atau https://t.me/..."
-                /></label>
-                <label class="text-[11px] font-semibold text-slate-500"
-                  >Telegram 2<input id="supportTelegram2" class="inp mt-1" placeholder="Opsional"
-                /></label>
+            <div class="rounded-xl border border-blue-100 bg-blue-50/50 p-3 space-y-3">
+              <div>
+                <p class="text-xs font-bold text-slate-700">Saluran Support CS</p>
+                <p class="text-[11px] text-slate-500">
+                  Setiap admin punya satu kolom sendiri. Matikan toggle untuk menghilangkan admin
+                  dari pilihan user.
+                </p>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div class="rounded-xl border border-blue-100 bg-white p-3 space-y-2">
+                  <label class="flex items-center justify-between text-xs font-bold text-slate-700">
+                    <span>Admin 1</span
+                    ><span class="flex items-center gap-2 text-[11px] font-semibold text-slate-500"
+                      ><input
+                        id="supportAdmin1Enabled"
+                        type="checkbox"
+                        class="w-4 h-4 accent-blue-600"
+                      />
+                      Aktif</span
+                    >
+                  </label>
+                  <input
+                    id="supportAdmin1Name"
+                    class="inp"
+                    placeholder="Nama admin, contoh: CS Utama"
+                  />
+                  <input id="supportAdmin1Whatsapp" class="inp" placeholder="WhatsApp admin 1" />
+                  <input id="supportAdmin1Telegram" class="inp" placeholder="Telegram admin 1" />
+                </div>
+                <div class="rounded-xl border border-blue-100 bg-white p-3 space-y-2">
+                  <label class="flex items-center justify-between text-xs font-bold text-slate-700">
+                    <span>Admin 2</span
+                    ><span class="flex items-center gap-2 text-[11px] font-semibold text-slate-500"
+                      ><input
+                        id="supportAdmin2Enabled"
+                        type="checkbox"
+                        class="w-4 h-4 accent-blue-600"
+                      />
+                      Aktif</span
+                    >
+                  </label>
+                  <input
+                    id="supportAdmin2Name"
+                    class="inp"
+                    placeholder="Nama admin, contoh: CS Cadangan"
+                  />
+                  <input id="supportAdmin2Whatsapp" class="inp" placeholder="WhatsApp admin 2" />
+                  <input id="supportAdmin2Telegram" class="inp" placeholder="Telegram admin 2" />
+                </div>
               </div>
             </div>
             <button class="btn-p w-full py-3 rounded-xl font-bold">
@@ -963,10 +988,14 @@
         cDaily.value = s.dailyMax;
         cAnn.value = s.announcement;
         cRules.value = s.rulesText || "";
-        supportWa1.value = s.supportChannels?.whatsapp?.[0] || "";
-        supportWa2.value = s.supportChannels?.whatsapp?.[1] || "";
-        supportTelegram1.value = s.supportChannels?.telegram?.[0] || "";
-        supportTelegram2.value = s.supportChannels?.telegram?.[1] || "";
+        [1, 2].forEach((index) => {
+          const admin = s.supportChannels?.admins?.[index - 1] || {};
+          document.getElementById(`supportAdmin${index}Name`).value =
+            admin.name || `Admin ${index}`;
+          document.getElementById(`supportAdmin${index}Whatsapp`).value = admin.whatsapp || "";
+          document.getElementById(`supportAdmin${index}Telegram`).value = admin.telegram || "";
+          document.getElementById(`supportAdmin${index}Enabled`).checked = admin.enabled !== false;
+        });
         cAutoStock.checked = !!s.autoStockEnabled;
         cStock.value = (s.gmailStock || []).join("\n");
         dailyInfo.className = "text-xs text-slate-500";

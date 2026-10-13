@@ -38,15 +38,26 @@
       }),
     );
   };
-  const normalizeSupportChannels = (value) => ({
-    whatsapp: Array.isArray(value?.whatsapp) ? value.whatsapp.filter(Boolean).slice(0, 2) : [],
-    telegram: Array.isArray(value?.telegram) ? value.telegram.filter(Boolean).slice(0, 2) : [],
-  });
+  const normalizeSupportChannels = (value) => {
+    const legacyWhatsApp = Array.isArray(value?.whatsapp) ? value.whatsapp : [];
+    const legacyTelegram = Array.isArray(value?.telegram) ? value.telegram : [];
+    const source = Array.isArray(value?.admins) ? value.admins : [];
+    return {
+      admins: [0, 1].map((index) => ({
+        name: source[index]?.name || `Admin ${index + 1}`,
+        whatsapp: source[index]?.whatsapp || legacyWhatsApp[index] || "",
+        telegram: source[index]?.telegram || legacyTelegram[index] || "",
+        enabled: source[index]?.enabled !== false,
+      })),
+    };
+  };
   const readSupportChannels = () => ({
-    whatsapp: [supportWa1.value, supportWa2.value].map((value) => value.trim()).filter(Boolean),
-    telegram: [supportTelegram1.value, supportTelegram2.value]
-      .map((value) => value.trim())
-      .filter(Boolean),
+    admins: [1, 2].map((index) => ({
+      name: document.getElementById(`supportAdmin${index}Name`).value.trim() || `Admin ${index}`,
+      whatsapp: document.getElementById(`supportAdmin${index}Whatsapp`).value.trim(),
+      telegram: document.getElementById(`supportAdmin${index}Telegram`).value.trim(),
+      enabled: document.getElementById(`supportAdmin${index}Enabled`).checked,
+    })),
   });
   const normalize = (settings, deposits, users, withdrawals, paymentFeesOverride = null) => ({
     settings: {
