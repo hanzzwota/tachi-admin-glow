@@ -210,6 +210,28 @@
       refreshInFlight = null;
     }
   };
+  const refreshPayoutData = async () => {
+    if (refreshInFlight) await refreshInFlight.catch(() => {});
+    const [{ withdrawals }, { users }] = await Promise.all([
+      api("admin/withdrawals"),
+      api("admin/users"),
+    ]);
+    const refreshed = normalize({}, [], users, withdrawals);
+    db.withdrawals = refreshed.withdrawals;
+    db.users = refreshed.users;
+    window.reloadAdminDb?.();
+  };
+  const finishWithdrawalAction = (id, status, reason = "") => {
+    const withdrawal = db.withdrawals.find((item) => String(item.id) === String(id));
+    if (withdrawal) {
+      withdrawal.status = status;
+      if (reason) withdrawal.reason = reason;
+    }
+    window.reloadAdminDb?.();
+    void refreshPayoutData().catch((error) => {
+      console.error("Gagal menyegarkan data penarikan:", error);
+    });
+  };
   const settingsPayload = (overrides = {}) => ({
     rate: db.settings.rate,
     minWithdrawal: db.settings.minTarik,
@@ -293,7 +315,7 @@
   window.accWd = async (id) => {
     try {
       await api(`admin/withdrawals/${id}/approve`, { method: "POST" });
-      await refresh();
+      finishWithdrawalAction(id, "selesai");
       notify("Penarikan diselesaikan");
     } catch (error) {
       notify(error.message, "error");
@@ -308,7 +330,7 @@
         body: JSON.stringify({ reason }),
       });
       closeModal();
-      await refresh();
+      finishWithdrawalAction(id, "ditolak", reason);
       notify("Penarikan ditolak dan saldo dikembalikan");
     } catch (error) {
       notify(error.message, "error");

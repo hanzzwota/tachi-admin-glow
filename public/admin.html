@@ -271,6 +271,20 @@
 
         <!-- PAYOUT -->
         <section id="t-payout" class="glass rounded-2xl p-4 hidden">
+          <div class="mb-3 flex flex-wrap gap-2" role="group" aria-label="Filter status penarikan">
+            <button type="button" data-payout-filter="semua" aria-pressed="true" onclick="setPayoutStatusFilter('semua')" class="rounded-xl border border-blue-600 bg-blue-600 px-3 py-2 text-xs font-bold text-white">
+              Semua <span id="payoutFilterCount-semua" class="ml-1 rounded-full bg-white/20 px-1.5 py-0.5">0</span>
+            </button>
+            <button type="button" data-payout-filter="pending" aria-pressed="false" onclick="setPayoutStatusFilter('pending')" class="rounded-xl border border-blue-100 bg-white px-3 py-2 text-xs font-bold text-slate-600">
+              Pending <span id="payoutFilterCount-pending" class="ml-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-amber-700">0</span>
+            </button>
+            <button type="button" data-payout-filter="selesai" aria-pressed="false" onclick="setPayoutStatusFilter('selesai')" class="rounded-xl border border-blue-100 bg-white px-3 py-2 text-xs font-bold text-slate-600">
+              Selesai <span id="payoutFilterCount-selesai" class="ml-1 rounded-full bg-green-100 px-1.5 py-0.5 text-green-700">0</span>
+            </button>
+            <button type="button" data-payout-filter="ditolak" aria-pressed="false" onclick="setPayoutStatusFilter('ditolak')" class="rounded-xl border border-blue-100 bg-white px-3 py-2 text-xs font-bold text-slate-600">
+              Ditolak <span id="payoutFilterCount-ditolak" class="ml-1 rounded-full bg-red-100 px-1.5 py-0.5 text-red-700">0</span>
+            </button>
+          </div>
           <div class="relative mb-3">
             <i class="fa fa-search absolute left-3 top-3.5 text-slate-400"></i>
             <input
@@ -698,6 +712,12 @@
           ditolak:
             '<span class="px-2 py-1 rounded-lg text-xs font-bold bg-red-100 text-red-700">Ditolak</span>',
         })[s];
+      let payoutStatusFilter = "semua";
+      function setPayoutStatusFilter(status) {
+        if (!["semua", "pending", "selesai", "ditolak"].includes(status)) return;
+        payoutStatusFilter = status;
+        renderPayout();
+      }
       document.querySelectorAll(".tab").forEach(
         (b) =>
           (b.onclick = () => {
@@ -865,12 +885,34 @@
 
       function renderPayout() {
         const query = (document.getElementById("payoutSearch")?.value || "").trim().toLowerCase();
+        const counts = { semua: db.withdrawals.length, pending: 0, selesai: 0, ditolak: 0 };
+        db.withdrawals.forEach((withdrawal) => {
+          if (Object.hasOwn(counts, withdrawal.status) && withdrawal.status !== "semua")
+            counts[withdrawal.status] += 1;
+        });
+        Object.entries(counts).forEach(([status, count]) => {
+          const countElement = document.getElementById(`payoutFilterCount-${status}`);
+          if (countElement) countElement.textContent = String(count);
+        });
+        document.querySelectorAll("[data-payout-filter]").forEach((button) => {
+          const active = button.dataset.payoutFilter === payoutStatusFilter;
+          button.setAttribute("aria-pressed", String(active));
+          button.classList.toggle("border-blue-600", active);
+          button.classList.toggle("bg-blue-600", active);
+          button.classList.toggle("text-white", active);
+          button.classList.toggle("border-blue-100", !active);
+          button.classList.toggle("bg-white", !active);
+          button.classList.toggle("text-slate-600", !active);
+        });
         payoutBody.innerHTML =
           [...db.withdrawals]
             .filter(
               (w) =>
-                !query ||
-                `${w.id} ${w.user} ${w.name} ${w.dana} ${w.status}`.toLowerCase().includes(query),
+                (payoutStatusFilter === "semua" || w.status === payoutStatusFilter) &&
+                (!query ||
+                  `${w.id} ${w.user} ${w.name} ${w.dana} ${w.status}`
+                    .toLowerCase()
+                    .includes(query)),
             )
             .sort((a, b) => b.date - a.date)
             .map(
