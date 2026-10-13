@@ -64,12 +64,10 @@ async function login(request: Request) {
           )
         )[0];
     } else if (user.role !== "admin") {
-      await supabaseFetch(`profiles?username=eq.${encodeURIComponent(username)}`, {
-        method: "PATCH",
-        headers: { Prefer: "return=minimal" },
-        body: JSON.stringify({ role: "admin" }),
-      });
-      user.role = "admin";
+      return json(
+        { error: "Username admin sudah dipakai akun user. Gunakan username admin khusus." },
+        { status: 409 },
+      );
     }
   } else {
     if (
@@ -95,6 +93,8 @@ async function register(request: Request) {
       { status: 400 },
     );
   if (password.length < 6) return json({ error: "Password minimal 6 karakter" }, { status: 400 });
+  if (process.env.ADMIN_USERNAME && username === process.env.ADMIN_USERNAME)
+    return json({ error: "Username tersebut dicadangkan untuk admin" }, { status: 409 });
   const existing = await supabaseFetch<Record<string, unknown>[]>(
     `profiles?select=id&username=eq.${encodeURIComponent(username)}&limit=1`,
   );
@@ -299,6 +299,12 @@ async function updateSettings(request: Request) {
   });
   return json({ settings: await getSettings() });
 }
+
+function userSettings(settings: Record<string, unknown> | null) {
+  if (!settings) return null;
+  const { gmail_stock: _gmailStock, ...safeSettings } = settings;
+  return safeSettings;
+}
 async function claimGmailStock(request: Request) {
   await requireUser(request);
   const settings = await getSettings();
@@ -448,8 +454,11 @@ async function handler(request: Request, path: string) {
   if (request.method === "POST" && path === "auth/logout") return logout();
   if (request.method === "GET" && path === "auth/me")
     return json({ user: await getCurrentUser(request) });
-  if (request.method === "GET" && path === "settings")
-    return json({ settings: await getSettings() });
+  if (request.method === "GET" && path === "settings") {
+    const user = await requireUser(request);
+    const settings = await getSettings();
+    return json({ settings: user.role === "admin" ? settings : userSettings(settings) });
+  }
   if (request.method === "GET" && path === "deposits") return userDeposits(request);
   if (request.method === "POST" && path === "deposits") return createDeposit(request);
   if (request.method === "GET" && path === "admin/deposits") return userDeposits(request, true);

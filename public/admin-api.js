@@ -113,15 +113,24 @@
     URL.revokeObjectURL(link.href);
     notify("File rekapan berhasil diekspor");
   };
+  let refreshInFlight = null;
   const refresh = async () => {
-    const [{ deposits }, { users }, { settings }, { withdrawals }] = await Promise.all([
-      api("admin/deposits"),
-      api("admin/users"),
-      api("settings"),
-      api("admin/withdrawals"),
-    ]);
-    db = normalize(settings, deposits, users, withdrawals);
-    window.reloadAdminDb?.();
+    if (refreshInFlight) return refreshInFlight;
+    refreshInFlight = (async () => {
+      const [{ deposits }, { users }, { settings }, { withdrawals }] = await Promise.all([
+        api("admin/deposits"),
+        api("admin/users"),
+        api("settings"),
+        api("admin/withdrawals"),
+      ]);
+      db = normalize(settings, deposits, users, withdrawals);
+      window.reloadAdminDb?.();
+    })();
+    try {
+      return await refreshInFlight;
+    } finally {
+      refreshInFlight = null;
+    }
   };
   window.persistSettings = async () => {
     try {
@@ -311,6 +320,9 @@
       }
       await refresh();
       showApp();
+      window.setInterval(() => {
+        if (document.visibilityState === "visible") refresh().catch(() => {});
+      }, 15000);
     } catch (error) {
       notify(error.message);
     }

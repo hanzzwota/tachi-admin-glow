@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 body{font-family:'Inter',sans-serif;-webkit-tap-highlight-color:transparent}
-.glass{background:rgba(255,255,255,.8);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.6);box-shadow:0 10px 15px -3px rgba(59,130,246,.05)}
+.glass{background:rgba(255,255,255,.82);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.7);box-shadow:0 14px 30px -18px rgba(30,64,175,.28)}
 .btn-p{background:linear-gradient(to right,#2563eb,#4f46e5);color:#fff;box-shadow:0 6px 16px -6px rgba(37,99,235,.6)}
 .btn-p:hover{filter:brightness(1.08)}
 .tgl{width:52px;height:28px;border-radius:999px;background:#fca5a5;position:relative;transition:background-color .28s cubic-bezier(.4,0,.2,1),transform .18s ease;cursor:pointer;will-change:background-color}
@@ -19,7 +19,10 @@ body{font-family:'Inter',sans-serif;-webkit-tap-highlight-color:transparent}
 .tgl.on::after{left:27px}
 .marquee{white-space:nowrap;animation:mq 18s linear infinite;display:inline-block;padding-left:100%}
 @keyframes mq{to{transform:translateX(-100%)}}
-.tab.active{background:linear-gradient(to right,#2563eb,#4f46e5);color:#fff}
+.tab{transition:background-color .2s ease,color .2s ease,box-shadow .2s ease}
+.tab.active{background:linear-gradient(135deg,#2563eb,#4f46e5);color:#fff;box-shadow:0 8px 18px -10px rgba(37,99,235,.8)}
+.admin-tabbar{position:sticky;top:72px;z-index:20}
+.admin-tabbar .tab{min-height:42px}
 input,select,textarea{outline:none}
 .inp{width:100%;padding:.6rem .8rem;border-radius:.75rem;border:1px solid #dbeafe;background:#fff}
 .inp:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.15)}
@@ -29,11 +32,11 @@ input,select,textarea{outline:none}
 
 <!-- APP -->
 <div id="appView">
-  <header class="glass sticky top-0 z-30 px-4 py-3 flex items-center gap-3">
+  <header class="glass sticky top-0 z-30 px-4 py-3 flex items-center gap-3 border-b border-blue-100/80">
     <img src="https://files.catbox.moe/dysigb.jpeg" class="w-10 h-10 rounded-xl object-cover" alt="logo">
     <div class="flex-1 min-w-0">
       <div class="font-extrabold leading-tight truncate">tachi69gmail <span class="text-blue-600">Admin Console</span></div>
-      <div class="text-[11px] text-slate-500"><span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-1"></span>Logged in as: <b>Admin</b></div>
+      <div class="text-[11px] text-slate-500"><span class="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-1 shadow-[0_0_0_3px_rgba(16,185,129,.12)]"></span>Logged in as: <b>Admin</b><span class="ml-2 rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-700">Protected</span></div>
     </div>
     <button onclick="switchMode()" id="modeBtn" class="px-3 py-2 rounded-xl bg-white border border-blue-100 text-blue-600 text-xs font-bold"><i class="fa fa-repeat mr-1"></i><span>Dashboard User</span></button>
     <button onclick="logout()" class="px-3 py-2 rounded-xl bg-red-50 text-red-600 text-xs font-bold"><i class="fa fa-power-off"></i></button>
@@ -42,12 +45,12 @@ input,select,textarea{outline:none}
   <!-- ADMIN MODE -->
   <main id="adminMode" class="max-w-7xl mx-auto p-4 space-y-4">
     <section id="stats" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></section>
-    <nav class="glass rounded-2xl p-1.5 flex gap-1 overflow-x-auto text-sm font-semibold">
-      <button class="tab active px-4 py-2 rounded-xl whitespace-nowrap" data-t="setoran">Setoran Gmail</button>
-      <button class="tab px-4 py-2 rounded-xl whitespace-nowrap" data-t="riwayat">Rekapan Hari Ini</button>
-      <button class="tab px-4 py-2 rounded-xl whitespace-nowrap" data-t="payout">Penarikan</button>
-      <button class="tab px-4 py-2 rounded-xl whitespace-nowrap" data-t="users">Data User</button>
-      <button class="tab px-4 py-2 rounded-xl whitespace-nowrap" data-t="settings">System Settings</button>
+    <nav class="admin-tabbar glass rounded-2xl p-1.5 grid grid-cols-2 md:grid-cols-5 gap-1 text-xs sm:text-sm font-semibold">
+      <button class="tab active px-3 py-2 rounded-xl" data-t="setoran">Setoran Gmail</button>
+      <button class="tab px-3 py-2 rounded-xl" data-t="riwayat">Rekapan Hari Ini</button>
+      <button class="tab px-3 py-2 rounded-xl" data-t="payout">Penarikan</button>
+      <button class="tab px-3 py-2 rounded-xl" data-t="users">Data User</button>
+      <button class="tab px-3 py-2 rounded-xl" data-t="settings">System Settings</button>
     </nav>
 
     <!-- SETORAN -->

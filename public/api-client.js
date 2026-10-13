@@ -306,6 +306,9 @@
       const requestedView = new URLSearchParams(location.search).get("view");
       if (user) {
         await syncAppData();
+        window.setInterval(() => {
+          if (document.visibilityState === "visible") syncAppData().catch(() => {});
+        }, 20000);
         if (requestedView && !["login", "register"].includes(requestedView))
           setTimeout(() => window.navigateTo?.(requestedView), 0);
       } else if (!["login", "register"].includes(requestedView || "login"))
