@@ -163,25 +163,38 @@ export function defaultSettingsRow(): Record<string, unknown> {
   };
 }
 
-export async function getSettings() {
-  const rows = await supabaseFetch<Row[]>("app_settings?select=*&id=eq.1&limit=1");
-  if (rows && rows[0]) return rows[0];
-
+async function createDefaultSettingsRow() {
   const defaultSettings = defaultSettingsRow();
+  const duplicate = (message: string) => /duplicate|23505|already exists|409/i.test(message);
+
   try {
-    const created = await supabaseFetch<Row[]>("app_settings?on_conflict=id", {
-      method: "POST",
-      headers: { Prefer: "return=representation" },
-      body: JSON.stringify(defaultSettings),
-    });
-    return created && created[0] ? created[0] : defaultSettings;
+    try {
+      await supabaseFetch("app_settings", {
+        method: "POST",
+        headers: { Prefer: "return=minimal" },
+        body: JSON.stringify(defaultSettings),
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (!duplicate(message)) throw error;
+    }
+
+    const refreshed = await supabaseFetch<Row[]>("app_settings?select=*&id=eq.1&limit=1");
+    return refreshed?.[0] ?? defaultSettings;
   } catch (error) {
     console.warn(
-      "getSettings: failed to initialize app_settings row; falling back to in-memory defaults:",
+      "createDefaultSettingsRow: failed to initialize app_settings row without overwriting existing config:",
       error instanceof Error ? error.message : error,
     );
     return defaultSettings;
   }
+}
+
+export async function getSettings() {
+  const rows = await supabaseFetch<Row[]>("app_settings?select=*&id=eq.1&limit=1");
+  if (rows && rows[0]) return rows[0];
+
+  return createDefaultSettingsRow();
 }
 
 export function json(data: unknown, init: ResponseInit = {}) {
@@ -200,19 +213,6 @@ export function errorResponse(error: unknown) {
 export async function ensureSettingsRow() {
   const current = await getSettings();
   if (current) return current;
-  const defaultSettings = defaultSettingsRow();
-  try {
-    const created = await supabaseFetch<Row[]>("app_settings?on_conflict=id", {
-      method: "POST",
-      headers: { Prefer: "return=representation" },
-      body: JSON.stringify(defaultSettings),
-    });
-    return created && created[0] ? created[0] : defaultSettings;
-  } catch (error) {
-    console.warn(
-      "ensureSettingsRow: unable to create app_settings row:",
-      error instanceof Error ? error.message : error,
-    );
-    return defaultSettings;
-  }
+
+  return createDefaultSettingsRow();
 }
