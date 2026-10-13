@@ -63,6 +63,7 @@
     settings: {
       rate: Number(settings?.rate || 0),
       minTarik: Number(settings?.min_withdrawal || 0),
+      paymentMode: settings?.payment_mode === "dana_only" ? "dana_only" : "all",
       fee: normalizeFee(settings?.fee),
       paymentFees: normalizePaymentFees(
         paymentFeesOverride ?? settings?.payment_fees,
@@ -216,6 +217,7 @@
         body: JSON.stringify({
           rate: db.settings.rate,
           minWithdrawal: db.settings.minTarik,
+          paymentMode: db.settings.paymentMode,
           fee: db.settings.fee,
           paymentFees: db.settings.paymentFees,
           campaignPassword: db.settings.campaignPass,
@@ -351,6 +353,7 @@
         body: JSON.stringify({
           rate: cRate.value,
           minWithdrawal: cMin.value,
+          paymentMode: cPaymentMode.value,
           fee: cFee.value,
           paymentFees,
           campaignPassword: cPass.value,
@@ -370,6 +373,7 @@
         }),
       });
       db.settings.paymentFees = paymentFees;
+      db.settings.paymentMode = cPaymentMode.value;
       db.settings.rulesText = cRules.value;
       await refresh(paymentFees);
       notify("Pengaturan tersimpan");
@@ -384,6 +388,7 @@
         body: JSON.stringify({
           rate: db.settings.rate,
           minWithdrawal: db.settings.minTarik,
+          paymentMode: db.settings.paymentMode,
           fee: db.settings.fee,
           paymentFees: db.settings.paymentFees,
           campaignPassword: db.settings.campaignPass,

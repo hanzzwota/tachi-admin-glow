@@ -691,7 +691,10 @@
                 <span>Saluran CS</span>
               </a>
               <button
-                onclick="showToast('Membuka kontak support tachi69gmail')"
+                onclick="
+                  openSupportModal();
+                  return false;
+                "
                 class="flex items-center gap-1.5 bg-white border border-slate-200/80 px-2.5 py-1.5 rounded-xl text-[10px] font-semibold text-blue-600 shadow-sm active:scale-95 transition-transform"
               >
                 <i class="fa-solid fa-headset text-xs"></i>
@@ -1494,6 +1497,7 @@
               <select
                 id="bankSelect"
                 disabled
+                onchange="handlePaymentModeChange(this)"
                 class="bg-transparent text-xs text-slate-800 font-bold focus:outline-none w-full disabled:opacity-60"
               >
                 <option value="DANA" selected>DANA</option>
@@ -1505,6 +1509,10 @@
                 <option value="Mandiri">Bank Mandiri</option>
               </select>
             </div>
+            <span
+              id="paymentModeNotice"
+              class="mt-2 block text-[11px] font-medium text-slate-500"
+            ></span>
           </div>
 
           <div>

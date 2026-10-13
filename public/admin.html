@@ -339,6 +339,16 @@
               Rp15.000<input id="cMin" type="number" min="0" class="inp mt-1"
             /></label>
             <label class="block text-xs font-semibold text-slate-500"
+              >Payment yang dibuka untuk user<select id="cPaymentMode" class="inp mt-1">
+                <option value="all">Open All Payment</option>
+                <option value="dana_only">Open DANA Saja</option>
+              </select>
+              <span class="mt-1 block text-[11px] font-normal text-slate-500"
+                >Jika DANA saja, user yang memakai payment lain harus memilih DANA dan mengisi ulang
+                datanya.</span
+              >
+            </label>
+            <label class="block text-xs font-semibold text-slate-500"
               >Fee Admin Penarikan (Rp)<input
                 id="cFee"
                 type="number"
@@ -982,6 +992,7 @@
         if (document.activeElement?.closest("form")) return;
         cRate.value = s.rate;
         cMin.value = s.minTarik;
+        cPaymentMode.value = s.paymentMode || "all";
         cFee.value = s.fee;
         cPass.value = s.campaignPass;
         cLimit.value = s.limit;

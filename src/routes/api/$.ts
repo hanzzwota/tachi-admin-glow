@@ -22,6 +22,7 @@ const booleanValue = (value: unknown, fallback = false) => {
   return ["true", "1", "yes", "on"].includes(String(value).trim().toLowerCase());
 };
 const paymentMethods = ["DANA", "OVO", "GoPay", "ShopeePay", "BCA", "BRI", "Mandiri"];
+const paymentModes = ["all", "dana_only"] as const;
 const paymentKey = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, "");
 function canonicalPaymentFees(value: unknown, fallback: number) {
   const source = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
@@ -386,6 +387,11 @@ async function updateSettings(request: Request) {
     batch_limit: numberOrZero(payload.batchLimit ?? current?.batch_limit),
     announcement: text(payload.announcement ?? current?.announcement),
     rules_text: text(payload.rulesText ?? current?.rules_text),
+    payment_mode: paymentModes.includes(payload.paymentMode as (typeof paymentModes)[number])
+      ? payload.paymentMode
+      : current?.payment_mode === "dana_only"
+        ? "dana_only"
+        : "all",
     support_channels: canonicalSupportChannels(
       payload.supportChannels ?? current?.support_channels,
     ),
@@ -410,6 +416,7 @@ async function updateSettings(request: Request) {
     payment_fees: paymentFees,
     rules_text: rulesText,
     support_channels: supportChannels,
+    payment_mode: paymentMode,
     ...coreSettings
   } = allowed;
   await patchSettings(coreSettings);
@@ -417,6 +424,7 @@ async function updateSettings(request: Request) {
     ["payment_fees", paymentFees],
     ["rules_text", rulesText],
     ["support_channels", supportChannels],
+    ["payment_mode", paymentMode],
   ] as const) {
     try {
       await patchSettings({ [optionalSetting[0]]: optionalSetting[1] });
@@ -443,6 +451,7 @@ function userSettings(settings: Record<string, unknown> | null) {
   const fallbackFee = normalizeFee(safeSettings.fee);
   safeSettings.fee = fallbackFee;
   safeSettings.payment_fees = canonicalPaymentFees(safeSettings.payment_fees, fallbackFee);
+  safeSettings.payment_mode = safeSettings.payment_mode === "dana_only" ? "dana_only" : "all";
   safeSettings.withdrawal_minimums = withdrawalMinimums(safeSettings.min_withdrawal);
   return safeSettings;
 }
@@ -484,6 +493,12 @@ async function updateWallet(request: Request) {
   const name = text(payload.name).slice(0, 100);
   const number = text(payload.number);
   const supportedBanks = new Set(["DANA", "OVO", "GoPay", "ShopeePay", "BCA", "BRI", "Mandiri"]);
+  const settings = await getSettings();
+  if (settings?.payment_mode === "dana_only" && bank !== "DANA")
+    return json(
+      { error: "Admin saat ini hanya membuka payment DANA. Pilih DANA lalu isi ulang payment." },
+      { status: 400 },
+    );
   if (!supportedBanks.has(bank) || !name || !/^[0-9]{8,16}$/.test(number))
     return json({ error: "Nomor wallet 8-16 digit dan nama wajib diisi" }, { status: 400 });
   const updated = await supabaseFetch<Record<string, unknown>[]>(
@@ -523,9 +538,15 @@ async function createWithdrawal(request: Request) {
   const payload = await body(request);
   const amount = Math.floor(Number(payload.amount));
   const balance = Number(user.balance ?? 0);
-  const bank = paymentMethods.includes(String(user.wallet_bank))
+  const configuredBank = paymentMethods.includes(String(user.wallet_bank))
     ? String(user.wallet_bank)
     : "DANA";
+  if (settings.payment_mode === "dana_only" && configuredBank !== "DANA")
+    return json(
+      { error: "Admin saat ini hanya membuka payment DANA. Pilih DANA lalu isi ulang payment." },
+      { status: 400 },
+    );
+  const bank = configuredBank;
   const paymentFees = canonicalPaymentFees(settings.payment_fees, normalizeFee(settings.fee));
   const fee = paymentFees[bank] ?? 0;
   const minimum = withdrawalMinimums(settings.min_withdrawal)[bank] ?? 0;

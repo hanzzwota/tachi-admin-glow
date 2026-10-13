@@ -54,6 +54,25 @@
     );
   const state = { user: null, settings: null, deposits: [], withdrawals: [] };
   window.tachiApiState = state;
+  const isDanaOnly = () => state.settings?.payment_mode === "dana_only";
+  const resetPaymentToDana = () => {
+    if (!state.user) return;
+    state.user.wallet = { ...(state.user.wallet || {}), bank: "DANA", name: "", number: "" };
+    window.syncUserBankDataFromApi?.(state.user.wallet);
+    const number = document.getElementById("rekeningInput");
+    const name = document.getElementById("atasNamaInput");
+    if (number) number.value = "";
+    if (name) name.value = "";
+    const bank = document.getElementById("bankSelect");
+    if (bank) bank.value = "DANA";
+  };
+  window.handlePaymentModeChange = (select) => {
+    if (isDanaOnly() && select.value !== "DANA") {
+      select.value = "DANA";
+      resetPaymentToDana();
+      toast("Payment DANA saja yang dibuka admin. Isi ulang data payment DANA.", "error");
+    }
+  };
   const syncAdminProfileAction = (user) => {
     const action = document.getElementById("adminProfileAction");
     if (!action) return;
@@ -87,6 +106,16 @@
     if (profileUsername) profileUsername.textContent = `Username: @${user.username}`;
     const campaign = document.getElementById("requiredPasswordText");
     if (campaign) campaign.textContent = settings.campaign_password;
+    const danaOnly = isDanaOnly();
+    const bankSelect = document.getElementById("bankSelect");
+    if (bankSelect) {
+      paymentMethods.forEach((method) => {
+        const option = [...bankSelect.options].find((item) => item.value === method);
+        if (option) option.disabled = danaOnly && method !== "DANA";
+      });
+      if (danaOnly && user.wallet?.bank !== "DANA") resetPaymentToDana();
+      bankSelect.value = danaOnly ? "DANA" : user.wallet?.bank || "DANA";
+    }
     const currentBank = (user.wallet && user.wallet.bank) || state.user?.wallet?.bank || "DANA";
     const min = minWithdrawalFor(currentBank, settings);
     const minInfo = document.getElementById("withdrawMinInfo");
@@ -107,6 +136,15 @@
     if (bankInput && document.activeElement !== bankInput) bankInput.value = bank.number || "";
     const nameInput = document.getElementById("atasNamaInput");
     if (nameInput && document.activeElement !== nameInput) nameInput.value = bank.name || "";
+    const paymentModeNotice = document.getElementById("paymentModeNotice");
+    if (paymentModeNotice) {
+      paymentModeNotice.textContent = danaOnly
+        ? "Admin hanya membuka payment DANA. Payment selain DANA harus diisi ulang ke DANA."
+        : "Semua payment tersedia sesuai konfigurasi admin.";
+      paymentModeNotice.className = danaOnly
+        ? "mt-2 block text-[11px] font-bold text-amber-700"
+        : "mt-2 block text-[11px] font-medium text-slate-500";
+    }
     const summary = document.getElementById("summaryRekening");
     if (summary)
       summary.textContent = bank.number
