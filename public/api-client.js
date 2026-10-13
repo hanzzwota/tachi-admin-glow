@@ -221,7 +221,16 @@
     const incomingWallet = user.wallet || {};
     const previousWallet = previousUser?.wallet || {};
     const wallet = incomingWallet.number && incomingWallet.name ? incomingWallet : previousWallet;
-    state.user = { ...previousUser, ...user, wallet };
+    const sameUser = previousUser?.username && previousUser.username === user.username;
+    state.user = {
+      ...previousUser,
+      ...user,
+      username: sameUser ? previousUser.username : user.username,
+      displayName: sameUser
+        ? previousUser.displayName || user.displayName || user.username
+        : user.displayName || user.username,
+      wallet,
+    };
     state.settings = settings || {};
     state.deposits = Array.isArray(deposits) ? deposits : [];
     state.withdrawals = Array.isArray(withdrawals) ? withdrawals : [];
@@ -329,7 +338,14 @@
           number: result.wallet.wallet_number || number,
         };
       }
-      if (result.user) state.user = result.user;
+      if (result.user) {
+        state.user = {
+          ...state.user,
+          ...result.user,
+          username: state.user?.username || result.user.username,
+          displayName: state.user?.displayName || result.user.displayName || result.user.username,
+        };
+      }
       await syncAppData();
       window.setPaymentEditMode?.(false);
       toast("Data payment berhasil disimpan");

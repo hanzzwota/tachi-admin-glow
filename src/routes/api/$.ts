@@ -302,46 +302,49 @@ async function updateSettings(request: Request) {
   await requireAdmin(request);
   const payload = await body(request);
   const stock = Array.isArray(payload.gmailStock) ? payload.gmailStock : [];
+  const numberOrZero = (value: unknown) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
   const allowed = {
-    rate: Number(payload.rate),
-    min_withdrawal: Number(payload.minWithdrawal),
-    fee: Number(payload.fee),
+    rate: numberOrZero(payload.rate),
+    min_withdrawal: numberOrZero(payload.minWithdrawal),
+    fee: numberOrZero(payload.fee),
     payment_fees:
       payload.paymentFees && typeof payload.paymentFees === "object" ? payload.paymentFees : {},
     campaign_password: text(payload.campaignPassword),
     store_open: Boolean(payload.storeOpen),
     withdraw_open: Boolean(payload.withdrawOpen),
     checker_open: payload.checkerOpen !== false,
-    daily_limit: Number(payload.dailyLimit),
-    batch_limit: Number(payload.batchLimit),
+    daily_limit: numberOrZero(payload.dailyLimit),
+    batch_limit: numberOrZero(payload.batchLimit),
     announcement: text(payload.announcement),
     rules_text: text(payload.rulesText),
     auto_stock_enabled: Boolean(payload.autoStockEnabled),
     gmail_stock: stock,
   };
-  try {
+  const patchSettings = async (values: Record<string, unknown>) => {
     await supabaseFetch("app_settings?id=eq.1", {
       method: "PATCH",
       headers: { Prefer: "return=representation" },
-      body: JSON.stringify(allowed),
+      body: JSON.stringify(values),
     });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    if (!message.includes("payment_fees") && !message.includes("PGRST204")) throw error;
-    const legacyAllowed = { ...allowed } as Record<string, unknown>;
-    const missingPaymentFees = message.includes("payment_fees");
-    const missingRulesText = message.includes("rules_text");
-    if (missingPaymentFees) delete legacyAllowed.payment_fees;
-    if (missingRulesText) delete legacyAllowed.rules_text;
-    if (message.includes("PGRST204") && !missingPaymentFees && !missingRulesText) {
-      delete legacyAllowed.payment_fees;
-      delete legacyAllowed.rules_text;
+  };
+  const { payment_fees: paymentFees, rules_text: rulesText, ...coreSettings } = allowed;
+  await patchSettings(coreSettings);
+  for (const optionalSetting of [
+    ["payment_fees", paymentFees],
+    ["rules_text", rulesText],
+  ] as const) {
+    try {
+      await patchSettings({ [optionalSetting[0]]: optionalSetting[1] });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const optionalColumnMissing =
+        message.includes("PGRST204") ||
+        (message.includes("400") && message.includes(optionalSetting[0]));
+      if (!optionalColumnMissing) throw error;
     }
-    await supabaseFetch("app_settings?id=eq.1", {
-      method: "PATCH",
-      headers: { Prefer: "return=representation" },
-      body: JSON.stringify(legacyAllowed),
-    });
   }
   return json({ settings: await getSettings() });
 }

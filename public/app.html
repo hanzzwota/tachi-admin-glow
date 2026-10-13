@@ -2109,7 +2109,9 @@
       function simpanData(message = "Data berhasil disimpan!", icon) {
         const alertIcon =
           icon ||
-          (/gagal|salah|tidak|minimal|isi |terlebih dahulu|saldo tidak|belum|ditutup/i.test(message)
+          (/gagal|salah|tidak|minimal|isi |lengkapi|wajib|harus|pilih|alasan|tekan edit|terlebih dahulu|saldo tidak|belum|ditutup|invalid|error/i.test(
+            message,
+          )
             ? "error"
             : "success");
         if (window.Swal) {
@@ -2131,7 +2133,7 @@
           setTimeout(() => toast.classList.add("opacity-0"), 2500);
         }
       }
-      function showToast(message, icon = "success") {
+      function showToast(message, icon) {
         return simpanData(message, icon);
       }
     </script>

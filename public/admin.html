@@ -576,7 +576,9 @@
       function simpanData(message = "Data berhasil disimpan!", icon) {
         const alertIcon =
           icon ||
-          (/gagal|salah|tidak|minimal|isi |terlebih dahulu|saldo tidak|belum|ditutup/i.test(message)
+          (/gagal|salah|tidak|minimal|isi |lengkapi|wajib|harus|pilih|alasan|tekan edit|terlebih dahulu|saldo tidak|belum|ditutup|invalid|error/i.test(
+            message,
+          )
             ? "error"
             : "success");
         if (window.Swal) {
@@ -595,7 +597,7 @@
         clearTimeout(window._t);
         window._t = setTimeout(() => toastEl().classList.add("hidden"), 2200);
       }
-      function toast(message, icon = "success") {
+      function toast(message, icon) {
         return simpanData(message, icon);
       }
       const toastEl = () => document.getElementById("toast");
