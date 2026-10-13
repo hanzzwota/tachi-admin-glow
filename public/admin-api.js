@@ -82,7 +82,10 @@
           fee: Number(item.fee || 0),
         }))
       : [],
-    daily: { date: new Date().toISOString().slice(0, 10), count: 0 },
+    daily: {
+      date: new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10),
+      count: Number(settings?.daily_used || 0),
+    },
   });
   const wibDate = (value = Date.now()) =>
     new Date(new Date(value).getTime() + 7 * 3600e3).toISOString().slice(0, 10);

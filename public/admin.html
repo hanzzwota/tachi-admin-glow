@@ -928,7 +928,7 @@
         cRules.value = s.rulesText || "";
         cAutoStock.checked = !!s.autoStockEnabled;
         cStock.value = (s.gmailStock || []).join("\n");
-        dailyInfo.textContent = `Terpakai hari ini (${db.daily.date}): ${db.daily.count}/${s.dailyMax} Gmail • reset otomatis 00:00 WIB`;
+        dailyInfo.textContent = `Terpakai hari ini (${db.daily.date}): ${db.daily.count}/${s.dailyMax > 0 ? s.dailyMax : "tanpa batas"} Gmail • reset otomatis 00:00 WIB`;
       }
       function saveSettings(e) {
         e.preventDefault();
@@ -962,9 +962,9 @@
         uSaldo.textContent = rp(u.saldo);
         const lock = (t) =>
           `<div class="text-center py-6"><i class="fa fa-lock text-3xl text-red-400"></i><p class="font-bold text-red-500 mt-2">${t}</p></div>`;
-        const left = Math.max(0, s.dailyMax - db.daily.count);
+        const left = s.dailyMax > 0 ? Math.max(0, s.dailyMax - db.daily.count) : Infinity;
         uStor.innerHTML =
-          `<h3 class="font-bold mb-2">Stor Gmail <span class="text-xs text-slate-400">(${rp(s.rate)}/akun • maks ${s.limit}/transaksi • sisa kuota hari ini ${left})</span></h3>` +
+          `<h3 class="font-bold mb-2">Stor Gmail <span class="text-xs text-slate-400">(${rp(s.rate)}/akun • maks ${s.limit}/transaksi • sisa kuota hari ini ${left === Infinity ? "tanpa batas" : left})</span></h3>` +
           (!s.storOpen
             ? lock("Setoran Ditutup oleh Admin")
             : left <= 0
