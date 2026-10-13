@@ -85,8 +85,24 @@
     if (hour >= 15 && hour < 18) return "Selamat sore";
     return "Selamat malam";
   };
+  const displayNameFor = (user) =>
+    String(user?.displayName || "").trim() ||
+    String(user?.display_name || "").trim() ||
+    String(user?.username || "").trim() ||
+    "Pengguna";
+  const applyIdentityToDom = (user) => {
+    if (!user) return;
+    const displayName = displayNameFor(user);
+    const welcome = document.getElementById("welcomeGreeting");
+    if (welcome) welcome.textContent = `${greeting()}, ${displayName}`;
+    const profileName = document.getElementById("profileDisplayName");
+    if (profileName) profileName.textContent = displayName;
+    const profileUsername = document.getElementById("profileUsername");
+    if (profileUsername) profileUsername.textContent = `Username: @${user.username || ""}`;
+  };
   const applyUserDom = () => {
     const { user, settings } = state;
+    applyIdentityToDom(user);
     if (!user || !settings) return;
     ["dashboardBalance", "saldoBalance", "withdrawAvailableBalance", "profileBalance"].forEach(
       (id) => {
@@ -98,12 +114,6 @@
       const element = document.getElementById(id);
       if (element) element.textContent = `${format(settings.rate)} / Gmail`;
     });
-    const welcome = document.getElementById("welcomeGreeting");
-    if (welcome) welcome.textContent = `${greeting()}, ${user.displayName || user.username}`;
-    const profileName = document.getElementById("profileDisplayName");
-    if (profileName) profileName.textContent = user.displayName || user.username;
-    const profileUsername = document.getElementById("profileUsername");
-    if (profileUsername) profileUsername.textContent = `Username: @${user.username}`;
     const campaign = document.getElementById("requiredPasswordText");
     if (campaign) campaign.textContent = settings.campaign_password;
     const danaOnly = isDanaOnly();
@@ -295,14 +305,11 @@
     const incomingWallet = user.wallet || {};
     const previousWallet = previousUser?.wallet || {};
     const wallet = incomingWallet.number && incomingWallet.name ? incomingWallet : previousWallet;
-    const sameUser = previousUser?.username && previousUser.username === user.username;
     state.user = {
       ...previousUser,
       ...user,
-      username: sameUser ? previousUser.username : user.username,
-      displayName: sameUser
-        ? previousUser.displayName || user.displayName || user.username
-        : user.displayName || user.username,
+      username: user.username || previousUser?.username || "",
+      displayName: displayNameFor(user),
       wallet,
     };
     state.settings = {
@@ -490,6 +497,7 @@
       const { user } = await api("auth/me");
       const requestedView = new URLSearchParams(location.search).get("view");
       if (user) {
+        applyIdentityToDom(user);
         const availableViews = ["dashboard", "stor", "saldo", "profil", "riwayat"];
         const initialView = availableViews.includes(requestedView) ? requestedView : "dashboard";
         window.navigateTo?.(initialView);
