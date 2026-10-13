@@ -381,9 +381,17 @@ async function updateWallet(request: Request) {
       body: JSON.stringify({ wallet_bank: bank, wallet_name: name, wallet_number: number }),
     },
   );
-  if (!updated[0])
+  const saved =
+    updated[0] ??
+    (
+      await supabaseFetch<Record<string, unknown>[]>(
+        `profiles?id=eq.${encodeURIComponent(String(user.id))}&select=id,wallet_bank,wallet_name,wallet_number&limit=1`,
+      )
+    )[0];
+  if (!saved || saved.wallet_number !== number || saved.wallet_name !== name)
     return json({ error: "Data rekening gagal disimpan, silakan coba lagi" }, { status: 409 });
-  return json({ ok: true, wallet: updated[0] });
+  const freshUser = await getCurrentUser(request);
+  return json({ ok: true, wallet: saved, user: freshUser ? publicUser(freshUser) : undefined });
 }
 
 async function userWithdrawals(request: Request, admin = false) {

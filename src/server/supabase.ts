@@ -98,10 +98,18 @@ export async function getCurrentUser(request: Request) {
   const token = cookieValue(request);
   if (!token) return null;
   const tokenHash = await hashSession(token);
-  const rows = await supabaseFetch<Row[]>(
-    `sessions?select=profile_id,expires_at,profiles(id,username,display_name,role,balance,withdrawn,wallet_bank,wallet_name,wallet_number)&token_hash=eq.${encodeURIComponent(tokenHash)}&expires_at=gt.${encodeURIComponent(new Date().toISOString())}&limit=1`,
+  const sessions = await supabaseFetch<{ profile_id: string }[]>(
+    `sessions?select=profile_id&token_hash=eq.${encodeURIComponent(tokenHash)}&expires_at=gt.${encodeURIComponent(new Date().toISOString())}&limit=1`,
   );
-  return rows[0]?.profiles ? (rows[0].profiles as Row) : null;
+  const profileId = sessions[0]?.profile_id;
+  if (!profileId) return null;
+  const profiles = await supabaseFetch<Row[]>(
+    `profiles?select=id,username,display_name,role,balance,withdrawn,wallet_bank,wallet_name,wallet_number& id=eq.${encodeURIComponent(profileId)}`.replace(
+      "& id=",
+      "&id=",
+    ),
+  );
+  return profiles[0] ?? null;
 }
 
 export async function requireUser(request: Request) {

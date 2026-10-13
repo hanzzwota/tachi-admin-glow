@@ -54,7 +54,9 @@
     }
     const submit = document.getElementById("gmailListInput");
     if (submit) submit.disabled = settings.store_open === false;
-    const bank = user.wallet || {};
+    const incomingWallet = user.wallet || {};
+    const previousWallet = state.user?.wallet || {};
+    const bank = incomingWallet.number || incomingWallet.name ? incomingWallet : previousWallet;
     window.syncUserBankDataFromApi?.(bank);
     const bankInput = document.getElementById("rekeningInput");
     if (bankInput && document.activeElement !== bankInput) bankInput.value = bank.number || "";
@@ -333,6 +335,7 @@
           number: result.wallet.wallet_number || number,
         };
       }
+      if (result.user) state.user = result.user;
       await syncAppData();
       window.setPaymentEditMode?.(false);
       toast("Data rekening berhasil disimpan");
