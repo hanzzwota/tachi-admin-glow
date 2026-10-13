@@ -689,7 +689,7 @@
                     <i class="fa-solid fa-circle-info"></i>
                 </div>
                 <p class="text-xs text-sky-900 font-bold leading-relaxed">
-                    Generate mati: setor Gmail apa saja, password tetap password kampanye.
+                    Generate mati: setor Gmail apa saja, gunakan Password Wajib.
                 </p>
             </div>
 
@@ -718,7 +718,7 @@
                     <div class="w-8 h-8 rounded-xl icon-soft-box flex items-center justify-center text-white text-sm shrink-0">
                         <i class="fa-solid fa-key"></i>
                     </div>
-                    <h3 class="text-xs font-extrabold text-slate-800">Password wajib untuk Gmail yang disetor</h3>
+                    <h3 class="text-xs font-extrabold text-slate-800">Password Wajib untuk Gmail yang disetor</h3>
                 </div>
 
                 <div class="custom-input rounded-xl px-3.5 py-2 flex items-center justify-between mt-1">
@@ -1418,7 +1418,7 @@
             document.getElementById('new-password').value = '';
         }
 
-        // Password kampanye selalu mengikuti pengaturan admin terbaru.
+        // Password Wajib selalu mengikuti pengaturan admin terbaru.
         function copyCampaignPassword() {
             const data = typeof db === 'function' ? db() : null;
             copyToClipboard(data?.settings?.campaignPass || '');

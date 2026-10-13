@@ -83,7 +83,7 @@ Buatkan aplikasi Dashboard Admin berbasis Web (Single Page Application / Full-St
 
   - Input Minimal Tarik Saldo (Default: Rp4.000).
 
-  - Input Password Kampanye Wajib (Default: `sgsg1122`).
+  - Input Password Wajib (Default: `sgsg1122`).
 
   - Input Limit Maksimal Akun per Transaksi (Default: 1 akun).
 

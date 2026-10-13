@@ -100,7 +100,7 @@ input,select,textarea{outline:none}
         <label class="block text-xs font-semibold text-slate-500">Rate Setoran per Gmail (Rp)<input id="cRate" type="number" min="0" class="inp mt-1"></label>
         <label class="block text-xs font-semibold text-slate-500">Minimal Tarik Saldo (Rp)<input id="cMin" type="number" min="0" class="inp mt-1"></label>
         <label class="block text-xs font-semibold text-slate-500">Fee Admin Penarikan (Rp)<input id="cFee" type="number" min="0" class="inp mt-1"></label>
-        <label class="block text-xs font-semibold text-slate-500">Password Kampanye Wajib<input id="cPass" class="inp mt-1" maxlength="50"></label>
+        <label class="block text-xs font-semibold text-slate-500">Password Wajib<input id="cPass" class="inp mt-1" maxlength="50"></label>
         <label class="block text-xs font-semibold text-slate-500">Limit Maks Akun per Transaksi (1–50)<input id="cLimit" type="number" min="1" max="50" class="inp mt-1"></label>
         <label class="block text-xs font-semibold text-slate-500">Max Setor Hari Ini (total Gmail, reset 00:00 WIB)<input id="cDaily" type="number" min="0" class="inp mt-1"></label>
         <label class="flex items-center gap-3 text-xs font-semibold text-slate-500"><input id="cAutoStock" type="checkbox" class="w-4 h-4 accent-blue-600"> Aktifkan Generate Gmail otomatis</label>
@@ -271,7 +271,7 @@ function renderSettings(){const s=db.settings;
 }
 function saveSettings(e){e.preventDefault();const lim=parseInt(cLimit.value);
   if(!(lim>=1&&lim<=50))return toast('Limit per transaksi harus 1–50');
-  if(!cPass.value.trim())return toast('Password kampanye wajib diisi');
+  if(!cPass.value.trim())return toast('Password wajib harus diisi');
   Object.assign(db.settings,{rate:Math.max(0,+cRate.value),minTarik:Math.max(0,+cMin.value),fee:Math.max(0,+cFee.value),campaignPass:cPass.value.trim(),limit:lim,dailyMax:Math.max(0,+cDaily.value),announcement:cAnn.value.trim()});
   document.activeElement?.blur();save();toast('Konfigurasi disimpan')}
 
@@ -284,7 +284,7 @@ function renderUser(){if(!userMode)return;const s=db.settings;
   uStor.innerHTML=`<h3 class="font-bold mb-2">Stor Gmail <span class="text-xs text-slate-400">(${rp(s.rate)}/akun • maks ${s.limit}/transaksi • sisa kuota hari ini ${left})</span></h3>`+
    (!s.storOpen?lock('Setoran Ditutup oleh Admin'):left<=0?lock('Kuota setoran hari ini habis (reset 00:00 WIB)'):
    `<textarea id="uEm" rows="5" class="inp font-mono text-xs" placeholder="satu email per baris"></textarea>
-    <input id="uCp" class="inp mt-2" placeholder="Password kampanye"><button onclick="uSubmit()" class="btn-p w-full py-3 rounded-xl mt-2 font-bold">Kirim Setoran</button>`);
+    <input id="uCp" class="inp mt-2" placeholder="Password wajib"><button onclick="uSubmit()" class="btn-p w-full py-3 rounded-xl mt-2 font-bold">Kirim Setoran</button>`);
   uTarik.innerHTML=`<h3 class="font-bold mb-2">Tarik Saldo <span class="text-xs text-slate-400">(min ${rp(s.minTarik)} • DANA ${esc(u.wallet.dana)})</span></h3>`+
    (!s.tarikOpen?lock('Penarikan Ditutup'):`<input id="uAmt" type="number" class="inp" placeholder="Nominal"><button onclick="uTarikDo()" class="btn-p w-full py-3 rounded-xl mt-2 font-bold">Ajukan Penarikan</button>`);
   uRiwayat.innerHTML=db.setoran.filter(x=>x.user===u.username).sort((a,b)=>b.date-a.date).map(x=>`<div class="p-3 rounded-xl bg-white border border-blue-50 text-sm"><div class="flex justify-between"><span class="font-mono text-xs">${x.id}</span>${badge(x.status)}</div>
@@ -298,7 +298,7 @@ function uSubmit(){const s=db.settings;resetDaily();
   const bad=em.find(x=>!/^[a-z0-9._%+-]{1,64}@gmail\.com$/.test(x));if(bad)return toast('Format tidak valid: '+bad);
   const max=Math.min(50,s.limit);if(em.length>max)return toast('Maksimal '+max+' akun per transaksi');
   if(db.daily.count+em.length>s.dailyMax)return toast('Melebihi kuota harian');
-  if(uCp.value.trim()!==s.campaignPass)return toast('Password kampanye salah');
+  if(uCp.value.trim()!==s.campaignPass)return toast('Password wajib salah');
   db.setoran.push({id:uid('STR'),date:Date.now(),user:uSel.value,emails:em,status:'pending'});db.daily.count+=em.length;save();toast('Setoran terkirim ke antrean admin')}
 function uTarikDo(){const s=db.settings,u=db.users.find(x=>x.username===uSel.value);const a=parseInt(uAmt.value);
   if(!(a>=s.minTarik))return toast('Minimal '+rp(s.minTarik));if(a>u.saldo)return toast('Saldo tidak cukup');

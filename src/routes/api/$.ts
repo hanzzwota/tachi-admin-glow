@@ -170,7 +170,7 @@ async function createDeposit(request: Request) {
   if (!settings?.store_open)
     return json({ error: "Setoran sedang ditutup oleh admin" }, { status: 423 });
   if (text(payload.campaignPassword) !== String(settings.campaign_password))
-    return json({ error: "Password kampanye salah" }, { status: 403 });
+    return json({ error: "Password wajib salah" }, { status: 403 });
   if (emails.length > Number(settings.batch_limit))
     return json({ error: `Maksimal ${settings.batch_limit} Gmail per transaksi` }, { status: 400 });
   const rows = await supabaseFetch<Record<string, unknown>[]>("deposits", {
