@@ -294,12 +294,7 @@
   };
   window.renderRiwayat = renderHistory;
   async function syncAppData() {
-    const [{ user }, { settings }, { deposits }, { withdrawals }] = await Promise.all([
-      api("auth/me"),
-      api("settings"),
-      api("deposits"),
-      api("withdrawals"),
-    ]);
+    const { user } = await api("auth/me");
     if (!user) return null;
     const previousUser = state.user;
     const incomingWallet = user.wallet || {};
@@ -312,15 +307,38 @@
       displayName: displayNameFor(user),
       wallet,
     };
-    state.settings = {
-      ...(settings || {}),
-      payment_fees: normalizePaymentFees(settings?.payment_fees, Number(settings?.fee || 0)),
-    };
-    state.deposits = Array.isArray(deposits) ? deposits : [];
-    state.withdrawals = Array.isArray(withdrawals) ? withdrawals : [];
     applyUserDom();
-    renderHistory();
-    renderWithdrawals();
+    const [settingsResult, depositsResult, withdrawalsResult] = await Promise.allSettled([
+      api("settings"),
+      api("deposits"),
+      api("withdrawals"),
+    ]);
+    if (settingsResult.status === "fulfilled") {
+      const settings = settingsResult.value.settings || {};
+      state.settings = {
+        ...settings,
+        payment_fees: normalizePaymentFees(settings.payment_fees, Number(settings.fee || 0)),
+      };
+    } else {
+      console.warn("Gagal memuat pengaturan aplikasi:", settingsResult.reason);
+    }
+    if (depositsResult.status === "fulfilled") {
+      state.deposits = Array.isArray(depositsResult.value.deposits)
+        ? depositsResult.value.deposits
+        : [];
+      renderHistory();
+    } else {
+      console.warn("Gagal memuat riwayat setoran:", depositsResult.reason);
+    }
+    if (withdrawalsResult.status === "fulfilled") {
+      state.withdrawals = Array.isArray(withdrawalsResult.value.withdrawals)
+        ? withdrawalsResult.value.withdrawals
+        : [];
+      renderWithdrawals();
+    } else {
+      console.warn("Gagal memuat riwayat penarikan:", withdrawalsResult.reason);
+    }
+    applyUserDom();
     window.updateSlide?.();
     return state;
   }
