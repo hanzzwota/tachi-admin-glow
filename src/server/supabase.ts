@@ -136,9 +136,52 @@ export function clearSessionCookie() {
   return sessionCookie("", 0);
 }
 
+export function defaultSettingsRow(): Record<string, unknown> {
+  return {
+    id: 1,
+    rate: 4500,
+    min_withdrawal: 4000,
+    fee: 0,
+    payment_fees: { DANA: 0, OVO: 0, GoPay: 0, ShopeePay: 0, BCA: 0, BRI: 0, Mandiri: 0 },
+    campaign_password: "",
+    store_open: true,
+    withdraw_open: true,
+    checker_open: true,
+    daily_limit: 0,
+    batch_limit: 1,
+    announcement: "",
+    rules_text: "",
+    payment_mode: "all",
+    support_channels: {
+      admins: [
+        { name: "Admin 1", whatsapp: "", telegram: "", enabled: true },
+        { name: "Admin 2", whatsapp: "", telegram: "", enabled: true },
+      ],
+    },
+    auto_stock_enabled: false,
+    gmail_stock: [],
+  };
+}
+
 export async function getSettings() {
   const rows = await supabaseFetch<Row[]>("app_settings?select=*&id=eq.1&limit=1");
-  return rows[0] ?? null;
+  if (rows && rows[0]) return rows[0];
+
+  const defaultSettings = defaultSettingsRow();
+  try {
+    const created = await supabaseFetch<Row[]>("app_settings?on_conflict=id", {
+      method: "POST",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify(defaultSettings),
+    });
+    return created && created[0] ? created[0] : defaultSettings;
+  } catch (error) {
+    console.warn(
+      "getSettings: failed to initialize app_settings row; falling back to in-memory defaults:",
+      error instanceof Error ? error.message : error,
+    );
+    return defaultSettings;
+  }
 }
 
 export function json(data: unknown, init: ResponseInit = {}) {
@@ -152,4 +195,24 @@ export function errorResponse(error: unknown) {
   console.error(error);
   const message = error instanceof Error ? error.message : "Terjadi kesalahan server";
   return json({ error: message }, { status: 500 });
+}
+
+export async function ensureSettingsRow() {
+  const current = await getSettings();
+  if (current) return current;
+  const defaultSettings = defaultSettingsRow();
+  try {
+    const created = await supabaseFetch<Row[]>("app_settings?on_conflict=id", {
+      method: "POST",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify(defaultSettings),
+    });
+    return created && created[0] ? created[0] : defaultSettings;
+  } catch (error) {
+    console.warn(
+      "ensureSettingsRow: unable to create app_settings row:",
+      error instanceof Error ? error.message : error,
+    );
+    return defaultSettings;
+  }
 }
