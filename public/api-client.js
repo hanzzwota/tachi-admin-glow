@@ -39,6 +39,13 @@
       }),
     );
   };
+  const feeFor = (fees, method, fallback = 0) => {
+    const key = paymentKey(method || "DANA");
+    const entry = Object.entries(fees || {}).find(([name]) => paymentKey(name) === key);
+    return Math.max(0, Number(entry?.[1] ?? fallback));
+  };
+  const minimumFor = (method, configured = 4000) =>
+    String(method || "DANA") === "DANA" ? Math.max(4000, configured) : Math.max(15000, configured);
   const escapeHtml = (value) =>
     String(value ?? "").replace(
       /[&<>"']/g,

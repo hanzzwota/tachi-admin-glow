@@ -512,6 +512,8 @@ async function createWithdrawal(request: Request) {
   );
   if (!updatedProfiles.length)
     return json({ error: "Saldo berubah, silakan muat ulang lalu coba lagi" }, { status: 409 });
+  let rows: Record<string, unknown>[];
+  try {
   const rows = await supabaseFetch<Record<string, unknown>[]>("withdrawals", {
     method: "POST",
     headers: { Prefer: "return=representation" },
@@ -525,6 +527,15 @@ async function createWithdrawal(request: Request) {
       status: "pending",
     }),
   });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes("PGRST204") && !message.includes("400")) throw error;
+    rows = await supabaseFetch<Record<string, unknown>[]>("withdrawals", {
+      method: "POST",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify({ user_id: user.id, amount, fee, status: "pending" }),
+    });
+  }
   return json({ withdrawal: rows[0] }, { status: 201 });
 }
 

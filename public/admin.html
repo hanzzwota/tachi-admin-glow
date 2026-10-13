@@ -958,6 +958,7 @@
         supportTelegram2.value = s.supportChannels?.telegram?.[1] || "";
         cAutoStock.checked = !!s.autoStockEnabled;
         cStock.value = (s.gmailStock || []).join("\n");
+        dailyInfo.className = "text-xs text-slate-500";
         dailyInfo.textContent = `Terpakai hari ini (${db.daily.date}): ${db.daily.count}/${s.dailyMax > 0 ? s.dailyMax : "tanpa batas"} Gmail • reset otomatis 00:00 WIB`;
       }
       function saveSettings(e) {
@@ -1044,7 +1045,8 @@
         if (bad) return toast("Format tidak valid: " + bad);
         const max = Math.min(50, s.limit);
         if (em.length > max) return toast("Maksimal " + max + " akun per transaksi");
-        if (db.daily.count + em.length > s.dailyMax) return toast("Melebihi kuota harian");
+        if (s.dailyMax > 0 && db.daily.count + em.length > s.dailyMax)
+          return toast("Melebihi kuota harian");
         if (uCp.value.trim() !== s.campaignPass) return toast("Password wajib salah");
         db.setoran.push({
           id: uid("STR"),
