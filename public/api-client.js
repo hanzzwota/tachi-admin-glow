@@ -490,6 +490,9 @@
       const { user } = await api("auth/me");
       const requestedView = new URLSearchParams(location.search).get("view");
       if (user) {
+        const availableViews = ["dashboard", "stor", "saldo", "profil", "riwayat"];
+        const initialView = availableViews.includes(requestedView) ? requestedView : "dashboard";
+        window.navigateTo?.(initialView);
         await syncAppData();
         window.setInterval(() => {
           if (document.visibilityState === "visible") syncAppData().catch(() => {});
@@ -500,8 +503,6 @@
         document.addEventListener("visibilitychange", refreshWhenVisible);
         window.addEventListener("focus", refreshWhenVisible);
         window.addEventListener("pageshow", refreshWhenVisible);
-        if (requestedView && !["login", "register"].includes(requestedView))
-          setTimeout(() => window.navigateTo?.(requestedView), 0);
       } else if (!["login", "register"].includes(requestedView || "login"))
         window.navigateTo?.("login");
     } catch (error) {
