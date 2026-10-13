@@ -135,9 +135,9 @@ function publicUser(user: Record<string, unknown>) {
     balance: Number(user.balance ?? 0),
     withdrawn: Number(user.withdrawn ?? 0),
     wallet: {
-      bank: user.wallet_bank ?? "DANA",
-      name: user.wallet_name ?? "",
-      number: user.wallet_number ?? "",
+      bank: text(user.wallet_bank) || "DANA",
+      name: text(user.wallet_name),
+      number: text(user.wallet_number),
     },
   };
 }
@@ -371,7 +371,8 @@ async function updateWallet(request: Request) {
   const bank = text(payload.bank) || "DANA";
   const name = text(payload.name).slice(0, 100);
   const number = text(payload.number);
-  if (!name || !/^[0-9]{8,16}$/.test(number))
+  const supportedBanks = new Set(["DANA", "OVO", "GoPay", "ShopeePay", "BCA", "BRI", "Mandiri"]);
+  if (!supportedBanks.has(bank) || !name || !/^[0-9]{8,16}$/.test(number))
     return json({ error: "Nomor wallet 8-16 digit dan nama wajib diisi" }, { status: 400 });
   const updated = await supabaseFetch<Record<string, unknown>[]>(
     `profiles?id=eq.${encodeURIComponent(String(user.id))}&select=id,wallet_bank,wallet_name,wallet_number`,
@@ -430,14 +431,16 @@ async function createWithdrawal(request: Request) {
     return json({ error: "Isi data rekening terlebih dahulu" }, { status: 400 });
   if (payload.confirmWallet !== true)
     return json({ error: "Konfirmasi nomor payment terlebih dahulu" }, { status: 400 });
-  await supabaseFetch(
+  const updatedProfiles = await supabaseFetch<Record<string, unknown>[]>(
     `profiles?id=eq.${encodeURIComponent(String(user.id))}&balance=eq.${encodeURIComponent(String(balance))}`,
     {
       method: "PATCH",
-      headers: { Prefer: "return=minimal" },
+      headers: { Prefer: "return=representation" },
       body: JSON.stringify({ balance: balance - amount - fee }),
     },
   );
+  if (!updatedProfiles.length)
+    return json({ error: "Saldo berubah, silakan muat ulang lalu coba lagi" }, { status: 409 });
   const rows = await supabaseFetch<Record<string, unknown>[]>("withdrawals", {
     method: "POST",
     headers: { Prefer: "return=representation" },
@@ -445,6 +448,7 @@ async function createWithdrawal(request: Request) {
       user_id: user.id,
       amount,
       fee,
+      wallet_bank: user.wallet_bank || "DANA",
       wallet_name: user.wallet_name,
       wallet_number: user.wallet_number,
       status: "pending",

@@ -11,6 +11,12 @@
   };
   const toast = (message) => window.showToast?.(message);
   const format = (value) => `Rp${Number(value || 0).toLocaleString("id-ID")}`;
+  const escapeHtml = (value) =>
+    String(value ?? "").replace(
+      /[&<>"']/g,
+      (character) =>
+        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character],
+    );
   const state = { user: null, settings: null, deposits: [], withdrawals: [] };
   window.tachiApiState = state;
   const syncAdminProfileAction = (user) => {
@@ -56,7 +62,7 @@
     if (submit) submit.disabled = settings.store_open === false;
     const incomingWallet = user.wallet || {};
     const previousWallet = state.user?.wallet || {};
-    const bank = incomingWallet.number || incomingWallet.name ? incomingWallet : previousWallet;
+    const bank = incomingWallet.number && incomingWallet.name ? incomingWallet : previousWallet;
     window.syncUserBankDataFromApi?.(bank);
     const bankInput = document.getElementById("rekeningInput");
     if (bankInput && document.activeElement !== bankInput) bankInput.value = bank.number || "";
@@ -80,7 +86,14 @@
     const dashboardWithdrawLabel = document.getElementById("btnTarikSaldoText");
     const saldoWithdrawLabel = document.getElementById("withdrawButtonLabel");
     if (dashboardWithdrawLabel)
-      dashboardWithdrawLabel.textContent = readyForWithdrawal ? "Tarik Sekarang" : "Tarik Saldo";
+      dashboardWithdrawLabel.textContent = readyForWithdrawal
+        ? "Tarik Sekarang"
+        : "Isi Terlebih Dahulu";
+    const saldoTopWithdrawLabel = document.getElementById("saldoTopWithdrawLabel");
+    if (saldoTopWithdrawLabel)
+      saldoTopWithdrawLabel.textContent = readyForWithdrawal
+        ? "Tarik Sekarang"
+        : "Isi Terlebih Dahulu";
     if (saldoWithdrawLabel)
       saldoWithdrawLabel.textContent = readyForWithdrawal
         ? "Tarik Sekarang"
@@ -231,7 +244,11 @@
       api("withdrawals"),
     ]);
     if (!user) return null;
-    state.user = user;
+    const previousUser = state.user;
+    const incomingWallet = user.wallet || {};
+    const previousWallet = previousUser?.wallet || {};
+    const wallet = incomingWallet.number && incomingWallet.name ? incomingWallet : previousWallet;
+    state.user = { ...previousUser, ...user, wallet };
     state.settings = settings || {};
     state.deposits = Array.isArray(deposits) ? deposits : [];
     state.withdrawals = Array.isArray(withdrawals) ? withdrawals : [];
@@ -323,6 +340,10 @@
     const bank = document.getElementById("bankSelect")?.value || "DANA";
     const name = document.getElementById("atasNamaInput")?.value.trim() || "";
     const number = document.getElementById("rekeningInput")?.value.trim() || "";
+    if (!name || !/^[0-9]{8,16}$/.test(number)) {
+      toast("Nama wajib diisi dan nomor harus 8-16 digit angka");
+      return;
+    }
     try {
       const result = await api("wallet", {
         method: "PATCH",
@@ -338,7 +359,7 @@
       if (result.user) state.user = result.user;
       await syncAppData();
       window.setPaymentEditMode?.(false);
-      toast("Data rekening berhasil disimpan");
+      toast("Data payment berhasil disimpan");
     } catch (error) {
       toast(error.message);
     }
@@ -351,22 +372,44 @@
       toast("Isi rekening di Profil terlebih dahulu");
       return;
     }
-    const confirmed = window.confirm(
-      `Pastikan nomor ${bank} ini benar:\n\n${number}\n\nJika Nomor Salah/Tidak Sesuai Dengan Nomor Payment Anda Admin Tidak Berhak Bertanggung Jawab.\n\nLanjut tarik saldo?`,
-    );
-    if (!confirmed) return;
     const amount = Number(document.getElementById("withdrawalAmountInput")?.value);
-    try {
-      await api("withdrawals", {
-        method: "POST",
-        body: JSON.stringify({ amount, confirmWallet: true }),
-      });
-      document.getElementById("withdrawalAmountInput").value = "";
-      await syncAppData();
-      toast("Permintaan penarikan diproses");
-    } catch (error) {
-      toast(error.message);
+    const paymentFees =
+      state.settings?.payment_fees && typeof state.settings.payment_fees === "object"
+        ? state.settings.payment_fees
+        : {};
+    const fee = Math.max(0, Number(paymentFees[bank] ?? state.settings?.fee ?? 0));
+    const balance = Number(state.user?.balance || 0);
+    if (!Number.isFinite(amount) || amount < Number(state.settings?.min_withdrawal || 0)) {
+      toast(`Minimal penarikan ${format(Number(state.settings?.min_withdrawal || 0))}`);
+      return;
     }
+    if (amount + fee > balance) {
+      toast("Saldo tidak cukup untuk nominal dan fee");
+      return;
+    }
+    const modalBody = document.getElementById("modalBody");
+    const modalTitle = document.getElementById("modalTitle");
+    const modal = document.getElementById("appModal");
+    if (!modalBody || !modalTitle || !modal) return;
+    modalTitle.textContent = "Konfirmasi Tarik";
+    modalBody.innerHTML = `<div class="space-y-2 text-xs"><div class="flex justify-between"><span>Metode payment</span><b>${escapeHtml(bank)}</b></div><div class="flex justify-between"><span>Nomor payment</span><b>${escapeHtml(number)}</b></div><div class="flex justify-between"><span>Nama pemilik</span><b>${escapeHtml(wallet.name)}</b></div><div class="flex justify-between"><span>Nominal penarikan</span><b>${format(amount)}</b></div><div class="flex justify-between"><span>Fee payment</span><b>${format(fee)}</b></div><div class="flex justify-between border-t pt-2"><span>Total saldo terpotong</span><b>${format(amount + fee)}</b></div><div class="flex justify-between"><span>Saldo bersih diterima</span><b>${format(amount)}</b></div><div class="rounded-xl bg-slate-100 p-3 text-slate-600">Pastikan nomor payment sudah benar. Jika Nomor Salah/Tidak Sesuai Dengan Nomor Payment Anda Admin Tidak Berhak Bertanggung Jawab.</div><div class="flex gap-2 pt-2"><button type="button" class="flex-1 rounded-xl border border-slate-200 px-3 py-2 font-bold" onclick="closeModal()">Kembali/Edit Nomor</button><button type="button" class="flex-1 rounded-xl bg-blue-600 px-3 py-2 font-bold text-white" id="confirmWithdrawalButton">Konfirmasi Tarik</button></div></div>`;
+    modal.classList.remove("hidden");
+    document.getElementById("confirmWithdrawalButton")?.addEventListener("click", async () => {
+      const button = document.getElementById("confirmWithdrawalButton");
+      if (button) button.disabled = true;
+      closeModal();
+      try {
+        await api("withdrawals", {
+          method: "POST",
+          body: JSON.stringify({ amount, confirmWallet: true }),
+        });
+        document.getElementById("withdrawalAmountInput").value = "";
+        await syncAppData();
+        toast("Permintaan penarikan diproses");
+      } catch (error) {
+        toast(error.message);
+      }
+    });
   };
   window.updatePassword = () => toast("Perubahan kata sandi belum tersedia pada backend");
   window.logout = async () => {
