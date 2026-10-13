@@ -314,6 +314,10 @@
     }
   };
   window.saveBankDetails = async () => {
+    if (document.getElementById("savePaymentButton")?.disabled) {
+      toast("Tekan Edit Nomor terlebih dahulu");
+      return;
+    }
     const bank = document.getElementById("bankSelect")?.value || "DANA";
     const name = document.getElementById("atasNamaInput")?.value.trim() || "";
     const number = document.getElementById("rekeningInput")?.value.trim() || "";
@@ -330,6 +334,7 @@
         };
       }
       await syncAppData();
+      window.setPaymentEditMode?.(false);
       toast("Data rekening berhasil disimpan");
     } catch (error) {
       toast(error.message);

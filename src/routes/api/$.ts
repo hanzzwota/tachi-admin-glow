@@ -310,11 +310,22 @@ async function updateSettings(request: Request) {
     auto_stock_enabled: Boolean(payload.autoStockEnabled),
     gmail_stock: stock,
   };
-  await supabaseFetch("app_settings?id=eq.1", {
-    method: "PATCH",
-    headers: { Prefer: "return=representation" },
-    body: JSON.stringify(allowed),
-  });
+  try {
+    await supabaseFetch("app_settings?id=eq.1", {
+      method: "PATCH",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify(allowed),
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes("payment_fees") && !message.includes("PGRST204")) throw error;
+    const { payment_fees: _paymentFees, ...legacyAllowed } = allowed;
+    await supabaseFetch("app_settings?id=eq.1", {
+      method: "PATCH",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify(legacyAllowed),
+    });
+  }
   return json({ settings: await getSettings() });
 }
 

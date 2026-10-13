@@ -1487,6 +1487,14 @@
               <h3 class="text-xs font-extrabold text-slate-800">Rekening Penarikan Dana</h3>
               <p class="text-[11px] text-slate-500 font-medium">Dipakai saat menarik saldo</p>
             </div>
+            <button
+              id="editPaymentButton"
+              type="button"
+              onclick="setPaymentEditMode(true)"
+              class="ml-auto rounded-xl bg-blue-50 px-3 py-2 text-[11px] font-extrabold text-blue-600"
+            >
+              <i class="fa-solid fa-pen mr-1"></i>Edit Nomor
+            </button>
           </div>
 
           <div>
@@ -1496,7 +1504,8 @@
             <div class="custom-input rounded-xl px-3.5 py-2.5 flex items-center">
               <select
                 id="bankSelect"
-                class="bg-transparent text-xs text-slate-800 font-bold focus:outline-none w-full"
+                disabled
+                class="bg-transparent text-xs text-slate-800 font-bold focus:outline-none w-full disabled:opacity-60"
               >
                 <option value="DANA" selected>DANA</option>
                 <option value="OVO">OVO</option>
@@ -1518,6 +1527,7 @@
               <input
                 id="rekeningInput"
                 type="text"
+                readonly
                 placeholder="081234567890"
                 oninput="
                   syncUserBankDataFromInputs();
@@ -1537,6 +1547,7 @@
               <input
                 id="atasNamaInput"
                 type="text"
+                readonly
                 placeholder="Sesuai buku tabungan"
                 oninput="
                   syncUserBankDataFromInputs();
@@ -1548,8 +1559,10 @@
           </div>
 
           <button
+            id="savePaymentButton"
+            disabled
             onclick="saveBankDetails()"
-            class="btn-glossy w-full text-white font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-2 mt-1 active:scale-98 transition-transform"
+            class="btn-glossy w-full text-white font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-2 mt-1 active:scale-98 transition-transform opacity-50 cursor-not-allowed"
           >
             <i class="fa-solid fa-check"></i>
             <span>Simpan Data Rekening</span>
@@ -1759,6 +1772,25 @@
 
       // Data rekening aktif untuk sesi pengguna.
       let userBankData = { bank: "", rekening: "", nama: "" };
+      let paymentEditMode = false;
+      function setPaymentEditMode(enabled) {
+        paymentEditMode = Boolean(enabled);
+        const bank = document.getElementById("bankSelect");
+        const number = document.getElementById("rekeningInput");
+        const name = document.getElementById("atasNamaInput");
+        const edit = document.getElementById("editPaymentButton");
+        const save = document.getElementById("savePaymentButton");
+        if (bank) bank.disabled = !paymentEditMode;
+        if (number) number.readOnly = !paymentEditMode;
+        if (name) name.readOnly = !paymentEditMode;
+        if (edit) edit.classList.toggle("hidden", paymentEditMode);
+        if (save) {
+          save.disabled = !paymentEditMode;
+          save.classList.toggle("opacity-50", !paymentEditMode);
+          save.classList.toggle("cursor-not-allowed", !paymentEditMode);
+        }
+      }
+      window.setPaymentEditMode = setPaymentEditMode;
 
       // Rate dinamis: ubah satu nilai ini saat harga Gmail diperbarui admin.
       function getGmailRate() {
