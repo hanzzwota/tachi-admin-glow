@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>tachi69gmail - Platform Setor & Jual Beli Gmail</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons CDN -->
@@ -2127,16 +2128,33 @@
       }
 
       // Notification Toast Handler
-      function showToast(message) {
+      function simpanData(message = "Data berhasil disimpan!", icon) {
+        const alertIcon =
+          icon ||
+          (/gagal|salah|tidak|minimal|isi |terlebih dahulu|saldo tidak|belum|ditutup/i.test(message)
+            ? "error"
+            : "success");
+        if (window.Swal) {
+          return Swal.fire({
+            toast: true,
+            position: "top-end",
+            icon: alertIcon,
+            title: message,
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+          });
+        }
         const toast = document.getElementById("toast");
         const toastMsg = document.getElementById("toastMsg");
         if (toast && toastMsg) {
           toastMsg.innerText = message;
           toast.classList.remove("opacity-0");
-          setTimeout(() => {
-            toast.classList.add("opacity-0");
-          }, 2500);
+          setTimeout(() => toast.classList.add("opacity-0"), 2500);
         }
+      }
+      function showToast(message, icon = "success") {
+        return simpanData(message, icon);
       }
     </script>
     <script>

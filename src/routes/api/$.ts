@@ -332,6 +332,17 @@ async function updateSettings(request: Request) {
 function userSettings(settings: Record<string, unknown> | null) {
   if (!settings) return null;
   const { gmail_stock: _gmailStock, ...safeSettings } = settings;
+  const fallbackFee = Math.max(0, Number(safeSettings.fee ?? 0));
+  const configuredFees =
+    safeSettings.payment_fees && typeof safeSettings.payment_fees === "object"
+      ? (safeSettings.payment_fees as Record<string, unknown>)
+      : {};
+  safeSettings.payment_fees = Object.fromEntries(
+    ["DANA", "OVO", "GoPay", "ShopeePay", "BCA", "BRI", "Mandiri"].map((method) => [
+      method,
+      Math.max(0, Number(configuredFees[method] ?? fallbackFee)),
+    ]),
+  );
   return safeSettings;
 }
 
@@ -536,8 +547,10 @@ async function handler(request: Request, path: string) {
   if (request.method === "POST" && path === "auth/login") return login(request);
   if (request.method === "POST" && path === "auth/register") return register(request);
   if (request.method === "POST" && path === "auth/logout") return logout();
-  if (request.method === "GET" && path === "auth/me")
-    return json({ user: await getCurrentUser(request) });
+  if (request.method === "GET" && path === "auth/me") {
+    const user = await getCurrentUser(request);
+    return json({ user: user ? publicUser(user) : null });
+  }
   if (request.method === "GET" && path === "settings") {
     const user = await requireUser(request);
     const settings = await getSettings();

@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>tachi69gmail Admin Console</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link
       rel="stylesheet"
@@ -522,11 +523,30 @@
       const userModeEl = () => document.getElementById("userMode");
 
       // UI helpers
-      function toast(m) {
-        toastEl().textContent = m;
+      function simpanData(message = "Data berhasil disimpan!", icon) {
+        const alertIcon =
+          icon ||
+          (/gagal|salah|tidak|minimal|isi |terlebih dahulu|saldo tidak|belum|ditutup/i.test(message)
+            ? "error"
+            : "success");
+        if (window.Swal) {
+          return Swal.fire({
+            toast: true,
+            position: "top-end",
+            icon: alertIcon,
+            title: message,
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+          });
+        }
+        toastEl().textContent = message;
         toastEl().classList.remove("hidden");
         clearTimeout(window._t);
         window._t = setTimeout(() => toastEl().classList.add("hidden"), 2200);
+      }
+      function toast(message, icon = "success") {
+        return simpanData(message, icon);
       }
       const toastEl = () => document.getElementById("toast");
       function openModal(t, b) {

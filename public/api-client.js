@@ -278,7 +278,7 @@
       toast(isRegister ? "Akun berhasil dibuat" : "Login berhasil");
       setTimeout(() => window.navigateTo?.("dashboard"), 250);
     } catch (error) {
-      toast(error.message);
+      toast(error.message, "error");
     }
   };
   window.openChecker = () => {
@@ -308,7 +308,7 @@
       toast("Setoran Gmail berhasil dikirim dan menunggu validasi admin");
       setTimeout(() => window.navigateTo?.("riwayat"), 300);
     } catch (error) {
-      toast(error.message);
+      toast(error.message, "error");
     }
   };
   window.copyCampaignPassword = async () => {
@@ -316,7 +316,7 @@
       await navigator.clipboard.writeText(state.settings?.campaign_password || "");
       toast("Password berhasil disalin");
     } catch (error) {
-      toast(error.message);
+      toast(error.message, "error");
     }
   };
   window.generateStockGmail = async () => {
@@ -329,7 +329,7 @@
       }
       toast(`Gmail stok berhasil ditambahkan: ${gmail}`);
     } catch (error) {
-      toast(error.message);
+      toast(error.message, "error");
     }
   };
   window.saveBankDetails = async () => {
@@ -361,7 +361,7 @@
       window.setPaymentEditMode?.(false);
       toast("Data payment berhasil disimpan");
     } catch (error) {
-      toast(error.message);
+      toast(error.message, "error");
     }
   };
   window.handleTarikSaldo = async () => {
@@ -407,7 +407,7 @@
         await syncAppData();
         toast("Permintaan penarikan diproses");
       } catch (error) {
-        toast(error.message);
+        toast(error.message, "error");
       }
     });
   };

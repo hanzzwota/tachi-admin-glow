@@ -15,10 +15,12 @@
       rate: Number(settings?.rate || 0),
       minTarik: Number(settings?.min_withdrawal || 0),
       fee: Number(settings?.fee || 0),
-      paymentFees:
-        settings?.payment_fees && typeof settings.payment_fees === "object"
-          ? settings.payment_fees
-          : {},
+      paymentFees: Object.fromEntries(
+        ["DANA", "OVO", "GoPay", "ShopeePay", "BCA", "BRI", "Mandiri"].map((key) => [
+          key,
+          Math.max(0, Number(settings?.payment_fees?.[key] ?? settings?.fee ?? 0)),
+        ]),
+      ),
       campaignPass: settings?.campaign_password || "",
       storOpen: settings?.store_open !== false,
       tarikOpen: settings?.withdraw_open !== false,
@@ -163,7 +165,7 @@
       await refresh();
       notify("Status fitur diperbarui");
     } catch (error) {
-      notify(error.message);
+      notify(error.message, "error");
     }
   };
   window.doLogin = async (event) => {
@@ -195,7 +197,7 @@
       await refresh();
       notify("Setoran diterima dan saldo user diperbarui");
     } catch (error) {
-      notify(error.message);
+      notify(error.message, "error");
     }
   };
   window.doRej = async (id) => {
@@ -212,7 +214,7 @@
       await refresh();
       notify("Setoran ditolak");
     } catch (error) {
-      notify(error.message);
+      notify(error.message, "error");
     }
   };
   window.accWd = async (id) => {
@@ -221,7 +223,7 @@
       await refresh();
       notify("Penarikan diselesaikan");
     } catch (error) {
-      notify(error.message);
+      notify(error.message, "error");
     }
   };
   window.rejWd = async (id) => {
@@ -236,7 +238,7 @@
       await refresh();
       notify("Penarikan ditolak dan saldo dikembalikan");
     } catch (error) {
-      notify(error.message);
+      notify(error.message, "error");
     }
   };
   const userAction = async (id, action) => {
@@ -251,7 +253,7 @@
             : "Akun dibuka kembali",
       );
     } catch (error) {
-      notify(error.message);
+      notify(error.message, "error");
     }
   };
   window.blockUser = (id) => userAction(id, "block");
@@ -292,7 +294,7 @@
       await refresh();
       notify("Pengaturan tersimpan");
     } catch (error) {
-      notify(error.message);
+      notify(error.message, "error");
     }
   };
   window.save = async () => {
@@ -317,7 +319,7 @@
       });
       await refresh();
     } catch (error) {
-      notify(error.message);
+      notify(error.message, "error");
     }
   };
   window.logout = async () => {
@@ -340,7 +342,7 @@
         if (document.visibilityState === "visible") refresh().catch(() => {});
       }, 15000);
     } catch (error) {
-      notify(error.message);
+      notify(error.message, "error");
     }
   });
 })();
