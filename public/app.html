@@ -678,12 +678,17 @@
           <div class="flex items-center gap-2">
             <div class="flex items-center gap-1.5">
               <a
-                href="https://wa.me/"
+                id="supportWaQuick"
+                href="#"
+                onclick="
+                  openSupportModal();
+                  return false;
+                "
                 target="_blank"
                 class="flex items-center gap-1.5 bg-white border border-slate-200/80 px-2.5 py-1.5 rounded-xl text-[10px] font-semibold text-slate-700 shadow-sm active:scale-95 transition-transform"
               >
                 <i class="fa-brands fa-whatsapp text-emerald-500 text-sm"></i>
-                <span>Saluran WA</span>
+                <span>Saluran CS</span>
               </a>
               <button
                 onclick="showToast('Membuka kontak support tachi69gmail')"
@@ -1726,6 +1731,46 @@
           window.tachiApiState?.settings?.rules_text ||
           "1. Gmail harus fresh.\n2. Wajib menggunakan password yang dicantumkan di bawah.\n3. Keputusan admin tachi69gmail mutlak.";
         openModal("Rules Hari Ini", rules);
+      }
+      function supportUrl(type, value) {
+        const raw = String(value || "").trim();
+        if (!raw) return "";
+        if (/^https?:\/\//i.test(raw)) return raw;
+        if (type === "whatsapp") return `https://wa.me/${raw.replace(/\D/g, "")}`;
+        return `https://t.me/${raw.replace(/^@/, "")}`;
+      }
+      function escapeSupport(value) {
+        return String(value || "").replace(
+          /[&<>"']/g,
+          (character) =>
+            ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character],
+        );
+      }
+      function openSupportModal() {
+        const channels = window.tachiApiState?.settings?.support_channels || {};
+        const items = [
+          ...(Array.isArray(channels.whatsapp) ? channels.whatsapp : []).map((value) => [
+            "WhatsApp",
+            "whatsapp",
+            value,
+          ]),
+          ...(Array.isArray(channels.telegram) ? channels.telegram : []).map((value) => [
+            "Telegram",
+            "telegram",
+            value,
+          ]),
+        ].filter(([, , value]) => value);
+        const body = items.length
+          ? `<div class="space-y-2">${items
+              .map(([label, type, value]) => {
+                const href = escapeSupport(supportUrl(type, value));
+                return `<a href="${href}" target="_blank" rel="noopener" class="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold text-blue-600"><span><i class="fa-brands fa-${type === "whatsapp" ? "whatsapp text-emerald-500" : "telegram text-sky-500"} mr-2"></i>${label}</span><i class="fa-solid fa-arrow-up-right-from-square text-xs"></i></a>`;
+              })
+              .join("")}</div>`
+          : '<p class="text-sm text-slate-500">Saluran CS belum diatur admin.</p>';
+        document.getElementById("modalTitle").innerText = "Support CS";
+        document.getElementById("modalBody").innerHTML = body;
+        document.getElementById("appModal").classList.remove("hidden");
       }
 
       function updateSlide() {

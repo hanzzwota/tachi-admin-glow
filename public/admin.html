@@ -421,6 +421,32 @@
                 placeholder="1. Gmail harus fresh.&#10;2. Wajib menggunakan password."
               ></textarea>
             </label>
+            <div class="rounded-xl border border-blue-100 bg-blue-50/50 p-3 space-y-2">
+              <p class="text-xs font-bold text-slate-700">Saluran Support CS</p>
+              <p class="text-[11px] text-slate-500">
+                Isi nomor/link. Maksimal 2 WhatsApp dan 2 Telegram.
+              </p>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <label class="text-[11px] font-semibold text-slate-500"
+                  >WhatsApp 1<input
+                    id="supportWa1"
+                    class="inp mt-1"
+                    placeholder="628123456789 atau https://wa.me/..."
+                /></label>
+                <label class="text-[11px] font-semibold text-slate-500"
+                  >WhatsApp 2<input id="supportWa2" class="inp mt-1" placeholder="Opsional"
+                /></label>
+                <label class="text-[11px] font-semibold text-slate-500"
+                  >Telegram 1<input
+                    id="supportTelegram1"
+                    class="inp mt-1"
+                    placeholder="@username atau https://t.me/..."
+                /></label>
+                <label class="text-[11px] font-semibold text-slate-500"
+                  >Telegram 2<input id="supportTelegram2" class="inp mt-1" placeholder="Opsional"
+                /></label>
+              </div>
+            </div>
             <button class="btn-p w-full py-3 rounded-xl font-bold">
               <i class="fa fa-floppy-disk mr-2"></i>Simpan Konfigurasi
             </button>
@@ -926,6 +952,10 @@
         cDaily.value = s.dailyMax;
         cAnn.value = s.announcement;
         cRules.value = s.rulesText || "";
+        supportWa1.value = s.supportChannels?.whatsapp?.[0] || "";
+        supportWa2.value = s.supportChannels?.whatsapp?.[1] || "";
+        supportTelegram1.value = s.supportChannels?.telegram?.[0] || "";
+        supportTelegram2.value = s.supportChannels?.telegram?.[1] || "";
         cAutoStock.checked = !!s.autoStockEnabled;
         cStock.value = (s.gmailStock || []).join("\n");
         dailyInfo.textContent = `Terpakai hari ini (${db.daily.date}): ${db.daily.count}/${s.dailyMax > 0 ? s.dailyMax : "tanpa batas"} Gmail • reset otomatis 00:00 WIB`;

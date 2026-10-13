@@ -27,6 +27,16 @@
       }),
     );
   };
+  const normalizeSupportChannels = (value) => ({
+    whatsapp: Array.isArray(value?.whatsapp) ? value.whatsapp.filter(Boolean).slice(0, 2) : [],
+    telegram: Array.isArray(value?.telegram) ? value.telegram.filter(Boolean).slice(0, 2) : [],
+  });
+  const readSupportChannels = () => ({
+    whatsapp: [supportWa1.value, supportWa2.value].map((value) => value.trim()).filter(Boolean),
+    telegram: [supportTelegram1.value, supportTelegram2.value]
+      .map((value) => value.trim())
+      .filter(Boolean),
+  });
   const normalize = (settings, deposits, users, withdrawals, paymentFeesOverride = null) => ({
     settings: {
       rate: Number(settings?.rate || 0),
@@ -46,6 +56,7 @@
       rulesText:
         settings?.rules_text ||
         "1. Gmail harus fresh.\n2. Wajib menggunakan password yang dicantumkan di bawah.\n3. Keputusan admin tachi69gmail mutlak.",
+      supportChannels: normalizeSupportChannels(settings?.support_channels),
       autoStockEnabled: settings?.auto_stock_enabled === true,
       gmailStock: Array.isArray(settings?.gmail_stock) ? settings.gmail_stock : [],
     },
@@ -193,6 +204,7 @@
           batchLimit: db.settings.limit,
           announcement: db.settings.announcement,
           rulesText: db.settings.rulesText,
+          supportChannels: db.settings.supportChannels,
           autoStockEnabled: db.settings.autoStockEnabled,
           gmailStock: db.settings.gmailStock,
         }),
@@ -321,6 +333,7 @@
           batchLimit: cLimit.value,
           announcement: cAnn.value,
           rulesText: cRules.value,
+          supportChannels: readSupportChannels(),
           autoStockEnabled: cAutoStock.checked,
           gmailStock: cStock.value
             .split(/\s+/)
@@ -353,6 +366,7 @@
           batchLimit: db.settings.limit,
           announcement: db.settings.announcement,
           rulesText: db.settings.rulesText,
+          supportChannels: db.settings.supportChannels,
           autoStockEnabled: db.settings.autoStockEnabled,
           gmailStock: db.settings.gmailStock,
         }),

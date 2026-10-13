@@ -28,6 +28,12 @@ function canonicalPaymentFees(value: unknown, fallback: number) {
     }),
   );
 }
+function canonicalSupportChannels(value: unknown) {
+  const source = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+  const list = (key: string) =>
+    Array.isArray(source[key]) ? source[key].map(text).filter(Boolean).slice(0, 2) : [];
+  return { whatsapp: list("whatsapp"), telegram: list("telegram") };
+}
 const idFromPath = (path: string) => path.split("/").filter(Boolean).at(-1) ?? "";
 
 async function body(request: Request): Promise<Body> {
@@ -331,6 +337,7 @@ async function updateSettings(request: Request) {
     batch_limit: numberOrZero(payload.batchLimit),
     announcement: text(payload.announcement),
     rules_text: text(payload.rulesText),
+    support_channels: canonicalSupportChannels(payload.supportChannels),
     auto_stock_enabled: Boolean(payload.autoStockEnabled),
     gmail_stock: stock,
   };
@@ -341,11 +348,17 @@ async function updateSettings(request: Request) {
       body: JSON.stringify(values),
     });
   };
-  const { payment_fees: paymentFees, rules_text: rulesText, ...coreSettings } = allowed;
+  const {
+    payment_fees: paymentFees,
+    rules_text: rulesText,
+    support_channels: supportChannels,
+    ...coreSettings
+  } = allowed;
   await patchSettings(coreSettings);
   for (const optionalSetting of [
     ["payment_fees", paymentFees],
     ["rules_text", rulesText],
+    ["support_channels", supportChannels],
   ] as const) {
     try {
       await patchSettings({ [optionalSetting[0]]: optionalSetting[1] });
