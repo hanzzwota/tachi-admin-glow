@@ -16,6 +16,11 @@ import { rateLimit } from "../../server/rate-limit";
 
 type Body = Record<string, unknown>;
 const text = (value: unknown) => (typeof value === "string" ? value.trim() : "");
+const booleanValue = (value: unknown, fallback = false) => {
+  if (typeof value === "boolean") return value;
+  if (value == null) return fallback;
+  return ["true", "1", "yes", "on"].includes(String(value).trim().toLowerCase());
+};
 const paymentMethods = ["DANA", "OVO", "GoPay", "ShopeePay", "BCA", "BRI", "Mandiri"];
 const paymentKey = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, "");
 function canonicalPaymentFees(value: unknown, fallback: number) {
@@ -337,6 +342,7 @@ async function rejectDeposit(request: Request, id: string) {
 async function updateSettings(request: Request) {
   await requireAdmin(request);
   const payload = await body(request);
+  const current = await getSettings();
   const stock = Array.isArray(payload.gmailStock) ? payload.gmailStock : [];
   const numberOrZero = (value: unknown) => {
     const parsed = Number(value);
@@ -352,21 +358,33 @@ async function updateSettings(request: Request) {
       { status: 400 },
     );
   const allowed = {
-    rate: numberOrZero(payload.rate),
-    min_withdrawal: numberOrZero(payload.minWithdrawal),
-    fee: normalizeFee(payload.fee),
-    payment_fees: canonicalPaymentFees(payload.paymentFees, normalizeFee(payload.fee)),
-    campaign_password: text(payload.campaignPassword),
-    store_open: Boolean(payload.storeOpen),
-    withdraw_open: Boolean(payload.withdrawOpen),
-    checker_open: payload.checkerOpen !== false,
-    daily_limit: numberOrZero(payload.dailyLimit),
-    batch_limit: numberOrZero(payload.batchLimit),
-    announcement: text(payload.announcement),
-    rules_text: text(payload.rulesText),
-    support_channels: canonicalSupportChannels(payload.supportChannels),
-    auto_stock_enabled: Boolean(payload.autoStockEnabled),
-    gmail_stock: stock,
+    rate: numberOrZero(payload.rate ?? current?.rate),
+    min_withdrawal: numberOrZero(payload.minWithdrawal ?? current?.min_withdrawal),
+    fee: normalizeFee(payload.fee ?? current?.fee),
+    payment_fees: canonicalPaymentFees(
+      payload.paymentFees ?? current?.payment_fees,
+      normalizeFee(payload.fee ?? current?.fee),
+    ),
+    campaign_password: text(payload.campaignPassword ?? current?.campaign_password),
+    store_open: booleanValue(payload.storeOpen, current?.store_open !== false),
+    withdraw_open: booleanValue(payload.withdrawOpen, current?.withdraw_open !== false),
+    checker_open: booleanValue(payload.checkerOpen, current?.checker_open !== false),
+    daily_limit: numberOrZero(payload.dailyLimit ?? current?.daily_limit),
+    batch_limit: numberOrZero(payload.batchLimit ?? current?.batch_limit),
+    announcement: text(payload.announcement ?? current?.announcement),
+    rules_text: text(payload.rulesText ?? current?.rules_text),
+    support_channels: canonicalSupportChannels(
+      payload.supportChannels ?? current?.support_channels,
+    ),
+    auto_stock_enabled: booleanValue(
+      payload.autoStockEnabled,
+      current?.auto_stock_enabled === true,
+    ),
+    gmail_stock: Array.isArray(payload.gmailStock)
+      ? stock
+      : Array.isArray(current?.gmail_stock)
+        ? current.gmail_stock
+        : [],
   };
   const patchSettings = async (values: Record<string, unknown>) => {
     await supabaseFetch("app_settings?id=eq.1", {
@@ -397,7 +415,13 @@ async function updateSettings(request: Request) {
       if (!optionalColumnMissing) throw error;
     }
   }
-  return json({ settings: await getSettings() });
+  const saved = await getSettings();
+  if (!saved) {
+    throw new Error(
+      "Konfigurasi app_settings tidak ditemukan. Jalankan migration Supabase terlebih dahulu.",
+    );
+  }
+  return json({ settings: saved });
 }
 
 function userSettings(settings: Record<string, unknown> | null) {
@@ -512,9 +536,18 @@ async function createWithdrawal(request: Request) {
   );
   if (!updatedProfiles.length)
     return json({ error: "Saldo berubah, silakan muat ulang lalu coba lagi" }, { status: 409 });
+  const restoreBalance = () =>
+    supabaseFetch(
+      `profiles?id=eq.${encodeURIComponent(String(user.id))}&balance=eq.${encodeURIComponent(String(balance - amount - fee))}`,
+      {
+        method: "PATCH",
+        headers: { Prefer: "return=minimal" },
+        body: JSON.stringify({ balance }),
+      },
+    ).catch(() => undefined);
   let rows: Record<string, unknown>[];
   try {
-    const rows = await supabaseFetch<Record<string, unknown>[]>("withdrawals", {
+    rows = await supabaseFetch<Record<string, unknown>[]>("withdrawals", {
       method: "POST",
       headers: { Prefer: "return=representation" },
       body: JSON.stringify({
@@ -529,12 +562,30 @@ async function createWithdrawal(request: Request) {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    if (!message.includes("PGRST204") && !message.includes("400")) throw error;
-    rows = await supabaseFetch<Record<string, unknown>[]>("withdrawals", {
-      method: "POST",
-      headers: { Prefer: "return=representation" },
-      body: JSON.stringify({ user_id: user.id, amount, fee, status: "pending" }),
-    });
+    if (!message.includes("PGRST204") && !message.includes("400")) {
+      await restoreBalance();
+      throw error;
+    }
+    try {
+      // Compatibility fallback for deployments whose PostgREST schema cache does
+      // not yet know the optional wallet_bank column. Required wallet fields must
+      // remain in the payload because the original schema marks them NOT NULL.
+      rows = await supabaseFetch<Record<string, unknown>[]>("withdrawals", {
+        method: "POST",
+        headers: { Prefer: "return=representation" },
+        body: JSON.stringify({
+          user_id: user.id,
+          amount,
+          fee,
+          wallet_name: user.wallet_name,
+          wallet_number: user.wallet_number,
+          status: "pending",
+        }),
+      });
+    } catch (fallbackError) {
+      await restoreBalance();
+      throw fallbackError;
+    }
   }
   return json({ withdrawal: rows[0] }, { status: 201 });
 }

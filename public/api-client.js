@@ -456,6 +456,12 @@
         window.setInterval(() => {
           if (document.visibilityState === "visible") syncAppData().catch(() => {});
         }, 20000);
+        const refreshWhenVisible = () => {
+          if (document.visibilityState === "visible") syncAppData().catch(() => {});
+        };
+        document.addEventListener("visibilitychange", refreshWhenVisible);
+        window.addEventListener("focus", refreshWhenVisible);
+        window.addEventListener("pageshow", refreshWhenVisible);
         if (requestedView && !["login", "register"].includes(requestedView))
           setTimeout(() => window.navigateTo?.(requestedView), 0);
       } else if (!["login", "register"].includes(requestedView || "login"))
