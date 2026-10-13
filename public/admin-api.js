@@ -9,7 +9,7 @@
     if (!response.ok) throw new Error(data.error || "Permintaan gagal");
     return data;
   };
-  const notify = (message, icon = "warning") => window.toast?.(message, icon);
+  const notify = (message, icon) => window.toast?.(message, icon);
   const paymentMethods = ["DANA", "OVO", "GoPay", "ShopeePay", "BCA", "BRI", "Mandiri"];
   const FEE_STEP = 1000;
   const FIXED_MIN_WITHDRAWAL = 15000;

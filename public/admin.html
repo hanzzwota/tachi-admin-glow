@@ -660,13 +660,15 @@
 
       // UI helpers
       function simpanData(message = "Data berhasil disimpan!", icon) {
-        const alertIcon =
-          icon ||
-          (/gagal|salah|tidak|minimal|isi |lengkapi|wajib|harus|pilih|alasan|tekan edit|terlebih dahulu|saldo tidak|belum|ditutup|invalid|error/i.test(
-            message,
-          )
+        const text = String(message || "");
+        const alertIcon = icon ||
+          (/gagal|kesalahan|\berror\b|tidak dapat|akses ditolak/i.test(text)
             ? "error"
-            : "warning");
+            : /berhasil|diterima|diselesaikan|selesai|diperbarui|tersimpan|disalin|diekspor|dikoreksi|diajukan|terkirim|dibuka|ditutup|ditolak|dikembalikan|dihapus|diblokir/i.test(
+                  text,
+                )
+              ? "success"
+              : "warning");
         if (window.Swal) {
           return Swal.fire({
             toast: true,
