@@ -514,19 +514,19 @@ async function createWithdrawal(request: Request) {
     return json({ error: "Saldo berubah, silakan muat ulang lalu coba lagi" }, { status: 409 });
   let rows: Record<string, unknown>[];
   try {
-  const rows = await supabaseFetch<Record<string, unknown>[]>("withdrawals", {
-    method: "POST",
-    headers: { Prefer: "return=representation" },
-    body: JSON.stringify({
-      user_id: user.id,
-      amount,
-      fee,
-      wallet_bank: bank,
-      wallet_name: user.wallet_name,
-      wallet_number: user.wallet_number,
-      status: "pending",
-    }),
-  });
+    const rows = await supabaseFetch<Record<string, unknown>[]>("withdrawals", {
+      method: "POST",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify({
+        user_id: user.id,
+        amount,
+        fee,
+        wallet_bank: bank,
+        wallet_name: user.wallet_name,
+        wallet_number: user.wallet_number,
+        status: "pending",
+      }),
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     if (!message.includes("PGRST204") && !message.includes("400")) throw error;
