@@ -1,322 +1,960 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>tachi69gmail Admin Console</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<style>
-body{font-family:'Inter',sans-serif;-webkit-tap-highlight-color:transparent}
-.glass{background:rgba(255,255,255,.82);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.7);box-shadow:0 14px 30px -18px rgba(30,64,175,.28)}
-.btn-p{background:linear-gradient(to right,#2563eb,#4f46e5);color:#fff;box-shadow:0 6px 16px -6px rgba(37,99,235,.6)}
-.btn-p:hover{filter:brightness(1.08)}
-.tgl{width:52px;height:28px;border-radius:999px;background:#fca5a5;position:relative;transition:background-color .28s cubic-bezier(.4,0,.2,1),transform .18s ease;cursor:pointer;will-change:background-color}
-.tgl.on{background:#22c55e}
-.tgl::after{content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:left .28s cubic-bezier(.4,0,.2,1),box-shadow .2s ease;box-shadow:0 2px 4px rgba(0,0,0,.2)}
-.tgl:active{transform:scale(.96)}
-.tgl.on::after{left:27px}
-.marquee{white-space:nowrap;animation:mq 18s linear infinite;display:inline-block;padding-left:100%}
-@keyframes mq{to{transform:translateX(-100%)}}
-.tab{transition:background-color .2s ease,color .2s ease,box-shadow .2s ease}
-.tab.active{background:linear-gradient(135deg,#2563eb,#4f46e5);color:#fff;box-shadow:0 8px 18px -10px rgba(37,99,235,.8)}
-.admin-tabbar{position:sticky;top:72px;z-index:20}
-.admin-tabbar .tab{min-height:42px}
-input,select,textarea{outline:none}
-.inp{width:100%;padding:.6rem .8rem;border-radius:.75rem;border:1px solid #dbeafe;background:#fff}
-.inp:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.15)}
-</style>
-</head>
-<body class="min-h-screen bg-gradient-to-br from-blue-50 via-slate-50 to-blue-100 text-slate-800">
-
-<!-- APP -->
-<div id="appView">
-  <header class="glass sticky top-0 z-30 px-4 py-3 flex items-center gap-3 border-b border-blue-100/80">
-    <img src="https://files.catbox.moe/dysigb.jpeg" class="w-10 h-10 rounded-xl object-cover" alt="logo">
-    <div class="flex-1 min-w-0">
-      <div class="font-extrabold leading-tight truncate">tachi69gmail <span class="text-blue-600">Admin Console</span></div>
-      <div class="text-[11px] text-slate-500"><span class="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-1 shadow-[0_0_0_3px_rgba(16,185,129,.12)]"></span>Logged in as: <b>Admin</b><span class="ml-2 rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-700">Protected</span></div>
-    </div>
-    <button onclick="switchMode()" id="modeBtn" class="px-3 py-2 rounded-xl bg-white border border-blue-100 text-blue-600 text-xs font-bold"><i class="fa fa-repeat mr-1"></i><span>Dashboard User</span></button>
-    <button onclick="logout()" class="px-3 py-2 rounded-xl bg-red-50 text-red-600 text-xs font-bold"><i class="fa fa-power-off"></i></button>
-  </header>
-
-  <!-- ADMIN MODE -->
-  <main id="adminMode" class="max-w-7xl mx-auto p-4 space-y-4">
-    <section id="stats" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></section>
-    <nav class="admin-tabbar glass rounded-2xl p-1.5 grid grid-cols-2 md:grid-cols-5 gap-1 text-xs sm:text-sm font-semibold">
-      <button class="tab active px-3 py-2 rounded-xl" data-t="setoran">Setoran Gmail</button>
-      <button class="tab px-3 py-2 rounded-xl" data-t="riwayat">Rekapan Hari Ini</button>
-      <button class="tab px-3 py-2 rounded-xl" data-t="payout">Penarikan</button>
-      <button class="tab px-3 py-2 rounded-xl" data-t="users">Data User</button>
-      <button class="tab px-3 py-2 rounded-xl" data-t="settings">System Settings</button>
-    </nav>
-
-    <!-- SETORAN -->
-    <section id="t-setoran" class="glass rounded-2xl p-4">
-      <div class="flex flex-col md:flex-row gap-2 mb-3">
-        <div class="relative flex-1"><i class="fa fa-search absolute left-3 top-3.5 text-slate-400"></i>
-          <input id="sq" oninput="renderSetoran()" class="inp pl-9" placeholder="Cari email Gmail, username, atau ID transaksi..."></div>
-        <div class="flex gap-1" id="sfilter"></div>
-      </div>
-      <div class="overflow-x-auto"><table class="w-full text-sm"><thead class="text-left text-slate-500 text-xs uppercase"><tr>
-        <th class="p-2">ID</th><th class="p-2">Tanggal</th><th class="p-2">User</th><th class="p-2">Gmail</th><th class="p-2">Status</th><th class="p-2 text-right">Aksi</th></tr></thead>
-        <tbody id="setoranBody"></tbody></table></div>
-    </section>
-
-    <!-- DAILY RECAP -->
-    <section id="t-riwayat" class="glass rounded-2xl p-4 hidden space-y-4">
-      <div class="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
-        <div><h3 class="font-bold"><i class="fa fa-calendar-day text-blue-600 mr-2"></i>Rekapan Setoran Hari Ini</h3><p class="text-xs text-slate-500">Semua Gmail yang disetor user hari ini berdasarkan waktu WIB.</p></div>
-        <div class="flex gap-2"><button type="button" onclick="copyDailyGmail()" class="rounded-xl bg-white border border-blue-100 px-3 py-2 text-xs font-bold text-blue-600"><i class="fa fa-copy mr-1"></i>Salin Semua Gmail</button><button type="button" onclick="exportDailyGmail()" class="btn-p rounded-xl px-3 py-2 text-xs font-bold"><i class="fa fa-file-export mr-1"></i>Export .txt</button></div>
-      </div>
-      <div id="dailyRecapStats" class="grid grid-cols-2 gap-3 md:grid-cols-4"></div>
-      <textarea id="dailyGmailText" readonly rows="12" class="inp w-full font-mono text-xs" placeholder="Belum ada Gmail disetor hari ini"></textarea>
-    </section>
-
-    <!-- PAYOUT -->
-    <section id="t-payout" class="glass rounded-2xl p-4 hidden">
-      <div class="overflow-x-auto"><table class="w-full text-sm"><thead class="text-left text-slate-500 text-xs uppercase"><tr>
-        <th class="p-2">ID</th><th class="p-2">User</th><th class="p-2">Nama</th><th class="p-2">DANA</th><th class="p-2">Nominal</th><th class="p-2">Fee</th><th class="p-2">Transfer</th><th class="p-2">Status</th><th class="p-2 text-right">Aksi</th></tr></thead>
-        <tbody id="payoutBody"></tbody></table></div>
-    </section>
-
-    <!-- USERS -->
-    <section id="t-users" class="glass rounded-2xl p-4 hidden">
-      <div class="overflow-x-auto"><table class="w-full text-sm"><thead class="text-left text-slate-500 text-xs uppercase"><tr>
-        <th class="p-2">Username</th><th class="p-2">E-Wallet</th><th class="p-2">Saldo</th><th class="p-2">Setoran</th><th class="p-2">Status</th><th class="p-2 text-right">Aksi</th></tr></thead>
-        <tbody id="usersBody"></tbody></table></div>
-    </section>
-
-    <!-- SETTINGS -->
-    <section id="t-settings" class="hidden grid md:grid-cols-2 gap-4">
-      <div class="glass rounded-2xl p-5 space-y-4">
-        <h3 class="font-bold"><i class="fa fa-sliders text-blue-600 mr-2"></i>Sakelar Fitur (Real-time)</h3>
-        <div id="toggles" class="space-y-3"></div>
-      </div>
-      <form onsubmit="saveSettings(event)" class="glass rounded-2xl p-5 space-y-3">
-        <h3 class="font-bold"><i class="fa fa-gear text-blue-600 mr-2"></i>Parameter Konfigurasi</h3>
-        <label class="block text-xs font-semibold text-slate-500">Rate Setoran per Gmail (Rp)<input id="cRate" type="number" min="0" class="inp mt-1"></label>
-        <label class="block text-xs font-semibold text-slate-500">Minimal Tarik Saldo (Rp)<input id="cMin" type="number" min="0" class="inp mt-1"></label>
-        <label class="block text-xs font-semibold text-slate-500">Fee Admin Penarikan (Rp)<input id="cFee" type="number" min="0" class="inp mt-1"></label>
-        <div class="rounded-xl border border-blue-100 bg-blue-50/50 p-3 space-y-2">
-          <p class="text-xs font-bold text-slate-700">Fee berdasarkan payment</p>
-          <div class="grid grid-cols-2 gap-2">
-            <label class="text-[11px] font-semibold text-slate-500">DANA<input id="feeDANA" type="number" min="0" class="inp mt-1"></label>
-            <label class="text-[11px] font-semibold text-slate-500">OVO<input id="feeOVO" type="number" min="0" class="inp mt-1"></label>
-            <label class="text-[11px] font-semibold text-slate-500">GoPay<input id="feeGoPay" type="number" min="0" class="inp mt-1"></label>
-            <label class="text-[11px] font-semibold text-slate-500">ShopeePay<input id="feeShopeePay" type="number" min="0" class="inp mt-1"></label>
-            <label class="text-[11px] font-semibold text-slate-500">BCA<input id="feeBCA" type="number" min="0" class="inp mt-1"></label>
-            <label class="text-[11px] font-semibold text-slate-500">BRI<input id="feeBRI" type="number" min="0" class="inp mt-1"></label>
-            <label class="text-[11px] font-semibold text-slate-500">Mandiri<input id="feeMandiri" type="number" min="0" class="inp mt-1"></label>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tachi69gmail Admin Console</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .glass {
+        background: rgba(255, 255, 255, 0.82);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.7);
+        box-shadow: 0 14px 30px -18px rgba(30, 64, 175, 0.28);
+      }
+      .btn-p {
+        background: linear-gradient(to right, #2563eb, #4f46e5);
+        color: #fff;
+        box-shadow: 0 6px 16px -6px rgba(37, 99, 235, 0.6);
+      }
+      .btn-p:hover {
+        filter: brightness(1.08);
+      }
+      .tgl {
+        width: 52px;
+        height: 28px;
+        border-radius: 999px;
+        background: #fca5a5;
+        position: relative;
+        transition:
+          background-color 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+          transform 0.18s ease;
+        cursor: pointer;
+        will-change: background-color;
+      }
+      .tgl.on {
+        background: #22c55e;
+      }
+      .tgl::after {
+        content: "";
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #fff;
+        transition:
+          left 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+          box-shadow 0.2s ease;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+      .tgl:active {
+        transform: scale(0.96);
+      }
+      .tgl.on::after {
+        left: 27px;
+      }
+      .marquee {
+        white-space: nowrap;
+        animation: mq 18s linear infinite;
+        display: inline-block;
+        padding-left: 100%;
+      }
+      @keyframes mq {
+        to {
+          transform: translateX(-100%);
+        }
+      }
+      .tab {
+        transition:
+          background-color 0.2s ease,
+          color 0.2s ease,
+          box-shadow 0.2s ease;
+      }
+      .tab.active {
+        background: linear-gradient(135deg, #2563eb, #4f46e5);
+        color: #fff;
+        box-shadow: 0 8px 18px -10px rgba(37, 99, 235, 0.8);
+      }
+      .admin-tabbar {
+        position: sticky;
+        top: 72px;
+        z-index: 20;
+      }
+      .admin-tabbar .tab {
+        min-height: 42px;
+      }
+      input,
+      select,
+      textarea {
+        outline: none;
+      }
+      .inp {
+        width: 100%;
+        padding: 0.6rem 0.8rem;
+        border-radius: 0.75rem;
+        border: 1px solid #dbeafe;
+        background: #fff;
+      }
+      .inp:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+      }
+    </style>
+  </head>
+  <body class="min-h-screen bg-gradient-to-br from-blue-50 via-slate-50 to-blue-100 text-slate-800">
+    <!-- APP -->
+    <div id="appView">
+      <header
+        class="glass sticky top-0 z-30 px-4 py-3 flex items-center gap-3 border-b border-blue-100/80"
+      >
+        <img
+          src="https://files.catbox.moe/dysigb.jpeg"
+          class="w-10 h-10 rounded-xl object-cover"
+          alt="logo"
+        />
+        <div class="flex-1 min-w-0">
+          <div class="font-extrabold leading-tight truncate">
+            tachi69gmail <span class="text-blue-600">Admin Console</span>
+          </div>
+          <div class="text-[11px] text-slate-500">
+            <span
+              class="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-1 shadow-[0_0_0_3px_rgba(16,185,129,.12)]"
+            ></span
+            >Logged in as: <b>Admin</b
+            ><span class="ml-2 rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-700"
+              >Protected</span
+            >
           </div>
         </div>
-        <label class="block text-xs font-semibold text-slate-500">Password Wajib<input id="cPass" class="inp mt-1" maxlength="50"></label>
-        <label class="block text-xs font-semibold text-slate-500">Limit Maks Akun per Transaksi (1–50)<input id="cLimit" type="number" min="1" max="50" class="inp mt-1"></label>
-        <label class="block text-xs font-semibold text-slate-500">Max Setor Hari Ini (total Gmail, reset 00:00 WIB)<input id="cDaily" type="number" min="0" class="inp mt-1"></label>
-        <label class="flex items-center gap-3 text-xs font-semibold text-slate-500"><input id="cAutoStock" type="checkbox" class="w-4 h-4 accent-blue-600"> Aktifkan Generate Gmail otomatis</label>
-        <label class="block text-xs font-semibold text-slate-500">Stok Gmail (satu email per baris)<textarea id="cStock" rows="5" class="inp mt-1 font-mono" placeholder="akun1@gmail.com\nakun2@gmail.com"></textarea></label>
-        <p class="text-xs text-slate-500" id="dailyInfo"></p>
-        <label class="block text-xs font-semibold text-slate-500">Teks Pengumuman Running<textarea id="cAnn" rows="3" maxlength="300" class="inp mt-1"></textarea></label>
-        <button class="btn-p w-full py-3 rounded-xl font-bold"><i class="fa fa-floppy-disk mr-2"></i>Simpan Konfigurasi</button>
-      </form>
-    </section>
-  </main>
+        <button
+          onclick="switchMode()"
+          id="modeBtn"
+          class="px-3 py-2 rounded-xl bg-white border border-blue-100 text-blue-600 text-xs font-bold"
+        >
+          <i class="fa fa-repeat mr-1"></i><span>Dashboard User</span>
+        </button>
+        <button
+          onclick="logout()"
+          class="px-3 py-2 rounded-xl bg-red-50 text-red-600 text-xs font-bold"
+        >
+          <i class="fa fa-power-off"></i>
+        </button>
+      </header>
 
-  <!-- USER MODE (simulator, data menyatu) -->
-  <main id="userMode" class="hidden max-w-md mx-auto p-4 space-y-4">
-    <div class="glass rounded-2xl p-3 overflow-hidden text-sm text-blue-700"><i class="fa fa-bullhorn mr-2"></i><span class="marquee" id="uAnn"></span></div>
-    <div class="glass rounded-2xl p-4">
-      <label class="text-xs font-semibold text-slate-500">Login sebagai user</label>
-      <select id="uSel" onchange="renderUser()" class="inp mt-1"></select>
-      <div class="mt-3 p-4 rounded-2xl btn-p"><div class="text-xs opacity-80">Saldo Tersedia</div><div class="text-2xl font-extrabold" id="uSaldo"></div></div>
+      <!-- ADMIN MODE -->
+      <main id="adminMode" class="max-w-7xl mx-auto p-4 space-y-4">
+        <section id="stats" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></section>
+        <nav
+          class="admin-tabbar glass rounded-2xl p-1.5 grid grid-cols-2 md:grid-cols-5 gap-1 text-xs sm:text-sm font-semibold"
+        >
+          <button class="tab active px-3 py-2 rounded-xl" data-t="setoran">Setoran Gmail</button>
+          <button class="tab px-3 py-2 rounded-xl" data-t="riwayat">Rekapan Hari Ini</button>
+          <button class="tab px-3 py-2 rounded-xl" data-t="payout">Penarikan</button>
+          <button class="tab px-3 py-2 rounded-xl" data-t="users">Data User</button>
+          <button class="tab px-3 py-2 rounded-xl" data-t="settings">System Settings</button>
+        </nav>
+
+        <!-- SETORAN -->
+        <section id="t-setoran" class="glass rounded-2xl p-4">
+          <div class="flex flex-col md:flex-row gap-2 mb-3">
+            <div class="relative flex-1">
+              <i class="fa fa-search absolute left-3 top-3.5 text-slate-400"></i>
+              <input
+                id="sq"
+                oninput="renderSetoran()"
+                class="inp pl-9"
+                placeholder="Cari email Gmail, username, atau ID transaksi..."
+              />
+            </div>
+            <div class="flex gap-1" id="sfilter"></div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="text-left text-slate-500 text-xs uppercase">
+                <tr>
+                  <th class="p-2">ID</th>
+                  <th class="p-2">Tanggal</th>
+                  <th class="p-2">User</th>
+                  <th class="p-2">Gmail</th>
+                  <th class="p-2">Status</th>
+                  <th class="p-2 text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="setoranBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- DAILY RECAP -->
+        <section id="t-riwayat" class="glass rounded-2xl p-4 hidden space-y-4">
+          <div class="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h3 class="font-bold">
+                <i class="fa fa-calendar-day text-blue-600 mr-2"></i>Rekapan Setoran Hari Ini
+              </h3>
+              <p class="text-xs text-slate-500">
+                Semua Gmail yang disetor user hari ini berdasarkan waktu WIB.
+              </p>
+            </div>
+            <div class="flex gap-2">
+              <button
+                type="button"
+                onclick="copyDailyGmail()"
+                class="rounded-xl bg-white border border-blue-100 px-3 py-2 text-xs font-bold text-blue-600"
+              >
+                <i class="fa fa-copy mr-1"></i>Salin Semua Gmail</button
+              ><button
+                type="button"
+                onclick="exportDailyGmail()"
+                class="btn-p rounded-xl px-3 py-2 text-xs font-bold"
+              >
+                <i class="fa fa-file-export mr-1"></i>Export .txt
+              </button>
+            </div>
+          </div>
+          <div id="dailyRecapStats" class="grid grid-cols-2 gap-3 md:grid-cols-4"></div>
+          <textarea
+            id="dailyGmailText"
+            readonly
+            rows="12"
+            class="inp w-full font-mono text-xs"
+            placeholder="Belum ada Gmail disetor hari ini"
+          ></textarea>
+        </section>
+
+        <!-- PAYOUT -->
+        <section id="t-payout" class="glass rounded-2xl p-4 hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="text-left text-slate-500 text-xs uppercase">
+                <tr>
+                  <th class="p-2">ID</th>
+                  <th class="p-2">User</th>
+                  <th class="p-2">Nama</th>
+                  <th class="p-2">DANA</th>
+                  <th class="p-2">Nominal</th>
+                  <th class="p-2">Fee</th>
+                  <th class="p-2">Transfer</th>
+                  <th class="p-2">Status</th>
+                  <th class="p-2 text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="payoutBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- USERS -->
+        <section id="t-users" class="glass rounded-2xl p-4 hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="text-left text-slate-500 text-xs uppercase">
+                <tr>
+                  <th class="p-2">Username</th>
+                  <th class="p-2">E-Wallet</th>
+                  <th class="p-2">Saldo</th>
+                  <th class="p-2">Setoran</th>
+                  <th class="p-2">Status</th>
+                  <th class="p-2 text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="usersBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- SETTINGS -->
+        <section id="t-settings" class="hidden grid md:grid-cols-2 gap-4">
+          <div class="glass rounded-2xl p-5 space-y-4">
+            <h3 class="font-bold">
+              <i class="fa fa-sliders text-blue-600 mr-2"></i>Sakelar Fitur (Real-time)
+            </h3>
+            <div id="toggles" class="space-y-3"></div>
+          </div>
+          <form onsubmit="saveSettings(event)" class="glass rounded-2xl p-5 space-y-3">
+            <h3 class="font-bold">
+              <i class="fa fa-gear text-blue-600 mr-2"></i>Parameter Konfigurasi
+            </h3>
+            <label class="block text-xs font-semibold text-slate-500"
+              >Rate Setoran per Gmail (Rp)<input id="cRate" type="number" min="0" class="inp mt-1"
+            /></label>
+            <label class="block text-xs font-semibold text-slate-500"
+              >Minimal Tarik Saldo (Rp)<input id="cMin" type="number" min="0" class="inp mt-1"
+            /></label>
+            <label class="block text-xs font-semibold text-slate-500"
+              >Fee Admin Penarikan (Rp)<input id="cFee" type="number" min="0" class="inp mt-1"
+            /></label>
+            <div class="rounded-xl border border-blue-100 bg-blue-50/50 p-3 space-y-2">
+              <p class="text-xs font-bold text-slate-700">Fee berdasarkan payment</p>
+              <div class="grid grid-cols-2 gap-2">
+                <label class="text-[11px] font-semibold text-slate-500"
+                  >DANA<input id="feeDANA" type="number" min="0" class="inp mt-1"
+                /></label>
+                <label class="text-[11px] font-semibold text-slate-500"
+                  >OVO<input id="feeOVO" type="number" min="0" class="inp mt-1"
+                /></label>
+                <label class="text-[11px] font-semibold text-slate-500"
+                  >GoPay<input id="feeGoPay" type="number" min="0" class="inp mt-1"
+                /></label>
+                <label class="text-[11px] font-semibold text-slate-500"
+                  >ShopeePay<input id="feeShopeePay" type="number" min="0" class="inp mt-1"
+                /></label>
+                <label class="text-[11px] font-semibold text-slate-500"
+                  >BCA<input id="feeBCA" type="number" min="0" class="inp mt-1"
+                /></label>
+                <label class="text-[11px] font-semibold text-slate-500"
+                  >BRI<input id="feeBRI" type="number" min="0" class="inp mt-1"
+                /></label>
+                <label class="text-[11px] font-semibold text-slate-500"
+                  >Mandiri<input id="feeMandiri" type="number" min="0" class="inp mt-1"
+                /></label>
+              </div>
+            </div>
+            <label class="block text-xs font-semibold text-slate-500"
+              >Password Wajib<input id="cPass" class="inp mt-1" maxlength="50"
+            /></label>
+            <label class="block text-xs font-semibold text-slate-500"
+              >Limit Maks Akun per Transaksi (1–50)<input
+                id="cLimit"
+                type="number"
+                min="1"
+                max="50"
+                class="inp mt-1"
+            /></label>
+            <label class="block text-xs font-semibold text-slate-500"
+              >Max Setor Hari Ini (total Gmail, reset 00:00 WIB)<input
+                id="cDaily"
+                type="number"
+                min="0"
+                class="inp mt-1"
+            /></label>
+            <label class="flex items-center gap-3 text-xs font-semibold text-slate-500"
+              ><input id="cAutoStock" type="checkbox" class="w-4 h-4 accent-blue-600" /> Aktifkan
+              Generate Gmail otomatis</label
+            >
+            <label class="block text-xs font-semibold text-slate-500"
+              >Stok Gmail (satu email per baris)<textarea
+                id="cStock"
+                rows="5"
+                class="inp mt-1 font-mono"
+                placeholder="akun1@gmail.com\nakun2@gmail.com"
+              ></textarea>
+            </label>
+            <p class="text-xs text-slate-500" id="dailyInfo"></p>
+            <label class="block text-xs font-semibold text-slate-500"
+              >Teks Pengumuman Running<textarea
+                id="cAnn"
+                rows="3"
+                maxlength="300"
+                class="inp mt-1"
+              ></textarea>
+            </label>
+            <button class="btn-p w-full py-3 rounded-xl font-bold">
+              <i class="fa fa-floppy-disk mr-2"></i>Simpan Konfigurasi
+            </button>
+          </form>
+        </section>
+      </main>
+
+      <!-- USER MODE (simulator, data menyatu) -->
+      <main id="userMode" class="hidden max-w-md mx-auto p-4 space-y-4">
+        <div class="glass rounded-2xl p-3 overflow-hidden text-sm text-blue-700">
+          <i class="fa fa-bullhorn mr-2"></i><span class="marquee" id="uAnn"></span>
+        </div>
+        <div class="glass rounded-2xl p-4">
+          <label class="text-xs font-semibold text-slate-500">Login sebagai user</label>
+          <select id="uSel" onchange="renderUser()" class="inp mt-1"></select>
+          <div class="mt-3 p-4 rounded-2xl btn-p">
+            <div class="text-xs opacity-80">Saldo Tersedia</div>
+            <div class="text-2xl font-extrabold" id="uSaldo"></div>
+          </div>
+        </div>
+        <div class="glass rounded-2xl p-4" id="uStor"></div>
+        <div class="glass rounded-2xl p-4" id="uTarik"></div>
+        <div class="glass rounded-2xl p-4">
+          <h3 class="font-bold mb-2">Riwayat Setoran</h3>
+          <div id="uRiwayat" class="space-y-2"></div>
+        </div>
+        <div class="glass rounded-2xl p-4">
+          <h3 class="font-bold mb-2">Riwayat Penarikan</h3>
+          <div id="uRiwayatW" class="space-y-2"></div>
+        </div>
+      </main>
     </div>
-    <div class="glass rounded-2xl p-4" id="uStor"></div>
-    <div class="glass rounded-2xl p-4" id="uTarik"></div>
-    <div class="glass rounded-2xl p-4"><h3 class="font-bold mb-2">Riwayat Setoran</h3><div id="uRiwayat" class="space-y-2"></div></div>
-    <div class="glass rounded-2xl p-4"><h3 class="font-bold mb-2">Riwayat Penarikan</h3><div id="uRiwayatW" class="space-y-2"></div></div>
-  </main>
-</div>
 
-<!-- MODAL -->
-<div id="modal" class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
-  <div class="glass bg-white rounded-3xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
-    <div class="flex justify-between items-center mb-4"><h3 id="mTitle" class="font-extrabold"></h3><button onclick="closeModal()" class="text-slate-400"><i class="fa fa-xmark text-lg"></i></button></div>
-    <div id="mBody"></div>
-  </div>
-</div>
-<div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] bg-slate-900 text-white text-sm px-4 py-2 rounded-xl shadow-lg"></div>
+    <!-- MODAL -->
+    <div
+      id="modal"
+      class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4"
+    >
+      <div class="glass bg-white rounded-3xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-4">
+          <h3 id="mTitle" class="font-extrabold"></h3>
+          <button onclick="closeModal()" class="text-slate-400">
+            <i class="fa fa-xmark text-lg"></i>
+          </button>
+        </div>
+        <div id="mBody"></div>
+      </div>
+    </div>
+    <div
+      id="toast"
+      class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] bg-slate-900 text-white text-sm px-4 py-2 rounded-xl shadow-lg"
+    ></div>
 
-<script>
-const KEY='tachi69_db';
-const rp=n=>'Rp'+Number(n||0).toLocaleString('id-ID');
-const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const wibDate=()=>new Date(Date.now()+7*3600e3).toISOString().slice(0,10);
-const fmt=t=>new Date(t).toLocaleString('id-ID',{timeZone:'Asia/Jakarta',dateStyle:'short',timeStyle:'short'});
-const uid=p=>p+Date.now().toString(36).toUpperCase().slice(-6)+Math.floor(Math.random()*90+10);
+    <script>
+      const KEY = "tachi69_db";
+      const rp = (n) => "Rp" + Number(n || 0).toLocaleString("id-ID");
+      const esc = (s) =>
+        String(s ?? "").replace(
+          /[&<>"']/g,
+          (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
+        );
+      const wibDate = () => new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10);
+      const fmt = (t) =>
+        new Date(t).toLocaleString("id-ID", {
+          timeZone: "Asia/Jakarta",
+          dateStyle: "short",
+          timeStyle: "short",
+        });
+      const uid = (p) =>
+        p + Date.now().toString(36).toUpperCase().slice(-6) + Math.floor(Math.random() * 90 + 10);
 
-function seed(){
-  const now=Date.now();
-  return {
-    settings:{storOpen:true,tarikOpen:true,checkerOpen:true,rate:4500,minTarik:4000,fee:0,campaignPass:'sgsg1122',limit:1,dailyMax:500,
-      announcement:'Selamat datang di tachi69gmail! Rate setoran Rp4.500/Gmail. Pencairan cepat via DANA.'},
-    daily:{date:wibDate(),count:0},
-    users:[],setoran:[],withdrawals:[]
-  };
-}
-function normalizeDb(value){const base=seed(),data=value&&typeof value==='object'?value:{};return { ...base, ...data, settings:{...base.settings,...(data.settings&&typeof data.settings==='object'?data.settings:{})}, daily:{...base.daily,...(data.daily&&typeof data.daily==='object'?data.daily:{})}, users:Array.isArray(data.users)?data.users:[], setoran:Array.isArray(data.setoran)?data.setoran:[], withdrawals:Array.isArray(data.withdrawals)?data.withdrawals:[] }}
-let db=normalizeDb(null);
-function load(){return normalizeDb(null)}
-function save(){renderAll();window.persistSettings?.()}
-window.reloadAdminDb=function(){renderAll()};
+      function seed() {
+        const now = Date.now();
+        return {
+          settings: {
+            storOpen: true,
+            tarikOpen: true,
+            checkerOpen: true,
+            rate: 4500,
+            minTarik: 4000,
+            fee: 0,
+            campaignPass: "sgsg1122",
+            limit: 1,
+            dailyMax: 500,
+            announcement:
+              "Selamat datang di tachi69gmail! Rate setoran Rp4.500/Gmail. Pencairan cepat via DANA.",
+          },
+          daily: { date: wibDate(), count: 0 },
+          users: [],
+          setoran: [],
+          withdrawals: [],
+        };
+      }
+      function normalizeDb(value) {
+        const base = seed(),
+          data = value && typeof value === "object" ? value : {};
+        return {
+          ...base,
+          ...data,
+          settings: {
+            ...base.settings,
+            ...(data.settings && typeof data.settings === "object" ? data.settings : {}),
+          },
+          daily: {
+            ...base.daily,
+            ...(data.daily && typeof data.daily === "object" ? data.daily : {}),
+          },
+          users: Array.isArray(data.users) ? data.users : [],
+          setoran: Array.isArray(data.setoran) ? data.setoran : [],
+          withdrawals: Array.isArray(data.withdrawals) ? data.withdrawals : [],
+        };
+      }
+      let db = normalizeDb(null);
+      function load() {
+        return normalizeDb(null);
+      }
+      function save() {
+        renderAll();
+        window.persistSettings?.();
+      }
+      window.reloadAdminDb = function () {
+        renderAll();
+      };
 
-// AUTH
-function doLogin(e){e.preventDefault(); lerr.textContent='Memvalidasi akun…'; lerr.classList.remove('hidden')}
-function logout(){window.logout?.()}
-function showApp(){document.getElementById('loginView')?.classList.add('hidden');document.getElementById('appView')?.classList.remove('hidden');resetDaily();renderAll()}
-let userMode=false;
-function switchMode(){window.top.location.href='/dashboard';return;userMode=!userMode;adminMode.classList.toggle('hidden',userMode);userModeEl().classList.toggle('hidden',!userMode);
-  modeBtn.querySelector('span').textContent=userMode?'Admin Mode':'User Mode';renderAll()}
-const userModeEl=()=>document.getElementById('userMode');
+      // AUTH
+      function doLogin(e) {
+        e.preventDefault();
+        lerr.textContent = "Memvalidasi akun…";
+        lerr.classList.remove("hidden");
+      }
+      function logout() {
+        window.logout?.();
+      }
+      function showApp() {
+        document.getElementById("loginView")?.classList.add("hidden");
+        document.getElementById("appView")?.classList.remove("hidden");
+        resetDaily();
+        renderAll();
+      }
+      let userMode = false;
+      function switchMode() {
+        window.top.location.href = "/dashboard";
+        return;
+        userMode = !userMode;
+        adminMode.classList.toggle("hidden", userMode);
+        userModeEl().classList.toggle("hidden", !userMode);
+        modeBtn.querySelector("span").textContent = userMode ? "Admin Mode" : "User Mode";
+        renderAll();
+      }
+      const userModeEl = () => document.getElementById("userMode");
 
-// UI helpers
-function toast(m){toastEl().textContent=m;toastEl().classList.remove('hidden');clearTimeout(window._t);window._t=setTimeout(()=>toastEl().classList.add('hidden'),2200)}
-const toastEl=()=>document.getElementById('toast');
-function openModal(t,b){mTitle.textContent=t;mBody.innerHTML=b;modal.classList.remove('hidden')}
-function closeModal(){modal.classList.add('hidden')}
-function copy(t){navigator.clipboard?.writeText(t).then(()=>toast('Disalin: '+t)).catch(()=>toast('Gagal menyalin'))}
-const badge=s=>({pending:'<span class="px-2 py-1 rounded-lg text-xs font-bold bg-amber-100 text-amber-700">Pending</span>',
-  diterima:'<span class="px-2 py-1 rounded-lg text-xs font-bold bg-green-100 text-green-700">Diterima</span>',
-  selesai:'<span class="px-2 py-1 rounded-lg text-xs font-bold bg-green-100 text-green-700">Selesai</span>',
-  ditolak:'<span class="px-2 py-1 rounded-lg text-xs font-bold bg-red-100 text-red-700">Ditolak</span>'}[s]);
-document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');
-  ['setoran','riwayat','payout','users','settings'].forEach(t=>document.getElementById('t-'+t).classList.toggle('hidden',t!==b.dataset.t));
-  if(b.dataset.t==='settings')document.getElementById('t-settings').classList.add('grid')});
+      // UI helpers
+      function toast(m) {
+        toastEl().textContent = m;
+        toastEl().classList.remove("hidden");
+        clearTimeout(window._t);
+        window._t = setTimeout(() => toastEl().classList.add("hidden"), 2200);
+      }
+      const toastEl = () => document.getElementById("toast");
+      function openModal(t, b) {
+        mTitle.textContent = t;
+        mBody.innerHTML = b;
+        modal.classList.remove("hidden");
+      }
+      function closeModal() {
+        modal.classList.add("hidden");
+      }
+      function copy(t) {
+        navigator.clipboard
+          ?.writeText(t)
+          .then(() => toast("Disalin: " + t))
+          .catch(() => toast("Gagal menyalin"));
+      }
+      const badge = (s) =>
+        ({
+          pending:
+            '<span class="px-2 py-1 rounded-lg text-xs font-bold bg-amber-100 text-amber-700">Pending</span>',
+          diterima:
+            '<span class="px-2 py-1 rounded-lg text-xs font-bold bg-green-100 text-green-700">Diterima</span>',
+          selesai:
+            '<span class="px-2 py-1 rounded-lg text-xs font-bold bg-green-100 text-green-700">Selesai</span>',
+          ditolak:
+            '<span class="px-2 py-1 rounded-lg text-xs font-bold bg-red-100 text-red-700">Ditolak</span>',
+        })[s];
+      document.querySelectorAll(".tab").forEach(
+        (b) =>
+          (b.onclick = () => {
+            document.querySelectorAll(".tab").forEach((x) => x.classList.remove("active"));
+            b.classList.add("active");
+            ["setoran", "riwayat", "payout", "users", "settings"].forEach((t) =>
+              document.getElementById("t-" + t).classList.toggle("hidden", t !== b.dataset.t),
+            );
+            if (b.dataset.t === "settings")
+              document.getElementById("t-settings").classList.add("grid");
+          }),
+      );
 
-function renderAll(){renderStats();renderSetoran();renderPayout();renderUsers();renderSettings();renderUser();window.renderDailyRecap?.()}
+      function renderAll() {
+        renderStats();
+        renderSetoran();
+        renderPayout();
+        renderUsers();
+        renderSettings();
+        renderUser();
+        window.renderDailyRecap?.();
+      }
 
-function renderStats(){
-  const pend=db.setoran.filter(s=>s.status==='pending').length;
-  const today=db.setoran.filter(s=>s.status==='diterima'&&new Date((s.verifiedAt||s.date)+7*3600e3).toISOString().slice(0,10)===wibDate()).reduce((a,s)=>a+s.accepted,0);
-  const saldo=db.users.reduce((a,u)=>a+u.saldo,0),cair=db.users.reduce((a,u)=>a+u.withdrawn,0);
-  const card=(i,c,l,v)=>`<div class="glass rounded-2xl p-4"><div class="w-9 h-9 rounded-xl flex items-center justify-center ${c} mb-2"><i class="fa ${i}"></i></div><div class="text-xs text-slate-500">${l}</div><div class="text-lg font-extrabold">${v}</div></div>`;
-  stats.innerHTML=card('fa-hourglass-half','bg-amber-100 text-amber-600','Setoran Pending',pend)+card('fa-circle-check','bg-green-100 text-green-600','Gmail Diterima Hari Ini',today)
-   +card('fa-wallet','bg-blue-100 text-blue-600','Saldo Tersedia',rp(saldo))+card('fa-money-bill-transfer','bg-indigo-100 text-indigo-600','Total Dicairkan',rp(cair));
-}
+      function renderStats() {
+        const pend = db.setoran.filter((s) => s.status === "pending").length;
+        const today = db.setoran
+          .filter(
+            (s) =>
+              s.status === "diterima" &&
+              new Date((s.verifiedAt || s.date) + 7 * 3600e3).toISOString().slice(0, 10) ===
+                wibDate(),
+          )
+          .reduce((a, s) => a + s.accepted, 0);
+        const hasilGmail = db.setoran
+          .filter((s) => s.status === "diterima")
+          .reduce((a, s) => a + Number(s.earned || (s.accepted || 0) * db.settings.rate), 0);
+        const harusDibayar = db.withdrawals
+          .filter((w) => w.status === "pending")
+          .reduce((a, w) => a + Number(w.amount || 0) + Number(w.fee || 0), 0);
+        const card = (i, c, l, v) =>
+          `<div class="glass rounded-2xl p-4"><div class="w-9 h-9 rounded-xl flex items-center justify-center ${c} mb-2"><i class="fa ${i}"></i></div><div class="text-xs text-slate-500">${l}</div><div class="text-lg font-extrabold">${v}</div></div>`;
+        stats.innerHTML =
+          card("fa-hourglass-half", "bg-amber-100 text-amber-600", "Setoran Pending", pend) +
+          card("fa-circle-check", "bg-green-100 text-green-600", "Gmail Diterima Hari Ini", today) +
+          card(
+            "fa-wallet",
+            "bg-blue-100 text-blue-600",
+            "Total Saldo Hasil Gmail",
+            rp(hasilGmail),
+          ) +
+          card(
+            "fa-money-bill-transfer",
+            "bg-indigo-100 text-indigo-600",
+            "Total Saldo Harus Dibayar",
+            rp(harusDibayar),
+          );
+      }
 
-let sf='semua';
-function renderSetoran(){
-  sfilter.innerHTML=['semua','pending','diterima','ditolak'].map(f=>`<button onclick="sf='${f}';renderSetoran()" class="px-3 py-2 rounded-xl text-xs font-bold capitalize ${sf===f?'btn-p':'bg-white border border-blue-100 text-slate-600'}">${f}</button>`).join('');
-  const q=sq.value.trim().toLowerCase();
-  const rows=db.setoran.filter(s=>(sf==='semua'||s.status===sf)&&(!q||s.id.toLowerCase().includes(q)||s.user.toLowerCase().includes(q)||s.emails.some(e=>e.toLowerCase().includes(q)))).sort((a,b)=>b.date-a.date);
-  setoranBody.innerHTML=rows.map(s=>{const hit=q?s.emails.filter(e=>e.toLowerCase().includes(q)).slice(0,2).map(e=>`<div class="text-[11px] text-blue-600">${esc(e)}</div>`).join(''):'';
-    return `<tr class="border-t border-blue-50"><td class="p-2 font-mono text-xs">${s.id}</td><td class="p-2 text-xs">${fmt(s.date)}</td><td class="p-2 font-semibold">${esc(s.user)}</td>
-    <td class="p-2">${s.emails.length}${s.status==='diterima'?` <span class="text-xs text-green-600">(${s.accepted} valid)</span>`:''}${hit}</td>
-    <td class="p-2">${badge(s.status)}${s.reason?`<div class="text-[11px] text-red-500 mt-1">${esc(s.reason)}</div>`:''}</td>
+      let sf = "semua";
+      function renderSetoran() {
+        sfilter.innerHTML = ["semua", "pending", "diterima", "ditolak"]
+          .map(
+            (f) =>
+              `<button onclick="sf='${f}';renderSetoran()" class="px-3 py-2 rounded-xl text-xs font-bold capitalize ${sf === f ? "btn-p" : "bg-white border border-blue-100 text-slate-600"}">${f}</button>`,
+          )
+          .join("");
+        const q = sq.value.trim().toLowerCase();
+        const rows = db.setoran
+          .filter(
+            (s) =>
+              (sf === "semua" || s.status === sf) &&
+              (!q ||
+                s.id.toLowerCase().includes(q) ||
+                s.user.toLowerCase().includes(q) ||
+                s.emails.some((e) => e.toLowerCase().includes(q))),
+          )
+          .sort((a, b) => b.date - a.date);
+        setoranBody.innerHTML =
+          rows
+            .map((s) => {
+              const hit = q
+                ? s.emails
+                    .filter((e) => e.toLowerCase().includes(q))
+                    .slice(0, 2)
+                    .map((e) => `<div class="text-[11px] text-blue-600">${esc(e)}</div>`)
+                    .join("")
+                : "";
+              return `<tr class="border-t border-blue-50"><td class="p-2 font-mono text-xs">${s.id}</td><td class="p-2 text-xs">${fmt(s.date)}</td><td class="p-2 font-semibold">${esc(s.user)}</td>
+    <td class="p-2">${s.emails.length}${s.status === "diterima" ? ` <span class="text-xs text-green-600">(${s.accepted} valid)</span>` : ""}${hit}</td>
+    <td class="p-2">${badge(s.status)}${s.reason ? `<div class="text-[11px] text-red-500 mt-1">${esc(s.reason)}</div>` : ""}</td>
     <td class="p-2 text-right whitespace-nowrap"><button onclick="viewSetoran('${s.id}')" class="px-2 py-1.5 rounded-lg bg-slate-100 text-xs"><i class="fa fa-eye"></i></button>
-    ${s.status==='pending'?`<button onclick="accModal('${s.id}')" class="px-2 py-1.5 rounded-lg bg-green-500 text-white text-xs font-bold">ACC</button>
-    <button onclick="rejModal('${s.id}')" class="px-2 py-1.5 rounded-lg bg-red-500 text-white text-xs font-bold">Tolak</button>`:''}</td></tr>`}).join('')||'<tr><td colspan="6" class="p-6 text-center text-slate-400">Tidak ada data</td></tr>';
-}
-function viewSetoran(id){const s=db.setoran.find(x=>x.id===id);
-  openModal('Detail '+id,`<div class="text-xs text-slate-500 mb-2">${esc(s.user)} • ${s.emails.length} akun</div><textarea readonly rows="10" class="inp font-mono text-xs">${esc(s.emails.join('\n'))}</textarea>
-  <button onclick="copy(${esc(JSON.stringify(s.emails.join('\n')))})" class="btn-p w-full py-2 rounded-xl mt-3 font-bold text-sm"><i class="fa fa-copy mr-1"></i>Salin Semua</button>`)}
-function accModal(id){const s=db.setoran.find(x=>x.id===id);
-  openModal('Pilih Gmail yang Diterima '+id,`<p class="text-sm mb-2">Centang Gmail valid. Yang tidak dicentang otomatis ditolak. Rate: <b>${rp(db.settings.rate)}</b></p><div class="max-h-64 overflow-y-auto space-y-2">${s.emails.map((email)=>`<label class="flex items-center gap-2 rounded-xl border border-blue-50 bg-white p-2 text-xs"><input type="checkbox" name="acceptedEmail" value="${esc(email)}" checked><span class="font-mono">${esc(email)}</span></label>`).join('')}</div>
+    ${
+      s.status === "pending"
+        ? `<button onclick="accModal('${s.id}')" class="px-2 py-1.5 rounded-lg bg-green-500 text-white text-xs font-bold">ACC</button>
+    <button onclick="rejModal('${s.id}')" class="px-2 py-1.5 rounded-lg bg-red-500 text-white text-xs font-bold">Tolak</button>`
+        : ""
+    }</td></tr>`;
+            })
+            .join("") ||
+          '<tr><td colspan="6" class="p-6 text-center text-slate-400">Tidak ada data</td></tr>';
+      }
+      function viewSetoran(id) {
+        const s = db.setoran.find((x) => x.id === id);
+        openModal(
+          "Detail " + id,
+          `<div class="text-xs text-slate-500 mb-2">${esc(s.user)} • ${s.emails.length} akun</div><textarea readonly rows="10" class="inp font-mono text-xs">${esc(s.emails.join("\n"))}</textarea>
+  <button onclick="copy(${esc(JSON.stringify(s.emails.join("\n")))})" class="btn-p w-full py-2 rounded-xl mt-3 font-bold text-sm"><i class="fa fa-copy mr-1"></i>Salin Semua</button>`,
+        );
+      }
+      function accModal(id) {
+        const s = db.setoran.find((x) => x.id === id);
+        openModal(
+          "Pilih Gmail yang Diterima " + id,
+          `<p class="text-sm mb-2">Centang Gmail valid. Yang tidak dicentang otomatis ditolak. Rate: <b>${rp(db.settings.rate)}</b></p><div class="max-h-64 overflow-y-auto space-y-2">${s.emails.map((email) => `<label class="flex items-center gap-2 rounded-xl border border-blue-50 bg-white p-2 text-xs"><input type="checkbox" name="acceptedEmail" value="${esc(email)}" checked><span class="font-mono">${esc(email)}</span></label>`).join("")}</div>
   <p class="text-sm mt-2">Saldo dihitung dari Gmail yang dicentang.</p>
-  <button onclick="doAcc('${id}')" class="w-full py-3 rounded-xl mt-4 font-bold bg-green-500 text-white">Konfirmasi ACC</button>`)}
-function doAcc(id){const s=db.setoran.find(x=>x.id===id);const n=parseInt(accN.value);
-  if(!(n>=1&&n<=s.emails.length))return toast('Jumlah tidak valid (1–'+s.emails.length+')');
-  const u=db.users.find(x=>x.username===s.user);s.status='diterima';s.accepted=n;s.verifiedAt=Date.now();s.earned=n*db.settings.rate;if(u)u.saldo+=s.earned;
-  closeModal();save();toast('Setoran diterima, saldo +'+rp(s.earned))}
-function rejModal(id){const s=db.setoran.find(x=>x.id===id);
-  openModal('Pilih Gmail yang Ditolak '+id,`<p class="text-sm mb-3">Centang Gmail yang ditolak. Yang tidak dicentang otomatis diterima.</p><div class="max-h-48 overflow-y-auto space-y-2">${s.emails.map((email)=>`<label class="flex items-center gap-2 rounded-xl border border-blue-50 bg-white p-2 text-xs"><input type="checkbox" name="rejectedEmail" value="${esc(email)}"><span class="font-mono">${esc(email)}</span></label>`).join('')}</div><p class="text-sm mb-3 mt-3">Pilih alasan:</p><div class="space-y-2">
-  ${['Captcha','Disable','Unregist','Error','Alasan Lain'].map((r,i)=>`<label class="flex items-center gap-2 p-3 rounded-xl border border-blue-100 bg-white cursor-pointer"><input type="radio" name="rr" value="${r}" ${i===0?'checked':''} onchange="rCustom.classList.toggle('hidden',this.value!=='Alasan Lain')"><span class="text-sm font-semibold">${i+1}. ${r}</span></label>`).join('')}</div>
+  <button onclick="doAcc('${id}')" class="w-full py-3 rounded-xl mt-4 font-bold bg-green-500 text-white">Konfirmasi ACC</button>`,
+        );
+      }
+      function doAcc(id) {
+        const s = db.setoran.find((x) => x.id === id);
+        const n = parseInt(accN.value);
+        if (!(n >= 1 && n <= s.emails.length))
+          return toast("Jumlah tidak valid (1–" + s.emails.length + ")");
+        const u = db.users.find((x) => x.username === s.user);
+        s.status = "diterima";
+        s.accepted = n;
+        s.verifiedAt = Date.now();
+        s.earned = n * db.settings.rate;
+        if (u) u.saldo += s.earned;
+        closeModal();
+        save();
+        toast("Setoran diterima, saldo +" + rp(s.earned));
+      }
+      function rejModal(id) {
+        const s = db.setoran.find((x) => x.id === id);
+        openModal(
+          "Pilih Gmail yang Ditolak " + id,
+          `<p class="text-sm mb-3">Centang Gmail yang ditolak. Yang tidak dicentang otomatis diterima.</p><div class="max-h-48 overflow-y-auto space-y-2">${s.emails.map((email) => `<label class="flex items-center gap-2 rounded-xl border border-blue-50 bg-white p-2 text-xs"><input type="checkbox" name="rejectedEmail" value="${esc(email)}"><span class="font-mono">${esc(email)}</span></label>`).join("")}</div><p class="text-sm mb-3 mt-3">Pilih alasan:</p><div class="space-y-2">
+  ${["Captcha", "Disable", "Unregist", "Error", "Alasan Lain"].map((r, i) => `<label class="flex items-center gap-2 p-3 rounded-xl border border-blue-100 bg-white cursor-pointer"><input type="radio" name="rr" value="${r}" ${i === 0 ? "checked" : ""} onchange="rCustom.classList.toggle('hidden',this.value!=='Alasan Lain')"><span class="text-sm font-semibold">${i + 1}. ${r}</span></label>`).join("")}</div>
   <textarea id="rCustom" rows="3" maxlength="200" class="inp mt-3 hidden" placeholder="Tulis alasan kustom..."></textarea>
-  <button onclick="doRej('${id}')" class="w-full py-3 rounded-xl mt-4 font-bold bg-red-500 text-white">Tolak Setoran</button>`)}
-function doRej(id){let r=document.querySelector('input[name=rr]:checked').value;
-  if(r==='Alasan Lain'){r=rCustom.value.trim();if(!r)return toast('Isi alasan kustom')}
-  const s=db.setoran.find(x=>x.id===id);s.status='ditolak';s.reason=r;s.verifiedAt=Date.now();closeModal();save();toast('Setoran ditolak: '+r)}
+  <button onclick="doRej('${id}')" class="w-full py-3 rounded-xl mt-4 font-bold bg-red-500 text-white">Tolak Setoran</button>`,
+        );
+      }
+      function doRej(id) {
+        let r = document.querySelector("input[name=rr]:checked").value;
+        if (r === "Alasan Lain") {
+          r = rCustom.value.trim();
+          if (!r) return toast("Isi alasan kustom");
+        }
+        const s = db.setoran.find((x) => x.id === id);
+        s.status = "ditolak";
+        s.reason = r;
+        s.verifiedAt = Date.now();
+        closeModal();
+        save();
+        toast("Setoran ditolak: " + r);
+      }
 
-function renderPayout(){
-  payoutBody.innerHTML=[...db.withdrawals].sort((a,b)=>b.date-a.date).map(w=>`<tr class="border-t border-blue-50"><td class="p-2 font-mono text-xs">${w.id}<div class="text-[10px] text-slate-400">${fmt(w.date)}</div></td>
+      function renderPayout() {
+        payoutBody.innerHTML =
+          [...db.withdrawals]
+            .sort((a, b) => b.date - a.date)
+            .map(
+              (
+                w,
+              ) => `<tr class="border-t border-blue-50"><td class="p-2 font-mono text-xs">${w.id}<div class="text-[10px] text-slate-400">${fmt(w.date)}</div></td>
   <td class="p-2 font-semibold">${esc(w.user)}</td><td class="p-2">${esc(w.name)}</td>
   <td class="p-2 whitespace-nowrap"><span class="font-mono">${esc(w.dana)}</span> <button onclick="copy('${esc(w.dana)}')" class="text-blue-600 ml-1"><i class="fa fa-copy"></i></button></td>
-  <td class="p-2">${rp(w.amount)}</td><td class="p-2">${rp(w.fee)}</td><td class="p-2 font-bold">${rp(w.amount-w.fee)}</td>
-  <td class="p-2">${badge(w.status)}${w.reason?`<div class="text-[11px] text-red-500 mt-1">${esc(w.reason)}</div>`:''}</td>
-  <td class="p-2 text-right whitespace-nowrap">${w.status==='pending'?`<button onclick="accWd('${w.id}')" class="px-2 py-1.5 rounded-lg bg-green-500 text-white text-xs font-bold">ACC</button>
-  <button onclick="rejWdModal('${w.id}')" class="px-2 py-1.5 rounded-lg bg-red-500 text-white text-xs font-bold">Tolak</button>`:''}</td></tr>`).join('')||'<tr><td colspan="9" class="p-6 text-center text-slate-400">Belum ada permintaan</td></tr>';
-}
-function accWd(id){const w=db.withdrawals.find(x=>x.id===id);w.status='selesai';w.doneAt=Date.now();const u=db.users.find(x=>x.username===w.user);if(u)u.withdrawn+=w.amount;save();toast('Pencairan selesai')}
-function rejWdModal(id){openModal('Tolak Penarikan '+id,`<label class="text-xs font-semibold text-slate-500">Alasan penolakan</label><textarea id="wdR" rows="3" maxlength="200" class="inp mt-1" placeholder="Contoh: Nomor DANA tidak valid"></textarea>
-  <p class="text-xs text-slate-500 mt-2">Saldo akan dikembalikan ke akun user.</p><button onclick="rejWd('${id}')" class="w-full py-3 rounded-xl mt-4 font-bold bg-red-500 text-white">Tolak & Kembalikan Saldo</button>`)}
-function rejWd(id){const r=wdR.value.trim();if(!r)return toast('Alasan wajib diisi');
-  const w=db.withdrawals.find(x=>x.id===id);w.status='ditolak';w.reason=r;const u=db.users.find(x=>x.username===w.user);if(u)u.saldo+=w.amount;closeModal();save();toast('Penarikan ditolak, saldo dikembalikan')}
+  <td class="p-2">${rp(w.amount)}</td><td class="p-2">${rp(w.fee)}</td><td class="p-2 font-bold">${rp(w.amount - w.fee)}</td>
+  <td class="p-2">${badge(w.status)}${w.reason ? `<div class="text-[11px] text-red-500 mt-1">${esc(w.reason)}</div>` : ""}</td>
+  <td class="p-2 text-right whitespace-nowrap">${
+    w.status === "pending"
+      ? `<button onclick="accWd('${w.id}')" class="px-2 py-1.5 rounded-lg bg-green-500 text-white text-xs font-bold">ACC</button>
+  <button onclick="rejWdModal('${w.id}')" class="px-2 py-1.5 rounded-lg bg-red-500 text-white text-xs font-bold">Tolak</button>`
+      : ""
+  }</td></tr>`,
+            )
+            .join("") ||
+          '<tr><td colspan="9" class="p-6 text-center text-slate-400">Belum ada permintaan</td></tr>';
+      }
+      function accWd(id) {
+        const w = db.withdrawals.find((x) => x.id === id);
+        w.status = "selesai";
+        w.doneAt = Date.now();
+        const u = db.users.find((x) => x.username === w.user);
+        if (u) u.withdrawn += w.amount;
+        save();
+        toast("Pencairan selesai");
+      }
+      function rejWdModal(id) {
+        openModal(
+          "Tolak Penarikan " + id,
+          `<label class="text-xs font-semibold text-slate-500">Alasan penolakan</label><textarea id="wdR" rows="3" maxlength="200" class="inp mt-1" placeholder="Contoh: Nomor DANA tidak valid"></textarea>
+  <p class="text-xs text-slate-500 mt-2">Saldo akan dikembalikan ke akun user.</p><button onclick="rejWd('${id}')" class="w-full py-3 rounded-xl mt-4 font-bold bg-red-500 text-white">Tolak & Kembalikan Saldo</button>`,
+        );
+      }
+      function rejWd(id) {
+        const r = wdR.value.trim();
+        if (!r) return toast("Alasan wajib diisi");
+        const w = db.withdrawals.find((x) => x.id === id);
+        w.status = "ditolak";
+        w.reason = r;
+        const u = db.users.find((x) => x.username === w.user);
+        if (u) u.saldo += w.amount;
+        closeModal();
+        save();
+        toast("Penarikan ditolak, saldo dikembalikan");
+      }
 
-function renderUsers(){
-  usersBody.innerHTML=db.users.filter(u=>!u.admin).map(u=>{const st=db.setoran.filter(s=>s.user===u.username);
-  return `<tr class="border-t border-blue-50"><td class="p-2 font-semibold">${esc(u.username)}</td><td class="p-2 text-xs">${esc(u.wallet.name)}<br><span class="font-mono">DANA ${esc(u.wallet.dana)}</span></td>
+      function renderUsers() {
+        usersBody.innerHTML = db.users
+          .filter((u) => !u.admin)
+          .map((u) => {
+            const st = db.setoran.filter((s) => s.user === u.username);
+            return `<tr class="border-t border-blue-50"><td class="p-2 font-semibold">${esc(u.username)}</td><td class="p-2 text-xs">${esc(u.wallet.name)}<br><span class="font-mono">DANA ${esc(u.wallet.dana)}</span></td>
   <td class="p-2 font-bold">${rp(u.saldo)}</td><td class="p-2 text-xs"><button onclick="userHist('${esc(u.username)}')" class="text-blue-600 underline">${st.length} transaksi</button></td>
-  <td class="p-2"><button onclick="toggleVip('${esc(u.username)}')" class="px-2 py-1 rounded-lg text-xs font-bold ${u.vip?'bg-amber-100 text-amber-700':'bg-slate-100 text-slate-600'}">${u.vip?'<i class="fa fa-crown mr-1"></i>VIP':'Reguler'}</button><div class="mt-1 text-[10px] font-bold ${u.blocked?'text-red-600':'text-green-600'}">${u.blocked?'DIBLOKIR':'AKTIF'}</div></td>
+  <td class="p-2"><button onclick="toggleVip('${esc(u.username)}')" class="px-2 py-1 rounded-lg text-xs font-bold ${u.vip ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600"}">${u.vip ? '<i class="fa fa-crown mr-1"></i>VIP' : "Reguler"}</button><div class="mt-1 text-[10px] font-bold ${u.blocked ? "text-red-600" : "text-green-600"}">${u.blocked ? "DIBLOKIR" : "AKTIF"}</div></td>
   <td class="p-2 text-right whitespace-nowrap"><button onclick="saldoModal('${esc(u.username)}')" class="px-2 py-1.5 rounded-lg btn-p text-xs font-bold">Saldo</button>
   <button onclick="resetPw('${esc(u.username)}')" class="px-2 py-1.5 rounded-lg bg-slate-100 text-xs font-bold">Reset PW</button>
-  ${u.blocked?`<button onclick="unblockUser('${u.id}')" class="px-2 py-1.5 rounded-lg bg-green-100 text-green-700 text-xs font-bold">Unblock</button>`:`<button onclick="blockUser('${u.id}')" class="px-2 py-1.5 rounded-lg bg-amber-100 text-amber-700 text-xs font-bold">Block</button>`}
-  <button onclick="deleteUser('${u.id}')" class="px-2 py-1.5 rounded-lg bg-red-100 text-red-700 text-xs font-bold">Hapus</button></td></tr>`}).join('');
-}
-function userHist(n){const st=db.setoran.filter(s=>s.user===n).sort((a,b)=>b.date-a.date);
-  openModal('Riwayat '+n,st.map(s=>`<div class="flex justify-between items-center p-2 border-b border-blue-50 text-sm"><div><div class="font-mono text-xs">${s.id}</div><div class="text-xs text-slate-500">${fmt(s.date)} • ${s.emails.length} akun</div></div>${badge(s.status)}</div>`).join('')||'<p class="text-sm text-slate-400">Belum ada</p>')}
-function toggleVip(n){const u=db.users.find(x=>x.username===n);u.vip=!u.vip;save()}
-function saldoModal(n){const u=db.users.find(x=>x.username===n);
-  openModal('Koreksi Saldo '+n,`<p class="text-sm mb-2">Saldo saat ini: <b>${rp(u.saldo)}</b></p><label class="text-xs font-semibold text-slate-500">Nominal (+ tambah / - kurang)</label>
-  <input id="adj" type="number" class="inp mt-1" placeholder="contoh: 5000 atau -2000"><button onclick="doAdj('${esc(n)}')" class="btn-p w-full py-3 rounded-xl mt-4 font-bold">Terapkan</button>`)}
-function doAdj(n){const v=parseInt(adj.value);if(!v)return toast('Nominal tidak valid');const u=db.users.find(x=>x.username===n);
-  if(u.saldo+v<0)return toast('Saldo tidak boleh minus');u.saldo+=v;closeModal();save();toast('Saldo dikoreksi')}
-function resetPw(n){const np=Math.random().toString(36).slice(-8);const u=db.users.find(x=>x.username===n);u.password=np;save();
-  openModal('Password Direset',`<p class="text-sm">Password baru untuk <b>${esc(n)}</b>:</p><div class="flex gap-2 mt-2"><input readonly value="${np}" class="inp font-mono"><button onclick="copy('${np}')" class="btn-p px-4 rounded-xl"><i class="fa fa-copy"></i></button></div>`)}
+  ${u.blocked ? `<button onclick="unblockUser('${u.id}')" class="px-2 py-1.5 rounded-lg bg-green-100 text-green-700 text-xs font-bold">Unblock</button>` : `<button onclick="blockUser('${u.id}')" class="px-2 py-1.5 rounded-lg bg-amber-100 text-amber-700 text-xs font-bold">Block</button>`}
+  <button onclick="deleteUser('${u.id}')" class="px-2 py-1.5 rounded-lg bg-red-100 text-red-700 text-xs font-bold">Hapus</button></td></tr>`;
+          })
+          .join("");
+      }
+      function userHist(n) {
+        const st = db.setoran.filter((s) => s.user === n).sort((a, b) => b.date - a.date);
+        openModal(
+          "Riwayat " + n,
+          st
+            .map(
+              (s) =>
+                `<div class="flex justify-between items-center p-2 border-b border-blue-50 text-sm"><div><div class="font-mono text-xs">${s.id}</div><div class="text-xs text-slate-500">${fmt(s.date)} • ${s.emails.length} akun</div></div>${badge(s.status)}</div>`,
+            )
+            .join("") || '<p class="text-sm text-slate-400">Belum ada</p>',
+        );
+      }
+      function toggleVip(n) {
+        const u = db.users.find((x) => x.username === n);
+        u.vip = !u.vip;
+        save();
+      }
+      function saldoModal(n) {
+        const u = db.users.find((x) => x.username === n);
+        openModal(
+          "Koreksi Saldo " + n,
+          `<p class="text-sm mb-2">Saldo saat ini: <b>${rp(u.saldo)}</b></p><label class="text-xs font-semibold text-slate-500">Nominal (+ tambah / - kurang)</label>
+  <input id="adj" type="number" class="inp mt-1" placeholder="contoh: 5000 atau -2000"><button onclick="doAdj('${esc(n)}')" class="btn-p w-full py-3 rounded-xl mt-4 font-bold">Terapkan</button>`,
+        );
+      }
+      function doAdj(n) {
+        const v = parseInt(adj.value);
+        if (!v) return toast("Nominal tidak valid");
+        const u = db.users.find((x) => x.username === n);
+        if (u.saldo + v < 0) return toast("Saldo tidak boleh minus");
+        u.saldo += v;
+        closeModal();
+        save();
+        toast("Saldo dikoreksi");
+      }
+      function resetPw(n) {
+        const np = Math.random().toString(36).slice(-8);
+        const u = db.users.find((x) => x.username === n);
+        u.password = np;
+        save();
+        openModal(
+          "Password Direset",
+          `<p class="text-sm">Password baru untuk <b>${esc(n)}</b>:</p><div class="flex gap-2 mt-2"><input readonly value="${np}" class="inp font-mono"><button onclick="copy('${np}')" class="btn-p px-4 rounded-xl"><i class="fa fa-copy"></i></button></div>`,
+        );
+      }
 
-function renderSettings(){const s=db.settings;
-  const t=(k,l,d)=>`<div class="flex items-center justify-between p-3 rounded-xl bg-white border border-blue-50"><div><div class="font-semibold text-sm">${l}</div><div class="text-xs ${s[k]?'text-green-600':'text-red-500'} font-bold">${s[k]?'● BUKA':'● TUTUP'} <span class="text-slate-400 font-normal">— ${d}</span></div></div><div class="tgl ${s[k]?'on':''}" onclick="db.settings.${k}=!db.settings.${k};save();toast('${l} '+(db.settings.${k}?'dibuka':'ditutup'))"></div></div>`;
-  toggles.innerHTML=t('storOpen','Stor Gmail','Halaman setor user')+t('tarikOpen','Tarik Saldo','Form penarikan user')+t('checkerOpen','Checker Gmail','Fitur cek Gmail user');
-  if(document.activeElement?.closest('form'))return;
-  cRate.value=s.rate;cMin.value=s.minTarik;cFee.value=s.fee;cPass.value=s.campaignPass;cLimit.value=s.limit;cDaily.value=s.dailyMax;cAnn.value=s.announcement;cAutoStock.checked=!!s.autoStockEnabled;cStock.value=(s.gmailStock||[]).join('\n');
-  dailyInfo.textContent=`Terpakai hari ini (${db.daily.date}): ${db.daily.count}/${s.dailyMax} Gmail • reset otomatis 00:00 WIB`;
-}
-function saveSettings(e){e.preventDefault();const lim=parseInt(cLimit.value);
-  if(!(lim>=1&&lim<=50))return toast('Limit per transaksi harus 1–50');
-  if(!cPass.value.trim())return toast('Password wajib harus diisi');
-  Object.assign(db.settings,{rate:Math.max(0,+cRate.value),minTarik:Math.max(0,+cMin.value),fee:Math.max(0,+cFee.value),campaignPass:cPass.value.trim(),limit:lim,dailyMax:Math.max(0,+cDaily.value),announcement:cAnn.value.trim()});
-  document.activeElement?.blur();save();toast('Konfigurasi disimpan')}
+      function renderSettings() {
+        const s = db.settings;
+        const t = (k, l, d) =>
+          `<div class="flex items-center justify-between p-3 rounded-xl bg-white border border-blue-50"><div><div class="font-semibold text-sm">${l}</div><div class="text-xs ${s[k] ? "text-green-600" : "text-red-500"} font-bold">${s[k] ? "● BUKA" : "● TUTUP"} <span class="text-slate-400 font-normal">— ${d}</span></div></div><div class="tgl ${s[k] ? "on" : ""}" onclick="db.settings.${k}=!db.settings.${k};save();toast('${l} '+(db.settings.${k}?'dibuka':'ditutup'))"></div></div>`;
+        toggles.innerHTML =
+          t("storOpen", "Stor Gmail", "Halaman setor user") +
+          t("tarikOpen", "Tarik Saldo", "Form penarikan user") +
+          t("checkerOpen", "Checker Gmail", "Fitur cek Gmail user");
+        if (document.activeElement?.closest("form")) return;
+        cRate.value = s.rate;
+        cMin.value = s.minTarik;
+        cFee.value = s.fee;
+        cPass.value = s.campaignPass;
+        cLimit.value = s.limit;
+        cDaily.value = s.dailyMax;
+        cAnn.value = s.announcement;
+        cAutoStock.checked = !!s.autoStockEnabled;
+        cStock.value = (s.gmailStock || []).join("\n");
+        dailyInfo.textContent = `Terpakai hari ini (${db.daily.date}): ${db.daily.count}/${s.dailyMax} Gmail • reset otomatis 00:00 WIB`;
+      }
+      function saveSettings(e) {
+        e.preventDefault();
+        const lim = parseInt(cLimit.value);
+        if (!(lim >= 1 && lim <= 50)) return toast("Limit per transaksi harus 1–50");
+        if (!cPass.value.trim()) return toast("Password wajib harus diisi");
+        Object.assign(db.settings, {
+          rate: Math.max(0, +cRate.value),
+          minTarik: Math.max(0, +cMin.value),
+          fee: Math.max(0, +cFee.value),
+          campaignPass: cPass.value.trim(),
+          limit: lim,
+          dailyMax: Math.max(0, +cDaily.value),
+          announcement: cAnn.value.trim(),
+        });
+        document.activeElement?.blur();
+        save();
+        toast("Konfigurasi disimpan");
+      }
 
-// USER MODE SIMULATOR
-function renderUser(){if(!userMode)return;const s=db.settings;
-  const cur=uSel.value||db.users[0].username;uSel.innerHTML=db.users.map(u=>`<option ${u.username===cur?'selected':''}>${esc(u.username)}</option>`).join('');
-  const u=db.users.find(x=>x.username===cur);uAnn.textContent=s.announcement;uSaldo.textContent=rp(u.saldo);
-  const lock=(t)=>`<div class="text-center py-6"><i class="fa fa-lock text-3xl text-red-400"></i><p class="font-bold text-red-500 mt-2">${t}</p></div>`;
-  const left=Math.max(0,s.dailyMax-db.daily.count);
-  uStor.innerHTML=`<h3 class="font-bold mb-2">Stor Gmail <span class="text-xs text-slate-400">(${rp(s.rate)}/akun • maks ${s.limit}/transaksi • sisa kuota hari ini ${left})</span></h3>`+
-   (!s.storOpen?lock('Setoran Ditutup oleh Admin'):left<=0?lock('Kuota setoran hari ini habis (reset 00:00 WIB)'):
-   `<textarea id="uEm" rows="5" class="inp font-mono text-xs" placeholder="satu email per baris"></textarea>
+      // USER MODE SIMULATOR
+      function renderUser() {
+        if (!userMode) return;
+        const s = db.settings;
+        const cur = uSel.value || db.users[0].username;
+        uSel.innerHTML = db.users
+          .map((u) => `<option ${u.username === cur ? "selected" : ""}>${esc(u.username)}</option>`)
+          .join("");
+        const u = db.users.find((x) => x.username === cur);
+        uAnn.textContent = s.announcement;
+        uSaldo.textContent = rp(u.saldo);
+        const lock = (t) =>
+          `<div class="text-center py-6"><i class="fa fa-lock text-3xl text-red-400"></i><p class="font-bold text-red-500 mt-2">${t}</p></div>`;
+        const left = Math.max(0, s.dailyMax - db.daily.count);
+        uStor.innerHTML =
+          `<h3 class="font-bold mb-2">Stor Gmail <span class="text-xs text-slate-400">(${rp(s.rate)}/akun • maks ${s.limit}/transaksi • sisa kuota hari ini ${left})</span></h3>` +
+          (!s.storOpen
+            ? lock("Setoran Ditutup oleh Admin")
+            : left <= 0
+              ? lock("Kuota setoran hari ini habis (reset 00:00 WIB)")
+              : `<textarea id="uEm" rows="5" class="inp font-mono text-xs" placeholder="satu email per baris"></textarea>
     <input id="uCp" class="inp mt-2" placeholder="Password wajib"><button onclick="uSubmit()" class="btn-p w-full py-3 rounded-xl mt-2 font-bold">Kirim Setoran</button>`);
-  uTarik.innerHTML=`<h3 class="font-bold mb-2">Tarik Saldo <span class="text-xs text-slate-400">(min ${rp(s.minTarik)} • DANA ${esc(u.wallet.dana)})</span></h3>`+
-   (!s.tarikOpen?lock('Penarikan Ditutup'):`<input id="uAmt" type="number" class="inp" placeholder="Nominal"><button onclick="uTarikDo()" class="btn-p w-full py-3 rounded-xl mt-2 font-bold">Ajukan Penarikan</button>`);
-  uRiwayat.innerHTML=db.setoran.filter(x=>x.user===u.username).sort((a,b)=>b.date-a.date).map(x=>`<div class="p-3 rounded-xl bg-white border border-blue-50 text-sm"><div class="flex justify-between"><span class="font-mono text-xs">${x.id}</span>${badge(x.status)}</div>
-   <div class="text-xs text-slate-500 mt-1">${fmt(x.date)} • ${x.emails.length} akun${x.status==='diterima'?` • ${x.accepted} diterima • +${rp(x.earned??x.accepted*s.rate)}`:''}</div>
-   ${x.reason?`<div class="text-xs mt-1 p-2 rounded-lg bg-red-50 text-red-600"><b>Alasan:</b> ${esc(x.reason)}</div>`:''}</div>`).join('')||'<p class="text-xs text-slate-400">Belum ada setoran</p>';
-  uRiwayatW.innerHTML=db.withdrawals.filter(x=>x.user===u.username).sort((a,b)=>b.date-a.date).map(x=>`<div class="p-3 rounded-xl bg-white border border-blue-50 text-sm flex justify-between"><div>${rp(x.amount)}<div class="text-xs text-slate-500">${fmt(x.date)}</div>${x.reason?`<div class="text-xs text-red-600">Alasan: ${esc(x.reason)}</div>`:''}</div>${badge(x.status)}</div>`).join('')||'<p class="text-xs text-slate-400">Belum ada</p>';
-}
-function uSubmit(){const s=db.settings;resetDaily();
-  const em=[...new Set(uEm.value.split(/\s+/).map(x=>x.trim().toLowerCase()).filter(Boolean))];
-  if(!em.length)return toast('Masukkan minimal 1 email');
-  const bad=em.find(x=>!/^[a-z0-9._%+-]{1,64}@gmail\.com$/.test(x));if(bad)return toast('Format tidak valid: '+bad);
-  const max=Math.min(50,s.limit);if(em.length>max)return toast('Maksimal '+max+' akun per transaksi');
-  if(db.daily.count+em.length>s.dailyMax)return toast('Melebihi kuota harian');
-  if(uCp.value.trim()!==s.campaignPass)return toast('Password wajib salah');
-  db.setoran.push({id:uid('STR'),date:Date.now(),user:uSel.value,emails:em,status:'pending'});db.daily.count+=em.length;save();toast('Setoran terkirim ke antrean admin')}
-function uTarikDo(){const s=db.settings,u=db.users.find(x=>x.username===uSel.value);const a=parseInt(uAmt.value);
-  if(!(a>=s.minTarik))return toast('Minimal '+rp(s.minTarik));if(a>u.saldo)return toast('Saldo tidak cukup');
-  u.saldo-=a;db.withdrawals.push({id:uid('WD'),date:Date.now(),user:u.username,name:u.wallet.name,dana:u.wallet.dana,amount:a,fee:Math.min(s.fee,a),status:'pending'});save();toast('Penarikan diajukan')}
-
-</script>
-  <script src="/admin-api.js"></script>
-</body>
+        uTarik.innerHTML =
+          `<h3 class="font-bold mb-2">Tarik Saldo <span class="text-xs text-slate-400">(min ${rp(s.minTarik)} • DANA ${esc(u.wallet.dana)})</span></h3>` +
+          (!s.tarikOpen
+            ? lock("Penarikan Ditutup")
+            : `<input id="uAmt" type="number" class="inp" placeholder="Nominal"><button onclick="uTarikDo()" class="btn-p w-full py-3 rounded-xl mt-2 font-bold">Ajukan Penarikan</button>`);
+        uRiwayat.innerHTML =
+          db.setoran
+            .filter((x) => x.user === u.username)
+            .sort((a, b) => b.date - a.date)
+            .map(
+              (
+                x,
+              ) => `<div class="p-3 rounded-xl bg-white border border-blue-50 text-sm"><div class="flex justify-between"><span class="font-mono text-xs">${x.id}</span>${badge(x.status)}</div>
+   <div class="text-xs text-slate-500 mt-1">${fmt(x.date)} • ${x.emails.length} akun${x.status === "diterima" ? ` • ${x.accepted} diterima • +${rp(x.earned ?? x.accepted * s.rate)}` : ""}</div>
+   ${x.reason ? `<div class="text-xs mt-1 p-2 rounded-lg bg-red-50 text-red-600"><b>Alasan:</b> ${esc(x.reason)}</div>` : ""}</div>`,
+            )
+            .join("") || '<p class="text-xs text-slate-400">Belum ada setoran</p>';
+        uRiwayatW.innerHTML =
+          db.withdrawals
+            .filter((x) => x.user === u.username)
+            .sort((a, b) => b.date - a.date)
+            .map(
+              (x) =>
+                `<div class="p-3 rounded-xl bg-white border border-blue-50 text-sm flex justify-between"><div>${rp(x.amount)}<div class="text-xs text-slate-500">${fmt(x.date)}</div>${x.reason ? `<div class="text-xs text-red-600">Alasan: ${esc(x.reason)}</div>` : ""}</div>${badge(x.status)}</div>`,
+            )
+            .join("") || '<p class="text-xs text-slate-400">Belum ada</p>';
+      }
+      function uSubmit() {
+        const s = db.settings;
+        resetDaily();
+        const em = [
+          ...new Set(
+            uEm.value
+              .split(/\s+/)
+              .map((x) => x.trim().toLowerCase())
+              .filter(Boolean),
+          ),
+        ];
+        if (!em.length) return toast("Masukkan minimal 1 email");
+        const bad = em.find((x) => !/^[a-z0-9._%+-]{1,64}@gmail\.com$/.test(x));
+        if (bad) return toast("Format tidak valid: " + bad);
+        const max = Math.min(50, s.limit);
+        if (em.length > max) return toast("Maksimal " + max + " akun per transaksi");
+        if (db.daily.count + em.length > s.dailyMax) return toast("Melebihi kuota harian");
+        if (uCp.value.trim() !== s.campaignPass) return toast("Password wajib salah");
+        db.setoran.push({
+          id: uid("STR"),
+          date: Date.now(),
+          user: uSel.value,
+          emails: em,
+          status: "pending",
+        });
+        db.daily.count += em.length;
+        save();
+        toast("Setoran terkirim ke antrean admin");
+      }
+      function uTarikDo() {
+        const s = db.settings,
+          u = db.users.find((x) => x.username === uSel.value);
+        const a = parseInt(uAmt.value);
+        if (!(a >= s.minTarik)) return toast("Minimal " + rp(s.minTarik));
+        if (a > u.saldo) return toast("Saldo tidak cukup");
+        u.saldo -= a;
+        db.withdrawals.push({
+          id: uid("WD"),
+          date: Date.now(),
+          user: u.username,
+          name: u.wallet.name,
+          dana: u.wallet.dana,
+          amount: a,
+          fee: Math.min(s.fee, a),
+          status: "pending",
+        });
+        save();
+        toast("Penarikan diajukan");
+      }
+    </script>
+    <script src="/admin-api.js"></script>
+  </body>
 </html>
