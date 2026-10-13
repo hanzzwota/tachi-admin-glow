@@ -10,21 +10,31 @@
     return data;
   };
   const notify = (message, icon = "success") => window.toast?.(message, icon);
+  const paymentMethods = ["DANA", "OVO", "GoPay", "ShopeePay", "BCA", "BRI", "Mandiri"];
+  const paymentKey = (value) =>
+    String(value)
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "");
+  const normalizePaymentFees = (value, fallback = 0) => {
+    const source = value && typeof value === "object" ? value : {};
+    return Object.fromEntries(
+      paymentMethods.map((method) => {
+        const entry = Object.entries(source).find(
+          ([key]) => paymentKey(key) === paymentKey(method),
+        );
+        const amount = Number(entry?.[1] ?? fallback);
+        return [method, Number.isFinite(amount) ? Math.max(0, amount) : Math.max(0, fallback)];
+      }),
+    );
+  };
   const normalize = (settings, deposits, users, withdrawals, paymentFeesOverride = null) => ({
     settings: {
       rate: Number(settings?.rate || 0),
       minTarik: Number(settings?.min_withdrawal || 0),
       fee: Number(settings?.fee || 0),
-      paymentFees: Object.fromEntries(
-        ["DANA", "OVO", "GoPay", "ShopeePay", "BCA", "BRI", "Mandiri"].map((key) => [
-          key,
-          Math.max(
-            0,
-            Number(
-              paymentFeesOverride?.[key] ?? settings?.payment_fees?.[key] ?? settings?.fee ?? 0,
-            ),
-          ),
-        ]),
+      paymentFees: normalizePaymentFees(
+        paymentFeesOverride ?? settings?.payment_fees,
+        Number(settings?.fee || 0),
       ),
       campaignPass: settings?.campaign_password || "",
       storOpen: settings?.store_open !== false,

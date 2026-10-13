@@ -16,6 +16,18 @@ import { rateLimit } from "../../server/rate-limit";
 
 type Body = Record<string, unknown>;
 const text = (value: unknown) => (typeof value === "string" ? value.trim() : "");
+const paymentMethods = ["DANA", "OVO", "GoPay", "ShopeePay", "BCA", "BRI", "Mandiri"];
+const paymentKey = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, "");
+function canonicalPaymentFees(value: unknown, fallback: number) {
+  const source = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+  return Object.fromEntries(
+    paymentMethods.map((method) => {
+      const found = Object.entries(source).find(([key]) => paymentKey(key) === paymentKey(method));
+      const amount = Number(found?.[1] ?? fallback);
+      return [method, Number.isFinite(amount) ? Math.max(0, amount) : Math.max(0, fallback)];
+    }),
+  );
+}
 const idFromPath = (path: string) => path.split("/").filter(Boolean).at(-1) ?? "";
 
 async function body(request: Request): Promise<Body> {
@@ -310,8 +322,7 @@ async function updateSettings(request: Request) {
     rate: numberOrZero(payload.rate),
     min_withdrawal: numberOrZero(payload.minWithdrawal),
     fee: numberOrZero(payload.fee),
-    payment_fees:
-      payload.paymentFees && typeof payload.paymentFees === "object" ? payload.paymentFees : {},
+    payment_fees: canonicalPaymentFees(payload.paymentFees, numberOrZero(payload.fee)),
     campaign_password: text(payload.campaignPassword),
     store_open: Boolean(payload.storeOpen),
     withdraw_open: Boolean(payload.withdrawOpen),
@@ -353,16 +364,7 @@ function userSettings(settings: Record<string, unknown> | null) {
   if (!settings) return null;
   const { gmail_stock: _gmailStock, ...safeSettings } = settings;
   const fallbackFee = Math.max(0, Number(safeSettings.fee ?? 0));
-  const configuredFees =
-    safeSettings.payment_fees && typeof safeSettings.payment_fees === "object"
-      ? (safeSettings.payment_fees as Record<string, unknown>)
-      : {};
-  safeSettings.payment_fees = Object.fromEntries(
-    ["DANA", "OVO", "GoPay", "ShopeePay", "BCA", "BRI", "Mandiri"].map((method) => [
-      method,
-      Math.max(0, Number(configuredFees[method] ?? fallbackFee)),
-    ]),
-  );
+  safeSettings.payment_fees = canonicalPaymentFees(safeSettings.payment_fees, fallbackFee);
   return safeSettings;
 }
 
@@ -442,10 +444,7 @@ async function createWithdrawal(request: Request) {
   const payload = await body(request);
   const amount = Math.floor(Number(payload.amount));
   const balance = Number(user.balance ?? 0);
-  const paymentFees =
-    settings.payment_fees && typeof settings.payment_fees === "object"
-      ? (settings.payment_fees as Record<string, unknown>)
-      : {};
+  const paymentFees = canonicalPaymentFees(settings.payment_fees, Number(settings.fee ?? 0));
   const fee = Math.max(
     0,
     Number(paymentFees[String(user.wallet_bank ?? "DANA")] ?? settings.fee ?? 0),

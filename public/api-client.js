@@ -11,6 +11,23 @@
   };
   const toast = (message) => window.showToast?.(message);
   const format = (value) => `Rp${Number(value || 0).toLocaleString("id-ID")}`;
+  const paymentMethods = ["DANA", "OVO", "GoPay", "ShopeePay", "BCA", "BRI", "Mandiri"];
+  const paymentKey = (value) =>
+    String(value)
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "");
+  const normalizePaymentFees = (value, fallback = 0) => {
+    const source = value && typeof value === "object" ? value : {};
+    return Object.fromEntries(
+      paymentMethods.map((method) => {
+        const entry = Object.entries(source).find(
+          ([key]) => paymentKey(key) === paymentKey(method),
+        );
+        const amount = Number(entry?.[1] ?? fallback);
+        return [method, Number.isFinite(amount) ? Math.max(0, amount) : Math.max(0, fallback)];
+      }),
+    );
+  };
   const escapeHtml = (value) =>
     String(value ?? "").replace(
       /[&<>"']/g,
@@ -231,7 +248,10 @@
         : user.displayName || user.username,
       wallet,
     };
-    state.settings = settings || {};
+    state.settings = {
+      ...(settings || {}),
+      payment_fees: normalizePaymentFees(settings?.payment_fees, Number(settings?.fee || 0)),
+    };
     state.deposits = Array.isArray(deposits) ? deposits : [];
     state.withdrawals = Array.isArray(withdrawals) ? withdrawals : [];
     applyUserDom();
