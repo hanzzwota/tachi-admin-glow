@@ -163,38 +163,25 @@ export function defaultSettingsRow(): Record<string, unknown> {
   };
 }
 
-async function createDefaultSettingsRow() {
-  const defaultSettings = defaultSettingsRow();
-  const duplicate = (message: string) => /duplicate|23505|already exists|409/i.test(message);
-
-  try {
-    try {
-      await supabaseFetch("app_settings", {
-        method: "POST",
-        headers: { Prefer: "return=minimal" },
-        body: JSON.stringify(defaultSettings),
-      });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      if (!duplicate(message)) throw error;
-    }
-
-    const refreshed = await supabaseFetch<Row[]>("app_settings?select=*&id=eq.1&limit=1");
-    return refreshed?.[0] ?? defaultSettings;
-  } catch (error) {
-    console.warn(
-      "createDefaultSettingsRow: failed to initialize app_settings row without overwriting existing config:",
-      error instanceof Error ? error.message : error,
-    );
-    return defaultSettings;
-  }
-}
-
 export async function getSettings() {
   const rows = await supabaseFetch<Row[]>("app_settings?select=*&id=eq.1&limit=1");
   if (rows && rows[0]) return rows[0];
 
-  return createDefaultSettingsRow();
+  const defaultSettings = defaultSettingsRow();
+  try {
+    const created = await supabaseFetch<Row[]>("app_settings?on_conflict=id", {
+      method: "POST",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify(defaultSettings),
+    });
+    return created && created[0] ? created[0] : defaultSettings;
+  } catch (error) {
+    console.warn(
+      "getSettings: failed to initialize app_settings row; falling back to in-memory defaults:",
+      error instanceof Error ? error.message : error,
+    );
+    return defaultSettings;
+  }
 }
 
 export function json(data: unknown, init: ResponseInit = {}) {
@@ -208,11 +195,4 @@ export function errorResponse(error: unknown) {
   console.error(error);
   const message = error instanceof Error ? error.message : "Terjadi kesalahan server";
   return json({ error: message }, { status: 500 });
-}
-
-export async function ensureSettingsRow() {
-  const current = await getSettings();
-  if (current) return current;
-
-  return createDefaultSettingsRow();
 }
