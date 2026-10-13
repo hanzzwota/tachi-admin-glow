@@ -285,7 +285,7 @@
         }
 
         /* Semua item bottom bar sejajar dan tidak lagi berbentuk bulat/runcing */
-        .nav-shell { position: fixed !important; display: flex; border-radius: 1.25rem; bottom: max(12px, env(safe-area-inset-bottom)) !important; left: 50% !important; right: auto !important; width: min(calc(100% - 24px), 480px) !important; transform: translateX(-50%); margin: 0; z-index: 9999 !important; }
+        .nav-shell { position: fixed !important; display: flex; border-radius: 1.25rem; top: max(10px, env(safe-area-inset-top)) !important; bottom: auto !important; left: 50% !important; right: auto !important; width: min(calc(100% - 24px), 480px) !important; transform: translateX(-50%); margin: 0; z-index: 9999 !important; }
         .nav-button { border-radius: .85rem; min-width: 3.5rem; padding: .35rem .25rem; }
         .nav-button:hover { background: rgba(59, 130, 246, .08); }
         .nav-stor-button { border-radius: .85rem !important; width: auto !important; height: auto !important; min-width: 3.5rem; padding: .35rem .25rem !important; border-width: 0 !important; box-shadow: none !important; background: transparent !important; color: #64748b; }
@@ -301,7 +301,7 @@
     <div class="bg-sphere-3"></div>
 
     <!-- Main Mobile Container -->
-    <div class="w-full max-w-lg min-h-screen px-3 sm:px-4 py-4 flex flex-col justify-start relative z-10">
+    <div class="w-full max-w-lg min-h-screen px-3 sm:px-4 pt-20 pb-4 flex flex-col justify-start relative z-10">
 
         <!-- ==================== VIEW 1: LOGIN PAGE ==================== -->
         <div id="view-login" class="flex flex-col items-center justify-center min-h-[85vh] w-full py-4 my-auto">
@@ -563,12 +563,12 @@
                         <span>Limit Storan Hari Ini</span>
                     </div>
                     <div class="font-bold text-slate-700">
-                        <span>0/20</span>
-                        <span class="text-slate-400 font-medium">· Sisa 20</span>
+                        <span id="dailyDepositUsage">0/0</span>
+                        <span id="dailyDepositRemaining" class="text-slate-400 font-medium">· Sisa 0</span>
                     </div>
                 </div>
                 <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden relative">
-                    <div class="bg-gradient-to-r from-blue-500 to-indigo-600 h-full w-[5%] rounded-full relative">
+                    <div id="dailyDepositProgress" class="bg-gradient-to-r from-blue-500 to-indigo-600 h-full w-0 rounded-full relative">
                         <div class="absolute right-0 top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-blue-600 border-2 border-white rounded-full shadow-sm"></div>
                     </div>
                 </div>
@@ -890,7 +890,7 @@
                         <span id="withdrawAvailableBalance" class="font-bold text-slate-800">Rp0</span>
                     </div>
                     <div class="border-t border-slate-200/80 pt-2 text-[10px] text-slate-400">
-                        Saldo terpotong = nominal penarikan + fee admin.
+                    <span id="withdrawFeeLabel">Fee payment: Rp0</span> · Saldo terpotong = nominal penarikan + fee admin.
                     </div>
                 </div>
 
@@ -1088,6 +1088,17 @@
                 </button>
             </div>
 
+            <div class="grid grid-cols-2 gap-3">
+                <div class="rounded-2xl border border-blue-100 bg-blue-50 p-3">
+                    <p class="text-[10px] font-extrabold uppercase tracking-wide text-blue-600">Hari ini</p>
+                    <p id="recapToday" class="mt-1 text-sm font-black text-slate-800">0 Gmail · Rp0</p>
+                </div>
+                <div class="rounded-2xl border border-slate-200 bg-slate-100 p-3">
+                    <p class="text-[10px] font-extrabold uppercase tracking-wide text-slate-500">Kemarin</p>
+                    <p id="recapYesterday" class="mt-1 text-sm font-black text-slate-800">0 Gmail · Rp0</p>
+                </div>
+            </div>
+
             <!-- Content Area List -->
             <div id="riwayatListContainer" class="flex flex-col gap-3 py-6 text-center">
                 <div class="w-16 h-16 rounded-3xl bg-blue-50 text-blue-500 flex items-center justify-center text-2xl mx-auto mb-2">
@@ -1099,7 +1110,7 @@
         </div>
 
         <!-- Bottom Navigation Bar -->
-        <nav id="bottomAppNav" class="nav-shell hidden fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white/95 backdrop-blur-md border border-slate-200/80 px-2 py-2 items-center justify-around gap-1 z-40 shadow-lg">
+        <nav id="bottomAppNav" class="nav-shell hidden fixed top-0 left-0 right-0 max-w-lg mx-auto bg-white/95 backdrop-blur-md border border-slate-200/80 px-2 py-2 items-center justify-around gap-1 z-40 shadow-lg">
             <button onclick="navigateTo('dashboard')" id="nav-item-dashboard" class="nav-button flex-1 flex flex-col items-center gap-1 text-blue-600">
                 <i class="fa-solid fa-house text-base"></i>
                 <span class="text-[10px] font-bold">Beranda</span>
@@ -1248,6 +1259,12 @@
 
         // View Navigation Handler
         function navigateTo(viewName) {
+            const routeMap = { dashboard: '/dashboard', stor: '/setor', saldo: '/saldo', profil: '/profil', riwayat: '/riwayat', login: '/login', register: '/register' };
+            const targetRoute = routeMap[viewName];
+            if (targetRoute && window.top !== window && window.top.location.pathname !== targetRoute) {
+                window.top.location.href = targetRoute;
+                return;
+            }
             const views = ['login', 'register', 'dashboard', 'stor', 'saldo', 'profil', 'riwayat'];
             
             views.forEach(v => {

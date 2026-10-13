@@ -15,6 +15,10 @@
       rate: Number(settings?.rate || 0),
       minTarik: Number(settings?.min_withdrawal || 0),
       fee: Number(settings?.fee || 0),
+      paymentFees:
+        settings?.payment_fees && typeof settings.payment_fees === "object"
+          ? settings.payment_fees
+          : {},
       campaignPass: settings?.campaign_password || "",
       storOpen: settings?.store_open !== false,
       tarikOpen: settings?.withdraw_open !== false,
@@ -124,6 +128,10 @@
         api("admin/withdrawals"),
       ]);
       db = normalize(settings, deposits, users, withdrawals);
+      ["DANA", "OVO", "GoPay", "ShopeePay", "BCA", "BRI", "Mandiri"].forEach((key) => {
+        const input = document.getElementById(`fee${key}`);
+        if (input) input.value = Number(db.settings.paymentFees[key] || 0);
+      });
       window.reloadAdminDb?.();
     })();
     try {
@@ -140,6 +148,7 @@
           rate: db.settings.rate,
           minWithdrawal: db.settings.minTarik,
           fee: db.settings.fee,
+          paymentFees: db.settings.paymentFees,
           campaignPassword: db.settings.campaignPass,
           storeOpen: db.settings.storOpen,
           withdrawOpen: db.settings.tarikOpen,
@@ -260,6 +269,12 @@
           rate: cRate.value,
           minWithdrawal: cMin.value,
           fee: cFee.value,
+          paymentFees: Object.fromEntries(
+            ["DANA", "OVO", "GoPay", "ShopeePay", "BCA", "BRI", "Mandiri"].map((key) => [
+              key,
+              Math.max(0, Number(document.getElementById(`fee${key}`)?.value || 0)),
+            ]),
+          ),
           campaignPassword: cPass.value,
           storeOpen: db.settings.storOpen,
           withdrawOpen: db.settings.tarikOpen,
@@ -288,6 +303,7 @@
           rate: db.settings.rate,
           minWithdrawal: db.settings.minTarik,
           fee: db.settings.fee,
+          paymentFees: db.settings.paymentFees,
           campaignPassword: db.settings.campaignPass,
           storeOpen: db.settings.storOpen,
           withdrawOpen: db.settings.tarikOpen,

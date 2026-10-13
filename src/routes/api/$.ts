@@ -298,6 +298,8 @@ async function updateSettings(request: Request) {
     rate: Number(payload.rate),
     min_withdrawal: Number(payload.minWithdrawal),
     fee: Number(payload.fee),
+    payment_fees:
+      payload.paymentFees && typeof payload.paymentFees === "object" ? payload.paymentFees : {},
     campaign_password: text(payload.campaignPassword),
     store_open: Boolean(payload.storeOpen),
     withdraw_open: Boolean(payload.withdrawOpen),
@@ -321,6 +323,21 @@ function userSettings(settings: Record<string, unknown> | null) {
   const { gmail_stock: _gmailStock, ...safeSettings } = settings;
   return safeSettings;
 }
+
+async function dailyDepositStats(settings: Record<string, unknown> | null) {
+  const jakartaDate = new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const start = encodeURIComponent(`${jakartaDate}T00:00:00+07:00`);
+  const rows = await supabaseFetch<Record<string, unknown>[]>(
+    `deposits?select=emails&created_at=gte.${start}&limit=500`,
+  );
+  const used = rows.reduce(
+    (total, row) => total + (Array.isArray(row.emails) ? row.emails.length : 0),
+    0,
+  );
+  const limit = Math.max(0, Number(settings?.daily_limit ?? 0));
+  return { daily_used: used, daily_remaining: limit ? Math.max(0, limit - used) : null };
+}
+
 async function claimGmailStock(request: Request) {
   await requireUser(request);
   const settings = await getSettings();
@@ -345,12 +362,17 @@ async function updateWallet(request: Request) {
   const number = text(payload.number);
   if (!name || !/^[0-9]{8,16}$/.test(number))
     return json({ error: "Nomor wallet 8-16 digit dan nama wajib diisi" }, { status: 400 });
-  await supabaseFetch(`profiles?id=eq.${encodeURIComponent(String(user.id))}`, {
-    method: "PATCH",
-    headers: { Prefer: "return=minimal" },
-    body: JSON.stringify({ wallet_bank: bank, wallet_name: name, wallet_number: number }),
-  });
-  return json({ ok: true });
+  const updated = await supabaseFetch<Record<string, unknown>[]>(
+    `profiles?id=eq.${encodeURIComponent(String(user.id))}&select=id,wallet_bank,wallet_name,wallet_number`,
+    {
+      method: "PATCH",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify({ wallet_bank: bank, wallet_name: name, wallet_number: number }),
+    },
+  );
+  if (!updated[0])
+    return json({ error: "Data rekening gagal disimpan, silakan coba lagi" }, { status: 409 });
+  return json({ ok: true, wallet: updated[0] });
 }
 
 async function userWithdrawals(request: Request, admin = false) {
@@ -369,7 +391,14 @@ async function createWithdrawal(request: Request) {
   const payload = await body(request);
   const amount = Math.floor(Number(payload.amount));
   const balance = Number(user.balance ?? 0);
-  const fee = Math.max(0, Number(settings.fee ?? 0));
+  const paymentFees =
+    settings.payment_fees && typeof settings.payment_fees === "object"
+      ? (settings.payment_fees as Record<string, unknown>)
+      : {};
+  const fee = Math.max(
+    0,
+    Number(paymentFees[String(user.wallet_bank ?? "DANA")] ?? settings.fee ?? 0),
+  );
   if (!Number.isFinite(amount) || amount < Number(settings.min_withdrawal ?? 0))
     return json(
       {
@@ -489,7 +518,8 @@ async function handler(request: Request, path: string) {
   if (request.method === "GET" && path === "settings") {
     const user = await requireUser(request);
     const settings = await getSettings();
-    return json({ settings: user.role === "admin" ? settings : userSettings(settings) });
+    const safe = user.role === "admin" ? settings : userSettings(settings);
+    return json({ settings: { ...(safe || {}), ...(await dailyDepositStats(settings)) } });
   }
   if (request.method === "GET" && path === "deposits") return userDeposits(request);
   if (request.method === "POST" && path === "deposits") return createDeposit(request);

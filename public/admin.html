@@ -100,6 +100,18 @@ input,select,textarea{outline:none}
         <label class="block text-xs font-semibold text-slate-500">Rate Setoran per Gmail (Rp)<input id="cRate" type="number" min="0" class="inp mt-1"></label>
         <label class="block text-xs font-semibold text-slate-500">Minimal Tarik Saldo (Rp)<input id="cMin" type="number" min="0" class="inp mt-1"></label>
         <label class="block text-xs font-semibold text-slate-500">Fee Admin Penarikan (Rp)<input id="cFee" type="number" min="0" class="inp mt-1"></label>
+        <div class="rounded-xl border border-blue-100 bg-blue-50/50 p-3 space-y-2">
+          <p class="text-xs font-bold text-slate-700">Fee berdasarkan payment</p>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="text-[11px] font-semibold text-slate-500">DANA<input id="feeDANA" type="number" min="0" class="inp mt-1"></label>
+            <label class="text-[11px] font-semibold text-slate-500">OVO<input id="feeOVO" type="number" min="0" class="inp mt-1"></label>
+            <label class="text-[11px] font-semibold text-slate-500">GoPay<input id="feeGoPay" type="number" min="0" class="inp mt-1"></label>
+            <label class="text-[11px] font-semibold text-slate-500">ShopeePay<input id="feeShopeePay" type="number" min="0" class="inp mt-1"></label>
+            <label class="text-[11px] font-semibold text-slate-500">BCA<input id="feeBCA" type="number" min="0" class="inp mt-1"></label>
+            <label class="text-[11px] font-semibold text-slate-500">BRI<input id="feeBRI" type="number" min="0" class="inp mt-1"></label>
+            <label class="text-[11px] font-semibold text-slate-500">Mandiri<input id="feeMandiri" type="number" min="0" class="inp mt-1"></label>
+          </div>
+        </div>
         <label class="block text-xs font-semibold text-slate-500">Password Wajib<input id="cPass" class="inp mt-1" maxlength="50"></label>
         <label class="block text-xs font-semibold text-slate-500">Limit Maks Akun per Transaksi (1–50)<input id="cLimit" type="number" min="1" max="50" class="inp mt-1"></label>
         <label class="block text-xs font-semibold text-slate-500">Max Setor Hari Ini (total Gmail, reset 00:00 WIB)<input id="cDaily" type="number" min="0" class="inp mt-1"></label>

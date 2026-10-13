@@ -67,6 +67,13 @@
         : "Belum disimpan";
     const summaryName = document.getElementById("summaryAtasNama");
     if (summaryName) summaryName.textContent = bank.name || "-";
+    const feeLabel = document.getElementById("withdrawFeeLabel");
+    const paymentFees =
+      settings.payment_fees && typeof settings.payment_fees === "object"
+        ? settings.payment_fees
+        : {};
+    if (feeLabel)
+      feeLabel.textContent = `Fee ${bank.bank || "DANA"}: ${format(Number(paymentFees[bank.bank || "DANA"] ?? settings.fee ?? 0))}`;
     const readyForWithdrawal = Boolean(bank.number && bank.name);
     const dashboardWithdrawLabel = document.getElementById("btnTarikSaldoText");
     const saldoWithdrawLabel = document.getElementById("withdrawButtonLabel");
@@ -76,6 +83,18 @@
       saldoWithdrawLabel.textContent = readyForWithdrawal
         ? "Tarik Sekarang"
         : "Isi rekening terlebih dahulu";
+    const dailyUsed = Number(settings.daily_used || 0);
+    const dailyLimit = Number(settings.daily_limit || 0);
+    const dailyRemaining =
+      settings.daily_remaining == null ? null : Number(settings.daily_remaining);
+    const dailyUsage = document.getElementById("dailyDepositUsage");
+    const dailyRemainingEl = document.getElementById("dailyDepositRemaining");
+    const dailyProgress = document.getElementById("dailyDepositProgress");
+    if (dailyUsage) dailyUsage.textContent = `${dailyUsed}/${dailyLimit || "∞"}`;
+    if (dailyRemainingEl)
+      dailyRemainingEl.textContent = `· Sisa ${dailyRemaining == null ? "∞" : dailyRemaining}`;
+    if (dailyProgress)
+      dailyProgress.style.width = `${dailyLimit ? Math.min(100, (dailyUsed / dailyLimit) * 100) : 0}%`;
     syncAdminProfileAction(user);
     const storeClosed = settings.store_open === false;
     const storeBanner = document.getElementById("storeStatusBanner");
@@ -131,6 +150,33 @@
     const records = state.deposits.filter(
       (item) => filter === "semua" || item.status === statusMap[filter],
     );
+    const wibDate = (value) =>
+      new Date(new Date(value).getTime() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const today = new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const yesterday = new Date(Date.now() + 7 * 60 * 60 * 1000 - 86400000)
+      .toISOString()
+      .slice(0, 10);
+    const recap = (date) =>
+      state.deposits
+        .filter((item) => wibDate(item.created_at) === date)
+        .reduce(
+          (result, item) => ({
+            gmail:
+              result.gmail +
+              (Array.isArray(item.accepted_emails)
+                ? item.accepted_emails.length
+                : Number(item.accepted_count || 0)),
+            earned: result.earned + Number(item.earned || 0),
+          }),
+          { gmail: 0, earned: 0 },
+        );
+    const todayRecap = recap(today);
+    const yesterdayRecap = recap(yesterday);
+    const todayEl = document.getElementById("recapToday");
+    const yesterdayEl = document.getElementById("recapYesterday");
+    if (todayEl) todayEl.textContent = `${todayRecap.gmail} Gmail · ${format(todayRecap.earned)}`;
+    if (yesterdayEl)
+      yesterdayEl.textContent = `${yesterdayRecap.gmail} Gmail · ${format(yesterdayRecap.earned)}`;
     if (!records.length) {
       container.innerHTML = `<div class="py-12 text-center text-sm font-bold text-slate-500">Belum ada riwayat setoran</div>`;
       return;
@@ -272,7 +318,17 @@
     const name = document.getElementById("atasNamaInput")?.value.trim() || "";
     const number = document.getElementById("rekeningInput")?.value.trim() || "";
     try {
-      await api("wallet", { method: "PATCH", body: JSON.stringify({ bank, name, number }) });
+      const result = await api("wallet", {
+        method: "PATCH",
+        body: JSON.stringify({ bank, name, number }),
+      });
+      if (result.wallet) {
+        state.user.wallet = {
+          bank: result.wallet.wallet_bank || bank,
+          name: result.wallet.wallet_name || name,
+          number: result.wallet.wallet_number || number,
+        };
+      }
       await syncAppData();
       toast("Data rekening berhasil disimpan");
     } catch (error) {
