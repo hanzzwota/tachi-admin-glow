@@ -12,6 +12,7 @@ import {
   supabaseFetch,
   verifyPassword,
 } from "../../server/supabase";
+import { rateLimit } from "../../server/rate-limit";
 
 type Body = Record<string, unknown>;
 const text = (value: unknown) => (typeof value === "string" ? value.trim() : "");
@@ -173,6 +174,21 @@ async function createDeposit(request: Request) {
     return json({ error: "Password wajib salah" }, { status: 403 });
   if (emails.length > Number(settings.batch_limit))
     return json({ error: `Maksimal ${settings.batch_limit} Gmail per transaksi` }, { status: 400 });
+  const jakartaDate = new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const dayStart = encodeURIComponent(`${jakartaDate}T00:00:00+07:00`);
+  const today = await supabaseFetch<Record<string, unknown>[]>(
+    `deposits?select=emails&created_at=gte.${dayStart}&limit=500`,
+  );
+  const submittedToday = today.reduce(
+    (total, row) => total + (Array.isArray(row.emails) ? row.emails.length : 0),
+    0,
+  );
+  const dailyLimit = Number(settings.daily_limit ?? 0);
+  if (dailyLimit > 0 && submittedToday + emails.length > dailyLimit)
+    return json(
+      { error: `Batas setor hari ini tersisa ${Math.max(0, dailyLimit - submittedToday)} Gmail` },
+      { status: 429 },
+    );
   const rows = await supabaseFetch<Record<string, unknown>[]>("deposits", {
     method: "POST",
     headers: { Prefer: "return=representation" },
@@ -364,6 +380,8 @@ async function createWithdrawal(request: Request) {
   if (amount + fee > balance) return json({ error: "Saldo tidak cukup" }, { status: 400 });
   if (!user.wallet_number || !user.wallet_name)
     return json({ error: "Isi data rekening terlebih dahulu" }, { status: 400 });
+  if (payload.confirmWallet !== true)
+    return json({ error: "Konfirmasi nomor payment terlebih dahulu" }, { status: 400 });
   await supabaseFetch(
     `profiles?id=eq.${encodeURIComponent(String(user.id))}&balance=eq.${encodeURIComponent(String(balance))}`,
     {
@@ -449,6 +467,20 @@ async function logout() {
 }
 
 async function handler(request: Request, path: string) {
+  const limits: Record<string, [number, number]> = {
+    "auth/login": [8, 15 * 60 * 1000],
+    "auth/register": [5, 60 * 60 * 1000],
+    deposits: [20, 60 * 1000],
+    withdrawals: [5, 10 * 60 * 1000],
+    wallet: [10, 10 * 60 * 1000],
+    "stock/claim": [10, 60 * 1000],
+    "admin/settings": [30, 60 * 1000],
+  };
+  const limit = limits[path];
+  if (limit) {
+    const blocked = rateLimit(request, path, limit[0], limit[1]);
+    if (blocked) return blocked;
+  }
   if (request.method === "POST" && path === "auth/login") return login(request);
   if (request.method === "POST" && path === "auth/register") return register(request);
   if (request.method === "POST" && path === "auth/logout") return logout();

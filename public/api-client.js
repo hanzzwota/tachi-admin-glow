@@ -13,23 +13,10 @@
   const format = (value) => `Rp${Number(value || 0).toLocaleString("id-ID")}`;
   const state = { user: null, settings: null, deposits: [], withdrawals: [] };
   window.tachiApiState = state;
-  const addAdminModeButton = (user) => {
-    const existing = document.getElementById("adminModeSwitch");
-    if (user.role !== "admin") {
-      existing?.remove();
-      return;
-    }
-    if (existing) return;
-    const button = document.createElement("button");
-    button.id = "adminModeSwitch";
-    button.type = "button";
-    button.textContent = "Dashboard Admin";
-    button.className =
-      "fixed top-3 right-3 z-50 rounded-xl bg-blue-600 px-3 py-2 text-[11px] font-extrabold text-white shadow-lg";
-    button.onclick = () => {
-      window.top.location.href = "/admin";
-    };
-    document.body.appendChild(button);
+  const syncAdminProfileAction = (user) => {
+    const action = document.getElementById("adminProfileAction");
+    if (!action) return;
+    action.classList.toggle("hidden", user.role !== "admin");
   };
   const greeting = () => {
     const hour = new Date().getHours();
@@ -68,6 +55,7 @@
     const submit = document.getElementById("gmailListInput");
     if (submit) submit.disabled = settings.store_open === false;
     const bank = user.wallet || {};
+    window.syncUserBankDataFromApi?.(bank);
     const bankInput = document.getElementById("rekeningInput");
     if (bankInput && document.activeElement !== bankInput) bankInput.value = bank.number || "";
     const nameInput = document.getElementById("atasNamaInput");
@@ -79,6 +67,16 @@
         : "Belum disimpan";
     const summaryName = document.getElementById("summaryAtasNama");
     if (summaryName) summaryName.textContent = bank.name || "-";
+    const readyForWithdrawal = Boolean(bank.number && bank.name);
+    const dashboardWithdrawLabel = document.getElementById("btnTarikSaldoText");
+    const saldoWithdrawLabel = document.getElementById("withdrawButtonLabel");
+    if (dashboardWithdrawLabel)
+      dashboardWithdrawLabel.textContent = readyForWithdrawal ? "Tarik Sekarang" : "Tarik Saldo";
+    if (saldoWithdrawLabel)
+      saldoWithdrawLabel.textContent = readyForWithdrawal
+        ? "Tarik Sekarang"
+        : "Isi rekening terlebih dahulu";
+    syncAdminProfileAction(user);
     const storeClosed = settings.store_open === false;
     const storeBanner = document.getElementById("storeStatusBanner");
     const storeButton = document.querySelector('button[onclick="submitGmailStoran()"]');
@@ -189,7 +187,6 @@
     state.settings = settings || {};
     state.deposits = Array.isArray(deposits) ? deposits : [];
     state.withdrawals = Array.isArray(withdrawals) ? withdrawals : [];
-    addAdminModeButton(user);
     applyUserDom();
     renderHistory();
     renderWithdrawals();
@@ -283,9 +280,23 @@
     }
   };
   window.handleTarikSaldo = async () => {
+    const wallet = state.user?.wallet || {};
+    const bank = wallet.bank || "DANA";
+    const number = wallet.number || "";
+    if (!number || !wallet.name) {
+      toast("Isi rekening di Profil terlebih dahulu");
+      return;
+    }
+    const confirmed = window.confirm(
+      `Pastikan nomor ${bank} ini benar:\n\n${number}\n\nJika Nomor Salah/Tidak Sesuai Dengan Nomor Payment Anda Admin Tidak Berhak Bertanggung Jawab.\n\nLanjut tarik saldo?`,
+    );
+    if (!confirmed) return;
     const amount = Number(document.getElementById("withdrawalAmountInput")?.value);
     try {
-      await api("withdrawals", { method: "POST", body: JSON.stringify({ amount }) });
+      await api("withdrawals", {
+        method: "POST",
+        body: JSON.stringify({ amount, confirmWallet: true }),
+      });
       document.getElementById("withdrawalAmountInput").value = "";
       await syncAppData();
       toast("Permintaan penarikan diproses");
