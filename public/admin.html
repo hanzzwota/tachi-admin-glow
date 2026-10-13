@@ -1028,6 +1028,11 @@
             )
             .join("") || '<p class="text-xs text-slate-400">Belum ada</p>';
       }
+      function resetDaily() {
+        // Kuota harian dihitung ulang oleh server tiap 00:00 WIB.
+        const today = wibDate();
+        if (!db.daily || db.daily.date !== today) db.daily = { date: today, count: 0 };
+      }
       function uSubmit() {
         const s = db.settings;
         resetDaily();

@@ -30,6 +30,13 @@ function canonicalPaymentFees(value: unknown, fallback: number) {
 // Fee selalu kelipatan Rp1.000 (boleh 0 dan di bawah Rp10.000).
 const FEE_STEP = 1000;
 const FIXED_MIN_WITHDRAWAL = 15000;
+const DEFAULT_DANA_MIN = 4000;
+const canonicalBank = (value: unknown) =>
+  paymentMethods.find((method) => paymentKey(method) === paymentKey(String(value ?? ""))) ?? "DANA";
+const isMissingColumn = (error: unknown, column: string) => {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.includes("PGRST204") || (message.includes("400") && message.includes(column));
+};
 function normalizeFee(value: unknown) {
   const amount = Number(value);
   if (!Number.isFinite(amount) || amount <= 0) return 0;
@@ -41,7 +48,8 @@ function isValidFee(value: unknown) {
 }
 // DANA mengikuti konfigurasi admin; metode lain wajib minimal Rp15.000.
 function withdrawalMinimums(adminMin: unknown) {
-  const dana = Math.max(0, Math.floor(Number(adminMin ?? 0)) || 0);
+  // Jika admin belum mengisi, DANA memakai minimal Rp4.000.
+  const dana = Math.max(0, Math.floor(Number(adminMin ?? 0)) || 0) || DEFAULT_DANA_MIN;
   return Object.fromEntries(
     paymentMethods.map((method) => [method, method === "DANA" ? dana : FIXED_MIN_WITHDRAWAL]),
   ) as Record<string, number>;
@@ -382,6 +390,7 @@ async function updateSettings(request: Request) {
     ...coreSettings
   } = allowed;
   await patchSettings(coreSettings);
+  const skipped: string[] = [];
   for (const optionalSetting of [
     ["payment_fees", paymentFees],
     ["rules_text", rulesText],
@@ -390,13 +399,18 @@ async function updateSettings(request: Request) {
     try {
       await patchSettings({ [optionalSetting[0]]: optionalSetting[1] });
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      const optionalColumnMissing =
-        message.includes("PGRST204") ||
-        (message.includes("400") && message.includes(optionalSetting[0]));
-      if (!optionalColumnMissing) throw error;
+      if (!isMissingColumn(error, optionalSetting[0])) throw error;
+      skipped.push(optionalSetting[0]);
     }
   }
+  if (skipped.includes("payment_fees"))
+    return json(
+      {
+        error:
+          "Pengaturan lain tersimpan, tapi fee per payment belum bisa disimpan karena database belum diperbarui. Jalankan file supabase/FIX_DATABASE.sql di SQL Editor Supabase, lalu simpan lagi.",
+      },
+      { status: 409 },
+    );
   return json({ settings: await getSettings() });
 }
 
@@ -486,9 +500,7 @@ async function createWithdrawal(request: Request) {
   const payload = await body(request);
   const amount = Math.floor(Number(payload.amount));
   const balance = Number(user.balance ?? 0);
-  const bank = paymentMethods.includes(String(user.wallet_bank))
-    ? String(user.wallet_bank)
-    : "DANA";
+  const bank = canonicalBank(user.wallet_bank);
   const paymentFees = canonicalPaymentFees(settings.payment_fees, normalizeFee(settings.fee));
   const fee = paymentFees[bank] ?? 0;
   const minimum = withdrawalMinimums(settings.min_withdrawal)[bank] ?? 0;
@@ -512,20 +524,46 @@ async function createWithdrawal(request: Request) {
   );
   if (!updatedProfiles.length)
     return json({ error: "Saldo berubah, silakan muat ulang lalu coba lagi" }, { status: 409 });
-  const rows = await supabaseFetch<Record<string, unknown>[]>("withdrawals", {
-    method: "POST",
-    headers: { Prefer: "return=representation" },
-    body: JSON.stringify({
-      user_id: user.id,
-      amount,
-      fee,
-      wallet_bank: bank,
-      wallet_name: user.wallet_name,
-      wallet_number: user.wallet_number,
-      status: "pending",
-    }),
-  });
-  return json({ withdrawal: rows[0] }, { status: 201 });
+  const record: Record<string, unknown> = {
+    user_id: user.id,
+    amount,
+    fee,
+    wallet_bank: bank,
+    wallet_name: user.wallet_name,
+    wallet_number: user.wallet_number,
+    status: "pending",
+  };
+  const insert = (values: Record<string, unknown>) =>
+    supabaseFetch<Record<string, unknown>[]>("withdrawals", {
+      method: "POST",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify(values),
+    });
+  try {
+    let rows: Record<string, unknown>[];
+    try {
+      rows = await insert(record);
+    } catch (error) {
+      // Database lama belum punya kolom wallet_bank: simpan tanpa kolom itu.
+      if (!isMissingColumn(error, "wallet_bank")) throw error;
+      const { wallet_bank: _bank, ...legacy } = record;
+      rows = await insert(legacy);
+    }
+    return json({ withdrawal: rows[0] }, { status: 201 });
+  } catch (error) {
+    // Penarikan gagal dicatat: kembalikan saldo user supaya tidak hilang.
+    await supabaseFetch(`profiles?id=eq.${encodeURIComponent(String(user.id))}`, {
+      method: "PATCH",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify({ balance }),
+    }).catch(() => undefined);
+    console.error(error);
+    const message = error instanceof Error ? error.message : "";
+    const friendly = message.includes("Minimal penarikan")
+      ? (message.match(/Minimal penarikan[^"]*/)?.[0] ?? "Nominal di bawah minimal penarikan")
+      : "Penarikan belum bisa diproses. Saldo Anda tidak terpotong, silakan coba lagi sebentar lagi.";
+    return json({ error: friendly }, { status: 400 });
+  }
 }
 
 async function processWithdrawal(request: Request, id: string, status: "selesai" | "ditolak") {

@@ -150,6 +150,11 @@ export function json(data: unknown, init: ResponseInit = {}) {
 
 export function errorResponse(error: unknown) {
   console.error(error);
-  const message = error instanceof Error ? error.message : "Terjadi kesalahan server";
+  const raw = error instanceof Error ? error.message : "";
+  // Jangan tampilkan pesan teknis (mis. "Supabase 400: {...}") ke pengguna.
+  const message =
+    !raw || raw.startsWith("Supabase ") || raw.includes("SUPABASE_")
+      ? "Maaf, terjadi gangguan. Silakan coba lagi sebentar lagi."
+      : raw;
   return json({ error: message }, { status: 500 });
 }

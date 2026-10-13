@@ -18,11 +18,21 @@
     if (!Number.isFinite(amount) || amount <= 0) return 0;
     return Math.round(amount / FEE_STEP) * FEE_STEP;
   };
-  const minWithdrawalFor = (bank, settings) =>
-    Number(
-      settings?.withdrawal_minimums?.[bank] ??
-        (bank === "DANA" ? Number(settings?.min_withdrawal || 0) : FIXED_MIN_WITHDRAWAL),
-    );
+  const canonicalBank = (value) =>
+    paymentMethods.find(
+      (method) =>
+        method.toLowerCase() ===
+        String(value || "")
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, ""),
+    ) ||
+    paymentMethods.find((method) => method.toLowerCase() === String(value || "").toLowerCase()) ||
+    "DANA";
+  const minWithdrawalFor = (bank, settings) => {
+    const key = canonicalBank(bank);
+    if (key !== "DANA") return FIXED_MIN_WITHDRAWAL;
+    return Number(settings?.min_withdrawal || 0) || 4000;
+  };
   const paymentKey = (value) =>
     String(value)
       .toLowerCase()

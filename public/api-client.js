@@ -19,11 +19,21 @@
     if (!Number.isFinite(amount) || amount <= 0) return 0;
     return Math.round(amount / FEE_STEP) * FEE_STEP;
   };
-  const minWithdrawalFor = (bank, settings) =>
-    Number(
-      settings?.withdrawal_minimums?.[bank] ??
-        (bank === "DANA" ? Number(settings?.min_withdrawal || 0) : FIXED_MIN_WITHDRAWAL),
-    );
+  const canonicalBank = (value) =>
+    paymentMethods.find(
+      (method) =>
+        method.toLowerCase() ===
+        String(value || "")
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, ""),
+    ) ||
+    paymentMethods.find((method) => method.toLowerCase() === String(value || "").toLowerCase()) ||
+    "DANA";
+  const minWithdrawalFor = (bank, settings) => {
+    const key = canonicalBank(bank);
+    if (key !== "DANA") return FIXED_MIN_WITHDRAWAL;
+    return Number(settings?.min_withdrawal || 0) || 4000;
+  };
   const paymentKey = (value) =>
     String(value)
       .toLowerCase()
@@ -80,7 +90,9 @@
     if (profileUsername) profileUsername.textContent = `Username: @${user.username}`;
     const campaign = document.getElementById("requiredPasswordText");
     if (campaign) campaign.textContent = settings.campaign_password;
-    const currentBank = (user.wallet && user.wallet.bank) || state.user?.wallet?.bank || "DANA";
+    const currentBank = canonicalBank(
+      (user.wallet && user.wallet.bank) || state.user?.wallet?.bank,
+    );
     const min = minWithdrawalFor(currentBank, settings);
     const minInfo = document.getElementById("withdrawMinInfo");
     if (minInfo)
@@ -110,7 +122,7 @@
     const feeLabel = document.getElementById("withdrawFeeLabel");
     const paymentFees = normalizePaymentFees(settings.payment_fees, normalizeFee(settings.fee));
     if (feeLabel)
-      feeLabel.textContent = `Fee ${bank.bank || "DANA"}: ${format(paymentFees[bank.bank || "DANA"] ?? 0)}`;
+      feeLabel.textContent = `Fee ${canonicalBank(bank.bank)}: ${format(paymentFees[canonicalBank(bank.bank)] ?? 0)}`;
     const readyForWithdrawal = Boolean(bank.number && bank.name);
     const dashboardWithdrawLabel = document.getElementById("btnTarikSaldoText");
     const saldoWithdrawLabel = document.getElementById("withdrawButtonLabel");
@@ -387,7 +399,7 @@
   };
   window.handleTarikSaldo = async () => {
     const wallet = state.user?.wallet || {};
-    const bank = wallet.bank || "DANA";
+    const bank = canonicalBank(wallet.bank);
     const number = wallet.number || "";
     if (!number || !wallet.name) {
       toast("Isi rekening di Profil terlebih dahulu");
