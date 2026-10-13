@@ -362,11 +362,13 @@ async function updateSettings(request: Request) {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : 0;
   };
+  const incomingFee = payload.fee ?? current?.fee ?? 0;
+  const incomingPaymentFees = payload.paymentFees ?? current?.payment_fees ?? {};
   const rawFees =
-    payload.paymentFees && typeof payload.paymentFees === "object"
-      ? Object.values(payload.paymentFees as Record<string, unknown>)
+    incomingPaymentFees && typeof incomingPaymentFees === "object"
+      ? Object.values(incomingPaymentFees as Record<string, unknown>)
       : [];
-  if (!isValidFee(payload.fee) || rawFees.some((value) => !isValidFee(value)))
+  if (!isValidFee(incomingFee) || rawFees.some((value) => !isValidFee(value)))
     return json(
       { error: "Fee harus kelipatan Rp1.000 (contoh: 0, 1.000, 2.000)" },
       { status: 400 },

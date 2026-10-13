@@ -210,28 +210,30 @@
       refreshInFlight = null;
     }
   };
+  const settingsPayload = (overrides = {}) => ({
+    rate: db.settings.rate,
+    minWithdrawal: db.settings.minTarik,
+    paymentMode: db.settings.paymentMode,
+    fee: db.settings.fee,
+    paymentFees: db.settings.paymentFees,
+    campaignPassword: db.settings.campaignPass,
+    storeOpen: db.settings.storOpen,
+    withdrawOpen: db.settings.tarikOpen,
+    checkerOpen: db.settings.checkerOpen,
+    dailyLimit: db.settings.dailyMax,
+    batchLimit: db.settings.limit,
+    announcement: db.settings.announcement,
+    rulesText: db.settings.rulesText,
+    supportChannels: db.settings.supportChannels,
+    autoStockEnabled: db.settings.autoStockEnabled,
+    gmailStock: db.settings.gmailStock,
+    ...overrides,
+  });
   window.persistSettings = async () => {
     try {
       await api("admin/settings", {
         method: "PATCH",
-        body: JSON.stringify({
-          rate: db.settings.rate,
-          minWithdrawal: db.settings.minTarik,
-          paymentMode: db.settings.paymentMode,
-          fee: db.settings.fee,
-          paymentFees: db.settings.paymentFees,
-          campaignPassword: db.settings.campaignPass,
-          storeOpen: db.settings.storOpen,
-          withdrawOpen: db.settings.tarikOpen,
-          checkerOpen: db.settings.checkerOpen,
-          dailyLimit: db.settings.dailyMax,
-          batchLimit: db.settings.limit,
-          announcement: db.settings.announcement,
-          rulesText: db.settings.rulesText,
-          supportChannels: db.settings.supportChannels,
-          autoStockEnabled: db.settings.autoStockEnabled,
-          gmailStock: db.settings.gmailStock,
-        }),
+        body: JSON.stringify(settingsPayload()),
       });
       await refresh();
       notify("Status fitur diperbarui");
@@ -350,27 +352,26 @@
       );
       await api("admin/settings", {
         method: "PATCH",
-        body: JSON.stringify({
-          rate: cRate.value,
-          minWithdrawal: cMin.value,
-          paymentMode: cPaymentMode.value,
-          fee: cFee.value,
-          paymentFees,
-          campaignPassword: cPass.value,
-          storeOpen: db.settings.storOpen,
-          withdrawOpen: db.settings.tarikOpen,
-          checkerOpen: db.settings.checkerOpen,
-          dailyLimit: cDaily.value,
-          batchLimit: cLimit.value,
-          announcement: cAnn.value,
-          rulesText: cRules.value,
-          supportChannels: readSupportChannels(),
-          autoStockEnabled: cAutoStock.checked,
-          gmailStock: cStock.value
-            .split(/\s+/)
-            .map((x) => x.trim())
-            .filter(Boolean),
-        }),
+        body: JSON.stringify(
+          settingsPayload({
+            rate: cRate.value,
+            minWithdrawal: cMin.value,
+            paymentMode: cPaymentMode.value,
+            fee: cFee.value,
+            paymentFees,
+            campaignPassword: cPass.value,
+            dailyLimit: cDaily.value,
+            batchLimit: cLimit.value,
+            announcement: cAnn.value,
+            rulesText: cRules.value,
+            supportChannels: readSupportChannels(),
+            autoStockEnabled: cAutoStock.checked,
+            gmailStock: cStock.value
+              .split(/\s+/)
+              .map((x) => x.trim())
+              .filter(Boolean),
+          }),
+        ),
       });
       db.settings.paymentFees = paymentFees;
       db.settings.paymentMode = cPaymentMode.value;
@@ -385,24 +386,7 @@
     try {
       await api("admin/settings", {
         method: "PATCH",
-        body: JSON.stringify({
-          rate: db.settings.rate,
-          minWithdrawal: db.settings.minTarik,
-          paymentMode: db.settings.paymentMode,
-          fee: db.settings.fee,
-          paymentFees: db.settings.paymentFees,
-          campaignPassword: db.settings.campaignPass,
-          storeOpen: db.settings.storOpen,
-          withdrawOpen: db.settings.tarikOpen,
-          checkerOpen: db.settings.checkerOpen,
-          dailyLimit: db.settings.dailyMax,
-          batchLimit: db.settings.limit,
-          announcement: db.settings.announcement,
-          rulesText: db.settings.rulesText,
-          supportChannels: db.settings.supportChannels,
-          autoStockEnabled: db.settings.autoStockEnabled,
-          gmailStock: db.settings.gmailStock,
-        }),
+        body: JSON.stringify(settingsPayload()),
       });
       await refresh();
     } catch (error) {
