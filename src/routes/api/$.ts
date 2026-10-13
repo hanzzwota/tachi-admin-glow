@@ -23,10 +23,28 @@ function canonicalPaymentFees(value: unknown, fallback: number) {
   return Object.fromEntries(
     paymentMethods.map((method) => {
       const found = Object.entries(source).find(([key]) => paymentKey(key) === paymentKey(method));
-      const amount = Number(found?.[1] ?? fallback);
-      return [method, Number.isFinite(amount) ? Math.max(0, amount) : Math.max(0, fallback)];
+      return [method, normalizeFee(found?.[1] ?? fallback)];
     }),
   );
+}
+// Fee selalu kelipatan Rp1.000 (boleh 0 dan di bawah Rp10.000).
+const FEE_STEP = 1000;
+const FIXED_MIN_WITHDRAWAL = 15000;
+function normalizeFee(value: unknown) {
+  const amount = Number(value);
+  if (!Number.isFinite(amount) || amount <= 0) return 0;
+  return Math.round(amount / FEE_STEP) * FEE_STEP;
+}
+function isValidFee(value: unknown) {
+  const amount = Number(value ?? 0);
+  return Number.isFinite(amount) && amount >= 0 && amount % FEE_STEP === 0;
+}
+// DANA mengikuti konfigurasi admin; metode lain wajib minimal Rp15.000.
+function withdrawalMinimums(adminMin: unknown) {
+  const dana = Math.max(0, Math.floor(Number(adminMin ?? 0)) || 0);
+  return Object.fromEntries(
+    paymentMethods.map((method) => [method, method === "DANA" ? dana : FIXED_MIN_WITHDRAWAL]),
+  ) as Record<string, number>;
 }
 function canonicalSupportChannels(value: unknown) {
   const source = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
@@ -324,11 +342,20 @@ async function updateSettings(request: Request) {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : 0;
   };
+  const rawFees =
+    payload.paymentFees && typeof payload.paymentFees === "object"
+      ? Object.values(payload.paymentFees as Record<string, unknown>)
+      : [];
+  if (!isValidFee(payload.fee) || rawFees.some((value) => !isValidFee(value)))
+    return json(
+      { error: "Fee harus kelipatan Rp1.000 (contoh: 0, 1.000, 2.000)" },
+      { status: 400 },
+    );
   const allowed = {
     rate: numberOrZero(payload.rate),
     min_withdrawal: numberOrZero(payload.minWithdrawal),
-    fee: numberOrZero(payload.fee),
-    payment_fees: canonicalPaymentFees(payload.paymentFees, numberOrZero(payload.fee)),
+    fee: normalizeFee(payload.fee),
+    payment_fees: canonicalPaymentFees(payload.paymentFees, normalizeFee(payload.fee)),
     campaign_password: text(payload.campaignPassword),
     store_open: Boolean(payload.storeOpen),
     withdraw_open: Boolean(payload.withdrawOpen),
@@ -376,8 +403,10 @@ async function updateSettings(request: Request) {
 function userSettings(settings: Record<string, unknown> | null) {
   if (!settings) return null;
   const { gmail_stock: _gmailStock, ...safeSettings } = settings;
-  const fallbackFee = Math.max(0, Number(safeSettings.fee ?? 0));
+  const fallbackFee = normalizeFee(safeSettings.fee);
+  safeSettings.fee = fallbackFee;
   safeSettings.payment_fees = canonicalPaymentFees(safeSettings.payment_fees, fallbackFee);
+  safeSettings.withdrawal_minimums = withdrawalMinimums(safeSettings.min_withdrawal);
   return safeSettings;
 }
 
@@ -457,16 +486,15 @@ async function createWithdrawal(request: Request) {
   const payload = await body(request);
   const amount = Math.floor(Number(payload.amount));
   const balance = Number(user.balance ?? 0);
-  const paymentFees = canonicalPaymentFees(settings.payment_fees, Number(settings.fee ?? 0));
-  const fee = Math.max(
-    0,
-    Number(paymentFees[String(user.wallet_bank ?? "DANA")] ?? settings.fee ?? 0),
-  );
-  if (!Number.isFinite(amount) || amount < Number(settings.min_withdrawal ?? 0))
+  const bank = paymentMethods.includes(String(user.wallet_bank))
+    ? String(user.wallet_bank)
+    : "DANA";
+  const paymentFees = canonicalPaymentFees(settings.payment_fees, normalizeFee(settings.fee));
+  const fee = paymentFees[bank] ?? 0;
+  const minimum = withdrawalMinimums(settings.min_withdrawal)[bank] ?? 0;
+  if (!Number.isFinite(amount) || amount <= 0 || amount < minimum)
     return json(
-      {
-        error: `Minimal penarikan Rp${Number(settings.min_withdrawal ?? 0).toLocaleString("id-ID")}`,
-      },
+      { error: `Minimal penarikan ${bank} Rp${minimum.toLocaleString("id-ID")}` },
       { status: 400 },
     );
   if (amount + fee > balance) return json({ error: "Saldo tidak cukup" }, { status: 400 });
@@ -491,7 +519,7 @@ async function createWithdrawal(request: Request) {
       user_id: user.id,
       amount,
       fee,
-      wallet_bank: user.wallet_bank || "DANA",
+      wallet_bank: bank,
       wallet_name: user.wallet_name,
       wallet_number: user.wallet_number,
       status: "pending",

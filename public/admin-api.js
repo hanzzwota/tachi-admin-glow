@@ -11,6 +11,18 @@
   };
   const notify = (message, icon = "success") => window.toast?.(message, icon);
   const paymentMethods = ["DANA", "OVO", "GoPay", "ShopeePay", "BCA", "BRI", "Mandiri"];
+  const FEE_STEP = 1000;
+  const FIXED_MIN_WITHDRAWAL = 15000;
+  const normalizeFee = (value) => {
+    const amount = Number(value);
+    if (!Number.isFinite(amount) || amount <= 0) return 0;
+    return Math.round(amount / FEE_STEP) * FEE_STEP;
+  };
+  const minWithdrawalFor = (bank, settings) =>
+    Number(
+      settings?.withdrawal_minimums?.[bank] ??
+        (bank === "DANA" ? Number(settings?.min_withdrawal || 0) : FIXED_MIN_WITHDRAWAL),
+    );
   const paymentKey = (value) =>
     String(value)
       .toLowerCase()
@@ -22,8 +34,7 @@
         const entry = Object.entries(source).find(
           ([key]) => paymentKey(key) === paymentKey(method),
         );
-        const amount = Number(entry?.[1] ?? fallback);
-        return [method, Number.isFinite(amount) ? Math.max(0, amount) : Math.max(0, fallback)];
+        return [method, normalizeFee(entry?.[1] ?? fallback)];
       }),
     );
   };
@@ -41,7 +52,7 @@
     settings: {
       rate: Number(settings?.rate || 0),
       minTarik: Number(settings?.min_withdrawal || 0),
-      fee: Number(settings?.fee || 0),
+      fee: normalizeFee(settings?.fee),
       paymentFees: normalizePaymentFees(
         paymentFeesOverride ?? settings?.payment_fees,
         Number(settings?.fee || 0),
@@ -312,10 +323,16 @@
   window.saveSettings = async (event) => {
     event.preventDefault();
     try {
+      const feeValues = [
+        cFee.value,
+        ...paymentMethods.map((key) => document.getElementById(`fee${key}`)?.value),
+      ];
+      if (feeValues.some((value) => Number(value || 0) < 0 || Number(value || 0) % FEE_STEP !== 0))
+        throw new Error("Fee harus kelipatan Rp1.000 (contoh: 0, 1.000, 2.000)");
       const paymentFees = Object.fromEntries(
-        ["DANA", "OVO", "GoPay", "ShopeePay", "BCA", "BRI", "Mandiri"].map((key) => [
+        paymentMethods.map((key) => [
           key,
-          Math.max(0, Number(document.getElementById(`fee${key}`)?.value || 0)),
+          normalizeFee(document.getElementById(`fee${key}`)?.value || 0),
         ]),
       );
       await api("admin/settings", {

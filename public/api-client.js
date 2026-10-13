@@ -12,6 +12,18 @@
   const toast = (message) => window.showToast?.(message);
   const format = (value) => `Rp${Number(value || 0).toLocaleString("id-ID")}`;
   const paymentMethods = ["DANA", "OVO", "GoPay", "ShopeePay", "BCA", "BRI", "Mandiri"];
+  const FEE_STEP = 1000;
+  const FIXED_MIN_WITHDRAWAL = 15000;
+  const normalizeFee = (value) => {
+    const amount = Number(value);
+    if (!Number.isFinite(amount) || amount <= 0) return 0;
+    return Math.round(amount / FEE_STEP) * FEE_STEP;
+  };
+  const minWithdrawalFor = (bank, settings) =>
+    Number(
+      settings?.withdrawal_minimums?.[bank] ??
+        (bank === "DANA" ? Number(settings?.min_withdrawal || 0) : FIXED_MIN_WITHDRAWAL),
+    );
   const paymentKey = (value) =>
     String(value)
       .toLowerCase()
@@ -23,8 +35,7 @@
         const entry = Object.entries(source).find(
           ([key]) => paymentKey(key) === paymentKey(method),
         );
-        const amount = Number(entry?.[1] ?? fallback);
-        return [method, Number.isFinite(amount) ? Math.max(0, amount) : Math.max(0, fallback)];
+        return [method, normalizeFee(entry?.[1] ?? fallback)];
       }),
     );
   };
@@ -69,7 +80,11 @@
     if (profileUsername) profileUsername.textContent = `Username: @${user.username}`;
     const campaign = document.getElementById("requiredPasswordText");
     if (campaign) campaign.textContent = settings.campaign_password;
-    const min = Number(settings.min_withdrawal || 0);
+    const currentBank = (user.wallet && user.wallet.bank) || state.user?.wallet?.bank || "DANA";
+    const min = minWithdrawalFor(currentBank, settings);
+    const minInfo = document.getElementById("withdrawMinInfo");
+    if (minInfo)
+      minInfo.textContent = `Minimal penarikan ${currentBank} ${format(min)}. DANA mengikuti setelan admin, OVO/GoPay/ShopeePay/BCA/BRI/Mandiri minimal ${format(FIXED_MIN_WITHDRAWAL)}.`;
     const amount = document.getElementById("withdrawalAmountInput");
     if (amount) {
       amount.placeholder = `Minimal penarikan ${format(min)}`;
@@ -93,12 +108,9 @@
     const summaryName = document.getElementById("summaryAtasNama");
     if (summaryName) summaryName.textContent = bank.name || "-";
     const feeLabel = document.getElementById("withdrawFeeLabel");
-    const paymentFees =
-      settings.payment_fees && typeof settings.payment_fees === "object"
-        ? settings.payment_fees
-        : {};
+    const paymentFees = normalizePaymentFees(settings.payment_fees, normalizeFee(settings.fee));
     if (feeLabel)
-      feeLabel.textContent = `Fee ${bank.bank || "DANA"}: ${format(Number(paymentFees[bank.bank || "DANA"] ?? settings.fee ?? 0))}`;
+      feeLabel.textContent = `Fee ${bank.bank || "DANA"}: ${format(paymentFees[bank.bank || "DANA"] ?? 0)}`;
     const readyForWithdrawal = Boolean(bank.number && bank.name);
     const dashboardWithdrawLabel = document.getElementById("btnTarikSaldoText");
     const saldoWithdrawLabel = document.getElementById("withdrawButtonLabel");
@@ -382,14 +394,15 @@
       return;
     }
     const amount = Number(document.getElementById("withdrawalAmountInput")?.value);
-    const paymentFees =
-      state.settings?.payment_fees && typeof state.settings.payment_fees === "object"
-        ? state.settings.payment_fees
-        : {};
-    const fee = Math.max(0, Number(paymentFees[bank] ?? state.settings?.fee ?? 0));
+    const paymentFees = normalizePaymentFees(
+      state.settings?.payment_fees,
+      normalizeFee(state.settings?.fee),
+    );
+    const fee = paymentFees[bank] ?? 0;
+    const minimum = minWithdrawalFor(bank, state.settings);
     const balance = Number(state.user?.balance || 0);
-    if (!Number.isFinite(amount) || amount < Number(state.settings?.min_withdrawal || 0)) {
-      toast(`Minimal penarikan ${format(Number(state.settings?.min_withdrawal || 0))}`);
+    if (!Number.isFinite(amount) || amount <= 0 || amount < minimum) {
+      toast(`Minimal penarikan ${bank} ${format(minimum)}`);
       return;
     }
     if (amount + fee > balance) {
