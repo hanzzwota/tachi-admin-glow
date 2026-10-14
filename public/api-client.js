@@ -48,7 +48,7 @@
     String(method || "DANA") === "DANA" ? Math.max(4000, configured) : Math.max(15000, configured);
   const escapeHtml = (value) =>
     String(value ?? "").replace(
-      /[&<>"']/g,
+      /[&<>\"']/g,
       (character) =>
         ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character],
     );
@@ -241,6 +241,39 @@
     const checkerLabel = document.getElementById("checkerFeatureLabel");
     if (checkerButton) checkerButton.classList.toggle("opacity-50", checkerClosed);
     if (checkerLabel) checkerLabel.textContent = checkerClosed ? "Checker (Ditutup)" : "Checker";
+
+    // Support WA quick link: prefer direct WhatsApp link to first enabled admin with whatsapp
+    try {
+      const waButton = document.getElementById("supportWaQuick");
+      if (waButton) {
+        const channels = settings.support_channels || {};
+        const admins = Array.isArray(channels.admins) ? channels.admins : [];
+        const adminWithWA = admins.find((a) => a && a.enabled !== false && a.whatsapp);
+        const buildSupportUrl = (type, raw) => {
+          const rawStr = String(raw || "").trim();
+          if (!rawStr) return "";
+          if (/^https?:\/\//i.test(rawStr)) return rawStr;
+          if (type === "whatsapp") return `https://wa.me/${rawStr.replace(/\D/g, "")}`;
+          return `https://t.me/${rawStr.replace(/^@/, "")}`;
+        };
+        const waUrl = adminWithWA ? buildSupportUrl("whatsapp", adminWithWA.whatsapp) : "";
+        if (waUrl) {
+          waButton.href = waUrl;
+          waButton.target = "_blank";
+          waButton.rel = "noopener";
+          waButton.onclick = null;
+        } else {
+          waButton.href = "#";
+          waButton.target = "";
+          waButton.onclick = () => {
+            if (typeof openSupportModal === "function") openSupportModal();
+            return false;
+          };
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
   };
   const renderHistory = (filter = window.activeRiwayatFilter || "semua") => {
     const container = document.getElementById("riwayatListContainer");
@@ -269,10 +302,10 @@
           values
             .map(
               (email) =>
-                `<div class="break-all py-0.5">${String(email).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char])}</div>`,
+                `<div class="break-all py-0.5">${String(email).replace(/[&<>\"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char])}</div>`,
             )
             .join("");
-        return `<article class="bg-white rounded-2xl p-4 border border-slate-100 card-soft-shadow text-left"><div class="flex items-center justify-between gap-3"><div><p class="font-mono text-xs font-bold text-slate-700">${item.id}</p><p class="text-[11px] text-slate-400 mt-1">${new Date(item.created_at).toLocaleString("id-ID")}</p></div><span class="${style} rounded-full px-2.5 py-1 text-[11px] font-extrabold">${label}</span></div><div class="mt-3 flex justify-between text-xs"><span class="text-slate-500">${allEmails.length} Gmail disetor</span><strong>${item.status === "diterima" ? `+${format(earned)}` : item.status === "ditolak" ? "Tidak dibayar" : "Diproses"}</strong></div>${item.status === "pending" ? `<div class="mt-3 rounded-lg bg-slate-50 p-2 text-[11px] text-slate-700"><b>Email yang kamu setorkan:</b><div class="mt-1 max-h-48 overflow-y-auto font-mono">${emailList(allEmails)}</div></div>` : ""}${accepted.length ? `<div class="mt-3 rounded-lg bg-emerald-50 p-2 text-[11px] text-emerald-700"><b>Diterima:</b><div class="mt-1 max-h-40 overflow-y-auto font-mono">${emailList(accepted)}</div></div>` : ""}${rejected.length ? `<div class="mt-2 rounded-lg bg-rose-50 p-2 text-[11px] text-rose-700"><b>Ditolak:</b><div class="mt-1 max-h-40 overflow-y-auto font-mono">${emailList(rejected)}</div></div>` : ""}${item.reason ? `<p class="text-[11px] text-rose-600 mt-2">Alasan: ${item.reason}</p>` : ""}</article>`;
+        return `<article class="bg-white rounded-2xl p-4 border border-slate-100 card-soft-shadow text-left"><div class="flex items-center justify-between gap-3"><div><p class="font-mono text-xs">${escapeHtml(item.id)} <div class="text-[11px] text-slate-400">${new Date(item.created_at).toLocaleString()}</div></p></div><div class="text-right"><div class="text-sm font-bold text-slate-700">${label}</div><div class="text-xs text-slate-400">${earned ? `+${format(earned)}` : ''}</div></div></div><div class="mt-3 text-sm">${emailList(allEmails.slice(0,4))}${accepted.length?`<div class="text-[11px] text-green-700 mt-2">Diterima: ${accepted.length}</div>`:''}${rejected.length?`<div class="text-[11px] text-rose-700 mt-2">Ditolak: ${rejected.length}</div>`:''}</div></article>`;
       })
       .join("");
   };
@@ -288,7 +321,7 @@
       .slice(0, 5)
       .map(
         (item) =>
-          `<div class="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 p-3 text-xs"><div><b>${format(item.amount)}</b><div class="text-slate-400">${new Date(item.created_at).toLocaleString("id-ID")}</div>${item.reason ? `<div class="text-rose-600">${item.reason}</div>` : ""}</div><span class="font-bold">${item.status === "selesai" ? "Selesai" : item.status === "ditolak" ? "Ditolak" : "Pending"}</span></div>`,
+          `<div class="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 p-3 text-xs"><div><b>${format(item.amount)}</b><div class="text-slate-400">${new Date(item.created_at).toLocaleString()}</div></div><div class="text-xs text-slate-500">${item.status}</div></div>`,
       )
       .join("");
   };
@@ -484,7 +517,7 @@
     const modal = document.getElementById("appModal");
     if (!modalBody || !modalTitle || !modal) return;
     modalTitle.textContent = "Konfirmasi Tarik";
-    modalBody.innerHTML = `<div class="space-y-2 text-xs"><div class="flex justify-between"><span>Metode payment</span><b>${escapeHtml(bank)}</b></div><div class="flex justify-between"><span>Nomor payment</span><b>${escapeHtml(number)}</b></div><div class="flex justify-between"><span>Nama pemilik</span><b>${escapeHtml(wallet.name)}</b></div><div class="flex justify-between"><span>Nominal penarikan</span><b>${format(amount)}</b></div><div class="flex justify-between"><span>Fee payment</span><b>${format(fee)}</b></div><div class="flex justify-between border-t pt-2"><span>Total saldo terpotong</span><b>${format(amount + fee)}</b></div><div class="flex justify-between"><span>Saldo bersih diterima</span><b>${format(amount)}</b></div><div class="rounded-xl bg-slate-100 p-3 text-slate-600">Pastikan nomor payment sudah benar. Jika Nomor Salah/Tidak Sesuai Dengan Nomor Payment Anda Admin Tidak Berhak Bertanggung Jawab.</div><div class="flex gap-2 pt-2"><button type="button" class="flex-1 rounded-xl border border-slate-200 px-3 py-2 font-bold" onclick="closeModal()">Kembali/Edit Nomor</button><button type="button" class="flex-1 rounded-xl bg-blue-600 px-3 py-2 font-bold text-white" id="confirmWithdrawalButton">Konfirmasi Tarik</button></div></div>`;
+    modalBody.innerHTML = `<div class="space-y-2 text-xs"><div class="flex justify-between"><span>Metode payment</span><b>${escapeHtml(bank)}</b></div><div class="flex justify-between"><span>Nomo[...]
     modal.classList.remove("hidden");
     document.getElementById("confirmWithdrawalButton")?.addEventListener("click", async () => {
       const button = document.getElementById("confirmWithdrawalButton");
