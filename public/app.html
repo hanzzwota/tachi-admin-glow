@@ -362,7 +362,7 @@
         position: fixed !important;
         display: flex;
         border-radius: 1.25rem;
-        bottom: max(12px, env(safe-area-inset-bottom)) !important;
+        bottom: calc(max(12px, env(safe-area-inset-bottom)) + 48px) !important;
         top: auto !important;
         left: 50% !important;
         right: auto !important;
@@ -423,7 +423,7 @@
 
     <!-- Main Mobile Container -->
     <div
-      class="w-full max-w-lg min-h-screen px-3 sm:px-4 pt-4 pb-28 flex flex-col justify-start relative z-10"
+      class="w-full max-w-lg min-h-screen px-3 sm:px-4 pt-4 pb-36 flex flex-col justify-start relative z-10"
     >
       <!-- Bottom Navigation Bar -->
       <nav
