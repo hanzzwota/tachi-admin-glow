@@ -159,7 +159,7 @@
         box-shadow: 0 6px 14px -2px rgba(245, 158, 11, 0.35);
       }
 
-      /* Center action button on bottom navigation bar */
+      /* Center action button on app navigation */
       .nav-center-btn {
         background: linear-gradient(135deg, #3b82f6, #1d4ed8);
         box-shadow: 0 8px 20px rgba(37, 99, 235, 0.45);
@@ -357,19 +357,19 @@
         }
       }
 
-      /* Semua item bottom bar sejajar dan tidak lagi berbentuk bulat/runcing */
+      /* Navbar aplikasi mengikuti alur halaman dan menempel di bagian atas saat scroll */
       .nav-shell {
-        position: fixed !important;
+        position: sticky !important;
         display: flex;
         border-radius: 1.25rem;
-        bottom: max(12px, env(safe-area-inset-bottom)) !important;
-        top: auto !important;
-        left: 50% !important;
-        right: auto !important;
-        width: min(calc(100% - 24px), 480px) !important;
-        transform: translateX(-50%);
-        margin: 0;
-        z-index: 9999 !important;
+        top: 0 !important;
+        bottom: auto !important;
+        width: 100% !important;
+        margin: 0 0 1rem;
+        z-index: 50 !important;
+      }
+      .nav-shell.hidden {
+        display: none;
       }
       .nav-button {
         border-radius: 0.85rem;
@@ -422,6 +422,53 @@
     <div
       class="w-full max-w-lg min-h-screen px-3 sm:px-4 py-4 flex flex-col justify-start relative z-10"
     >
+      <!-- Top Navigation Bar -->
+      <nav
+        id="appMainNav"
+        class="nav-shell hidden sticky top-0 w-full max-w-lg mx-auto mb-4 bg-white/95 backdrop-blur-md border border-slate-200/80 px-2 py-2 items-center justify-around gap-1 z-50 shadow-lg"
+      >
+        <button
+          onclick="navigateTo('dashboard')"
+          id="nav-item-dashboard"
+          class="nav-button flex-1 flex flex-col items-center gap-1 text-blue-600"
+        >
+          <i class="fa-solid fa-house text-base"></i>
+          <span class="text-[10px] font-bold">Beranda</span>
+        </button>
+        <button
+          onclick="navigateTo('riwayat')"
+          id="nav-item-riwayat"
+          class="nav-button flex-1 flex flex-col items-center gap-1 text-slate-400"
+        >
+          <i class="fa-solid fa-clock-rotate-left text-base"></i>
+          <span class="text-[10px] font-semibold">Riwayat</span>
+        </button>
+        <button
+          onclick="navigateTo('stor')"
+          id="nav-item-stor"
+          class="nav-stor-button flex-1 flex flex-col items-center gap-1"
+        >
+          <i class="fa-solid fa-paper-plane text-sm"></i>
+          <span class="text-[10px] font-semibold">Setor</span>
+        </button>
+        <button
+          onclick="navigateTo('saldo')"
+          id="nav-item-saldo"
+          class="nav-button flex-1 flex flex-col items-center gap-1 text-slate-400"
+        >
+          <i class="fa-solid fa-wallet text-base"></i>
+          <span class="text-[10px] font-semibold">Saldo</span>
+        </button>
+        <button
+          onclick="navigateTo('profil')"
+          id="nav-item-profil"
+          class="nav-button flex-1 flex flex-col items-center gap-1 text-slate-400"
+        >
+          <i class="fa-solid fa-user text-base"></i>
+          <span class="text-[10px] font-semibold">Profil</span>
+        </button>
+      </nav>
+
       <!-- ==================== VIEW 1: LOGIN PAGE ==================== -->
       <div
         id="view-login"
@@ -1636,52 +1683,6 @@
         </div>
       </div>
 
-      <!-- Bottom Navigation Bar -->
-      <nav
-        id="bottomAppNav"
-        class="nav-shell hidden fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white/95 backdrop-blur-md border border-slate-200/80 px-2 py-2 items-center justify-around gap-1 z-40 shadow-lg"
-      >
-        <button
-          onclick="navigateTo('dashboard')"
-          id="nav-item-dashboard"
-          class="nav-button flex-1 flex flex-col items-center gap-1 text-blue-600"
-        >
-          <i class="fa-solid fa-house text-base"></i>
-          <span class="text-[10px] font-bold">Beranda</span>
-        </button>
-        <button
-          onclick="navigateTo('riwayat')"
-          id="nav-item-riwayat"
-          class="nav-button flex-1 flex flex-col items-center gap-1 text-slate-400"
-        >
-          <i class="fa-solid fa-clock-rotate-left text-base"></i>
-          <span class="text-[10px] font-semibold">Riwayat</span>
-        </button>
-        <button
-          onclick="navigateTo('stor')"
-          id="nav-item-stor"
-          class="nav-stor-button flex-1 flex flex-col items-center gap-1"
-        >
-          <i class="fa-solid fa-paper-plane text-sm"></i>
-          <span class="text-[10px] font-semibold">Setor</span>
-        </button>
-        <button
-          onclick="navigateTo('saldo')"
-          id="nav-item-saldo"
-          class="nav-button flex-1 flex flex-col items-center gap-1 text-slate-400"
-        >
-          <i class="fa-solid fa-wallet text-base"></i>
-          <span class="text-[10px] font-semibold">Saldo</span>
-        </button>
-        <button
-          onclick="navigateTo('profil')"
-          id="nav-item-profil"
-          class="nav-button flex-1 flex flex-col items-center gap-1 text-slate-400"
-        >
-          <i class="fa-solid fa-user text-base"></i>
-          <span class="text-[10px] font-semibold">Profil</span>
-        </button>
-      </nav>
     </div>
 
     <!-- Reusable Dynamic Modal -->
@@ -1928,16 +1929,16 @@
           }
         });
 
-        // Handle bottom nav visibility and active state highlight
-        const bottomNav = document.getElementById("bottomAppNav");
+        // Handle top nav visibility and active state highlight
+        const appNav = document.getElementById("appMainNav");
         if (viewName === "login" || viewName === "register") {
-          bottomNav.classList.add("hidden");
-          bottomNav.classList.remove("flex");
+          appNav.classList.add("hidden");
+          appNav.classList.remove("flex");
         } else {
-          bottomNav.classList.remove("hidden");
-          bottomNav.classList.add("flex");
+          appNav.classList.remove("hidden");
+          appNav.classList.add("flex");
 
-          // Update bottom nav button active highlight
+          // Update top nav button active highlight
           const navItems = ["dashboard", "riwayat", "stor", "saldo", "profil"];
           navItems.forEach((item) => {
             const navBtn = document.getElementById(`nav-item-${item}`);
