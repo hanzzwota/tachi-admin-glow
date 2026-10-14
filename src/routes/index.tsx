@@ -2,6 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
   head: () => ({
+    scripts: [
+      {
+        src: "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7166254458926131",
+        async: true,
+        crossOrigin: "anonymous",
+      },
+    ],
     meta: [
       { title: "tachi69gmail Admin Console" },
       {
