@@ -357,16 +357,19 @@
         }
       }
 
-      /* Navbar aplikasi mengikuti alur halaman dan menempel di bagian atas saat scroll */
+      /* Navbar aplikasi fixed di bawah layar, di atas safe area perangkat */
       .nav-shell {
-        position: sticky !important;
+        position: fixed !important;
         display: flex;
         border-radius: 1.25rem;
-        top: 0 !important;
-        bottom: auto !important;
-        width: 100% !important;
-        margin: 0 0 1rem;
-        z-index: 50 !important;
+        bottom: max(12px, env(safe-area-inset-bottom)) !important;
+        top: auto !important;
+        left: 50% !important;
+        right: auto !important;
+        width: min(calc(100% - 24px), 480px) !important;
+        transform: translateX(-50%);
+        margin: 0;
+        z-index: 9999 !important;
       }
       .nav-shell.hidden {
         display: none;
@@ -420,12 +423,12 @@
 
     <!-- Main Mobile Container -->
     <div
-      class="w-full max-w-lg min-h-screen px-3 sm:px-4 py-4 flex flex-col justify-start relative z-10"
+      class="w-full max-w-lg min-h-screen px-3 sm:px-4 pt-4 pb-28 flex flex-col justify-start relative z-10"
     >
-      <!-- Top Navigation Bar -->
+      <!-- Bottom Navigation Bar -->
       <nav
         id="appMainNav"
-        class="nav-shell hidden sticky top-0 w-full max-w-lg mx-auto mb-4 bg-white/95 backdrop-blur-md border border-slate-200/80 px-2 py-2 items-center justify-around gap-1 z-50 shadow-lg"
+        class="nav-shell hidden fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white/95 backdrop-blur-md border border-slate-200/80 px-2 py-2 items-center justify-around gap-1 z-[60] shadow-lg"
       >
         <button
           onclick="navigateTo('dashboard')"
@@ -1929,7 +1932,7 @@
           }
         });
 
-        // Handle top nav visibility and active state highlight
+        // Handle bottom nav visibility and active state highlight
         const appNav = document.getElementById("appMainNav");
         if (viewName === "login" || viewName === "register") {
           appNav.classList.add("hidden");
@@ -1938,7 +1941,7 @@
           appNav.classList.remove("hidden");
           appNav.classList.add("flex");
 
-          // Update top nav button active highlight
+          // Update bottom nav button active highlight
           const navItems = ["dashboard", "riwayat", "stor", "saldo", "profil"];
           navItems.forEach((item) => {
             const navBtn = document.getElementById(`nav-item-${item}`);
