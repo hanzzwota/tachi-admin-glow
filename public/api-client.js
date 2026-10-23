@@ -9,7 +9,11 @@
     if (!response.ok) throw new Error(data.error || "Permintaan gagal");
     return data;
   };
-  const toast = (message) => window.showToast?.(message);
+  const toast = (message, requestedType) => {
+    const text = String(message || "");
+    const type = requestedType || (/gagal|kesalahan|error|koneksi|tidak dapat|akses ditolak/i.test(text) ? "error" : /tidak valid|tidak cukup|wajib|harus|belum|minimal|masukkan|isi |lengkapi|pilih/i.test(text) ? "warning" : /berhasil|diterima|disimpan|diajukan|diproses|dikirim|disalin|ditambahkan/i.test(text) ? "success" : "warning");
+    window.showToast?.(type, text);
+  };
   const format = (value) => `Rp${Number(value || 0).toLocaleString("id-ID")}`;
   const paymentMethods = ["DANA", "OVO", "GoPay", "ShopeePay", "BCA", "BRI", "Mandiri"];
   const FEE_STEP = 1000;
@@ -346,23 +350,40 @@
     event.preventDefault();
     const fields = [...event.target.querySelectorAll("input")];
     const isRegister = fields.length > 2;
+    let authAccepted = false;
     try {
       const payload = isRegister
         ? { displayName: fields[0].value, username: fields[1].value, password: fields[3].value }
         : { username: fields[0].value, password: fields[1].value };
+      if (!payload.username?.trim() || !payload.password) {
+        toast("⚠️ Masukkan username dan kata sandi untuk melanjutkan.", "warning");
+        return;
+      }
+      // Jangan pernah mencatat kata sandi atau token/session ke console.
+      console.log("Mencoba autentikasi:", { action: isRegister ? "register" : "login", username: payload.username });
       const result = await api(isRegister ? "auth/register" : "auth/login", {
         method: "POST",
         body: JSON.stringify(payload),
       });
+      if (!result?.user?.id || !result?.user?.username) {
+        throw new Error(isRegister ? "Pendaftaran gagal: server tidak mengembalikan sesi akun." : "Login gagal: server tidak mengembalikan sesi akun.");
+      }
+      authAccepted = true;
       if (result.user.role === "admin") {
+        toast("Login admin berhasil! Mengalihkan ke panel admin.", "success");
         location.href = "/admin";
         return;
       }
       await syncAppData();
-      toast(isRegister ? "Akun berhasil dibuat" : "Login berhasil");
+      toast(isRegister ? "Pendaftaran berhasil! Akun Anda siap digunakan." : "Login berhasil! Selamat datang.", "success");
       setTimeout(() => window.navigateTo?.("dashboard"), 250);
     } catch (error) {
-      toast(error.message, "error");
+      const detail = error instanceof Error ? error.message : "Kesalahan tidak diketahui";
+      const message = authAccepted
+        ? `Login berhasil, tetapi data dashboard gagal dimuat: ${detail}`
+        : `${isRegister ? "Pendaftaran" : "Login"} gagal: ${detail}`;
+      console.error("Kesalahan autentikasi:", error);
+      toast(message, "error");
     }
   };
   window.openChecker = () => {
