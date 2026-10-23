@@ -2174,41 +2174,37 @@
         document.getElementById("appModal").classList.add("hidden");
       }
 
-      // Outlined toast notifications: explicit types, three-second duration, duplicate suppression.
-      window.showToast = function (type, message) {
-        const allowed = ["success", "error", "warning"];
-        if (!allowed.includes(type)) type = "warning";
-        const text = String(message || "");
-        if (!text) return;
-        const key = `${type}:${text}`;
-        if (window._toastKey === key && Date.now() < (window._toastUntil || 0)) return;
-        window._toastKey = key;
-        window._toastUntil = Date.now() + 3000;
-        clearTimeout(window._toastTimer);
-        let toast = document.getElementById("outlinedToast");
-        if (!toast) {
-          toast = document.createElement("div");
-          toast.id = "outlinedToast";
-          toast.setAttribute("role", "status");
-          toast.setAttribute("aria-live", "polite");
-          Object.assign(toast.style, { position: "fixed", top: "16px", left: "50%", transform: "translateX(-50%)", zIndex: "99999", maxWidth: "min(92vw, 460px)", width: "max-content", padding: "12px 16px", borderRadius: "14px", background: "#fff", boxShadow: "0 10px 30px rgba(15,23,42,.14)", font: "600 14px/1.45 system-ui,sans-serif", display: "none", alignItems: "center", gap: "10px" });
-          document.body.appendChild(toast);
-        }
-        const styles = { success: ["#15803d", "#16a34a", "✓"], error: ["#b91c1c", "#dc2626", "×"], warning: ["#a16207", "#eab308", "⚠️"] };
-        const [color, border, symbol] = styles[type];
-        toast.replaceChildren();
-        const icon = document.createElement("span"); icon.textContent = symbol; icon.setAttribute("aria-hidden", "true");
-        const label = document.createElement("span"); label.textContent = text;
-        toast.append(icon, label);
-        toast.style.color = color; toast.style.border = `1px solid ${border}`; toast.style.display = "flex";
-        window._toastTimer = setTimeout(() => { toast.style.display = "none"; window._toastKey = ""; }, 3000);
-      };
+      // Notification Toast Handler
       function simpanData(message = "Data berhasil disimpan!", icon) {
-        const text = String(message || "");
-        const type = icon || (/gagal|kesalahan|error|koneksi|tidak dapat|akses ditolak/i.test(text) ? "error" : /salah|tidak|minimal|isi |lengkapi|wajib|harus|pilih|alasan|terlebih dahulu|saldo tidak|belum|invalid|valid|tekan/i.test(text) ? "warning" : /berhasil|diterima|diselesaikan|selesai|diperbarui|tersimpan|disalin|diajukan|terkirim|diproses|dibuka|ditutup|dihapus/i.test(text) ? "success" : "warning");
-        return window.showToast(type, text);
+        const alertIcon =
+          icon ||
+          (/gagal|salah|tidak|minimal|isi |lengkapi|wajib|harus|pilih|alasan|tekan edit|terlebih dahulu|saldo tidak|belum|ditutup|invalid|error/i.test(
+            message,
+          )
+            ? "error"
+            : "success");
+        if (window.Swal) {
+          return Swal.fire({
+            toast: true,
+            position: "top-end",
+            icon: alertIcon,
+            title: message,
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+          });
+        }
+        const toast = document.getElementById("toast");
+        const toastMsg = document.getElementById("toastMsg");
+        if (toast && toastMsg) {
+          toastMsg.innerText = message;
+          toast.classList.remove("opacity-0");
+          setTimeout(() => toast.classList.add("opacity-0"), 2500);
+        }
       }
-      function showToast(message, icon) { return simpanData(message, icon); }
+      function showToast(message, icon) {
+        return simpanData(message, icon);
+      }
     </script>
     <script>
       /* Backend data is managed by /api-client.js; no browser storage fallback. */
