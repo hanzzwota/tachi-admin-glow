@@ -1,13 +1,15 @@
-const SUPABASE_URL = process.env.SUPABASE_URL ?? `https://eiwjpbfkxmtytmtiqpfj.supabase.co`;
+const SUPABASE_URL = process.env.SUPABASE_URL ?? "https://tfepouzhcpaugfcgrekl.supabase.co";
+const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY ?? "";
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+const SUPABASE_API_KEY = SUPABASE_SECRET_KEY || SUPABASE_SERVICE_ROLE_KEY;
 const SESSION_COOKIE = "tachi_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
 
 type Row = Record<string, unknown>;
 
 function requireSupabase() {
-  if (!SUPABASE_SERVICE_ROLE_KEY) {
-    throw new Error("SUPABASE_SERVICE_ROLE_KEY belum dikonfigurasi di deployment");
+  if (!SUPABASE_API_KEY) {
+    throw new Error("SUPABASE_SECRET_KEY belum dikonfigurasi di environment server");
   }
 }
 
@@ -16,8 +18,8 @@ export async function supabaseFetch<T = Row>(path: string, init: RequestInit = {
   const response = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     ...init,
     headers: {
-      apikey: SUPABASE_SERVICE_ROLE_KEY,
-      Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      apikey: SUPABASE_API_KEY,
+      ...(SUPABASE_SECRET_KEY ? {} : { Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` }),
       "Content-Type": "application/json",
       ...(init.headers ?? {}),
     },

@@ -41,9 +41,9 @@ Semua tabel aplikasi harus bernilai `true`. Audit juga `pg_policies` dan pastika
 
 ### 4. Secret/API key — **Baik dengan catatan**
 
-`SUPABASE_SERVICE_ROLE_KEY`, `ADMIN_USERNAME`, dan `ADMIN_PASSWORD` dibaca dari environment server dan tidak ditemukan di frontend source. `.env` tidak masuk repository; `.env.example` hanya berisi placeholder.
+`SUPABASE_SECRET_KEY` (dengan dukungan kompatibilitas untuk `SUPABASE_SERVICE_ROLE_KEY` legacy), `ADMIN_USERNAME`, dan `ADMIN_PASSWORD` dibaca dari environment server dan tidak ditemukan di frontend source. `.env` tidak masuk repository; `.env.example` hanya berisi placeholder.
 
-Tetap lakukan secret scanning CI, blokir file `.env*` selain `.env.example`, dan rotasi service-role key bila pernah tertempel di log, screenshot, issue, atau chat. Jangan menaruh key dengan prefix `VITE_`.
+Tetap lakukan secret scanning CI, blokir file `.env*` selain `.env.example`, dan rotasi secret key bila pernah tertempel di log, screenshot, issue, atau chat. Jangan menaruh key dengan prefix `VITE_`.
 
 ### 5. Kebocoran konfigurasi settings — **Tinggi, sudah diperbaiki pada commit sebelumnya**
 
