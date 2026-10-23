@@ -1,27 +1,25 @@
 # Supabase backend setup
 
-Backend aplikasi menggunakan tabel kustom melalui REST API Supabase dan mengelola login sendiri dengan username/password serta session cookie HttpOnly. `SUPABASE_PUBLISHABLE_KEY` dan JWKS URL tidak dipakai oleh alur ini; jangan gunakan publishable key sebagai pengganti secret key server.
+Migration backend sudah diterapkan ke project Supabase `ryuu` (`eiwjpbfkxmtytmtiqpfj`). Tabel yang dibuat:
 
-Project yang dikonfigurasi untuk deployment: `https://tfepouzhcpaugfcgrekl.supabase.co`. Pemeriksaan REST menemukan tabel `public.profiles` belum ada pada project tersebut. Karena itu database belum siap untuk login sampai migrasi di folder `supabase/migrations/` diterapkan secara berurutan.
+- `app_settings`
+- `profiles`
+- `sessions`
+- `deposits`
+- `withdrawals`
 
-## Konfigurasi deployment
+## Environment variables deployment
 
-Tambahkan environment variable berikut di environment server (bukan di frontend atau source control):
+Tambahkan variable berikut di deployment server (Vercel/host lain):
 
 ```text
-SUPABASE_URL=https://tfepouzhcpaugfcgrekl.supabase.co
-SUPABASE_SECRET_KEY=<secret key dari Supabase Project Settings > API Keys>
+SUPABASE_URL=https://eiwjpbfkxmtytmtiqpfj.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=<service_role_key dari Supabase Project Settings > API>
 ADMIN_USERNAME=<username admin>
 ADMIN_PASSWORD=<password admin minimal 6 karakter>
 ```
 
-`SUPABASE_SECRET_KEY` bersifat rahasia, memberi akses server berprivilege tinggi, dan harus disimpan hanya sebagai server-side secret. Jangan memakai prefix `VITE_`, memasukkannya ke source code, atau mengirimkannya ke browser. `SUPABASE_SERVICE_ROLE_KEY` legacy masih didukung oleh kode demi kompatibilitas, tetapi konfigurasi baru sebaiknya menggunakan `SUPABASE_SECRET_KEY`. Setelah mengubah environment variable, redeploy/restart server.
-
-## Menerapkan schema
-
-Gunakan Supabase CLI dengan project ref `tfepouzhcpaugfcgrekl`, tautkan repository ini ke project baru, lalu jalankan `supabase db push` agar seluruh file migrasi berjalan sesuai urutan timestamp. Perintah tersebut membutuhkan autentikasi Supabase CLI dan password database; API secret key saja tidak dapat menjalankan migrasi DDL.
-
-Migrasi membuat dan memperbarui `app_settings`, `profiles`, `sessions`, `deposits`, dan `withdrawals`, mengaktifkan RLS, serta menambahkan fungsi/database constraints yang diperlukan. Pastikan proses migrasi berakhir sukses sebelum mencoba login. Key dalam chat sebaiknya dirotasi di Supabase Dashboard karena secret key yang sudah dibagikan tidak lagi sepenuhnya rahasia; simpan key pengganti hanya di environment deployment.
+`SUPABASE_SERVICE_ROLE_KEY` hanya boleh dipasang sebagai server-side secret. Jangan memakai prefix `VITE_` dan jangan memasukkannya ke source code.
 
 ## Endpoint utama
 
