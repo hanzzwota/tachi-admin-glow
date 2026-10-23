@@ -18,7 +18,9 @@
     }
     const data = await response.json().catch(() => ({}));
     if (!response.ok || data.error) {
-      const error = new Error(data.error || data.message || `Permintaan gagal (HTTP ${response.status})`);
+      const error = new Error(
+        data.error || data.message || `Permintaan gagal (HTTP ${response.status})`,
+      );
       error.status = response.status;
       error.data = data;
       throw error;
@@ -33,7 +35,10 @@
       await refresh();
     } catch (error) {
       console.error("Gagal memuat ulang data admin:", error);
-      showToast("warning", "⚠️ Perubahan tersimpan, tetapi tabel belum ter-update. Muat ulang halaman.");
+      showToast(
+        "warning",
+        "⚠️ Perubahan tersimpan, tetapi tabel belum ter-update. Muat ulang halaman.",
+      );
     }
   };
   const paymentMethods = ["DANA", "OVO", "GoPay", "ShopeePay", "BCA", "BRI", "Mandiri"];
@@ -315,7 +320,10 @@
     } catch (error) {
       db.settings[key] = previous; // kembalikan tampilan ke kondisi sebenarnya
       window.reloadAdminDb?.();
-      showToast("error", `Gagal ${next ? "membuka" : "menutup"} ${label}: ${errorText(error, "coba lagi nanti.")}`);
+      showToast(
+        "error",
+        `Gagal ${next ? "membuka" : "menutup"} ${label}: ${errorText(error, "coba lagi nanti.")}`,
+      );
       return;
     }
     showToast("success", `${label} berhasil ${next ? "dibuka" : "ditutup"}!`);
@@ -330,7 +338,8 @@
         method: "POST",
         body: JSON.stringify({ username: lu.value.trim(), password: lp.value }),
       });
-      if (!result?.user?.id) throw new Error("Login gagal! Server tidak mengembalikan sesi login. 😟");
+      if (!result?.user?.id)
+        throw new Error("Login gagal! Server tidak mengembalikan sesi login. 😟");
       if (result.user.role !== "admin") {
         lerr.textContent = "Akun ini bukan admin.";
         showToast("error", "Login gagal! Akun ini tidak memiliki akses admin.");
@@ -354,9 +363,9 @@
   window.doAcc = async (id) => {
     let acceptedEmails;
     try {
-      acceptedEmails = [
-        ...document.querySelectorAll("input[name='acceptedEmail']:checked"),
-      ].map((input) => input.value);
+      acceptedEmails = [...document.querySelectorAll("input[name='acceptedEmail']:checked")].map(
+        (input) => input.value,
+      );
       if (!acceptedEmails.length) {
         showToast("warning", "⚠️ Centang minimal 1 Gmail yang ingin diterima!");
         return;
@@ -429,7 +438,10 @@
     showToast("success", "Penarikan berhasil ditolak dan saldo dikembalikan ke user.");
   };
   const userActionText = {
-    delete: { ok: "Akun user berhasil dihapus beserta riwayatnya.", fail: "Gagal menghapus akun user" },
+    delete: {
+      ok: "Akun user berhasil dihapus beserta riwayatnya.",
+      fail: "Gagal menghapus akun user",
+    },
     block: { ok: "Akun user berhasil diblokir.", fail: "Gagal memblokir akun user" },
     unblock: { ok: "Blokir akun user berhasil dibuka.", fail: "Gagal membuka blokir akun user" },
   };
@@ -438,7 +450,8 @@
     try {
       await api(`admin/users/${id}/${action}`, { method: "POST" });
     } catch (error) {
-      const reason = error.status === 403 ? "Tidak ada akses admin." : errorText(error, "coba lagi nanti.");
+      const reason =
+        error.status === 403 ? "Tidak ada akses admin." : errorText(error, "coba lagi nanti.");
       showToast("error", `${text.fail}: ${reason}`);
       return;
     }
@@ -469,11 +482,12 @@
         cFee.value,
         ...paymentMethods.map((key) => document.getElementById(`fee${key}`)?.value),
       ];
-      if (feeValues.some((value) => Number(value || 0) < 0 || Number(value || 0) % FEE_STEP !== 0))
-        {
-          showToast("warning", "⚠️ Fee harus kelipatan Rp1.000 (contoh: 0, 1.000, 2.000).");
-          return;
-        }
+      if (
+        feeValues.some((value) => Number(value || 0) < 0 || Number(value || 0) % FEE_STEP !== 0)
+      ) {
+        showToast("warning", "⚠️ Fee harus kelipatan Rp1.000 (contoh: 0, 1.000, 2.000).");
+        return;
+      }
       paymentFees = Object.fromEntries(
         paymentMethods.map((key) => [
           key,
@@ -515,7 +529,10 @@
       await refresh(paymentFees);
     } catch (error) {
       console.error("Gagal memuat ulang data admin:", error);
-      showToast("warning", "⚠️ Pengaturan tersimpan, tetapi tampilan belum ter-update. Muat ulang halaman.");
+      showToast(
+        "warning",
+        "⚠️ Pengaturan tersimpan, tetapi tampilan belum ter-update. Muat ulang halaman.",
+      );
     }
   };
   window.save = async () => {
@@ -538,7 +555,10 @@
       setTimeout(() => window.top.location.assign("/login"), 350);
     } catch (error) {
       console.error("Admin Logout Error:", error);
-      showToast("error", `Logout admin gagal: ${errorText(error, "periksa koneksi lalu coba lagi.")}`);
+      showToast(
+        "error",
+        `Logout admin gagal: ${errorText(error, "periksa koneksi lalu coba lagi.")}`,
+      );
     }
   };
   window.addEventListener("DOMContentLoaded", async () => {
@@ -555,7 +575,10 @@
       }, 15000);
     } catch (error) {
       console.error("Gagal memuat dashboard admin:", error);
-      showToast("error", `Gagal memuat dashboard admin: ${errorText(error, "server tidak merespons.")}`);
+      showToast(
+        "error",
+        `Gagal memuat dashboard admin: ${errorText(error, "server tidak merespons.")}`,
+      );
     }
   });
 })();

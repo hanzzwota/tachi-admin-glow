@@ -19,7 +19,9 @@
     }
     const data = await response.json().catch(() => ({}));
     if (!response.ok || data.error) {
-      const error = new Error(data.error || data.message || `Permintaan gagal (HTTP ${response.status})`);
+      const error = new Error(
+        data.error || data.message || `Permintaan gagal (HTTP ${response.status})`,
+      );
       error.status = response.status;
       error.data = data;
       throw error;
@@ -88,7 +90,10 @@
     if (isDanaOnly() && select.value !== "DANA") {
       select.value = "DANA";
       resetPaymentToDana();
-      showToast("warning", "⚠️ Admin hanya membuka payment DANA. Silakan isi ulang data payment DANA.");
+      showToast(
+        "warning",
+        "⚠️ Admin hanya membuka payment DANA. Silakan isi ulang data payment DANA.",
+      );
     }
   };
   const syncAdminProfileAction = (user) => {
@@ -396,7 +401,10 @@
         method: "POST",
         body: JSON.stringify(payload),
       });
-      console.log("Response dari server:", { user: result?.user?.username, role: result?.user?.role });
+      console.log("Response dari server:", {
+        user: result?.user?.username,
+        role: result?.user?.role,
+      });
 
       // SUCCESS hanya jika server benar-benar mengembalikan user (sesi cookie sudah dibuat).
       if (!result || !result.user || !result.user.id) {
@@ -423,7 +431,10 @@
         await syncAppData();
       } catch (syncError) {
         console.error("Gagal memuat data akun:", syncError);
-        showToast("warning", "⚠️ Anda sudah masuk, tetapi data akun belum termuat. Muat ulang halaman.");
+        showToast(
+          "warning",
+          "⚠️ Anda sudah masuk, tetapi data akun belum termuat. Muat ulang halaman.",
+        );
       }
       setTimeout(() => window.navigateTo?.("dashboard"), 250);
     } catch (error) {
@@ -431,7 +442,10 @@
       if (error.isNetworkError) {
         showToast("error", "Koneksi gagal! Silakan periksa jaringan Anda atau coba lagi nanti.");
       } else if (error.status === 429) {
-        showToast("error", error.message || "Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi.");
+        showToast(
+          "error",
+          error.message || "Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi.",
+        );
       } else if (error.status >= 500) {
         showToast(
           "error",
@@ -608,7 +622,10 @@
         return;
       }
       document.getElementById("withdrawalAmountInput").value = "";
-      showToast("success", `Permintaan penarikan ${format(amount)} berhasil dikirim dan sedang diproses!`);
+      showToast(
+        "success",
+        `Permintaan penarikan ${format(amount)} berhasil dikirim dan sedang diproses!`,
+      );
       syncAppData().catch((error) => console.error("Gagal memuat ulang data:", error));
     });
   };
