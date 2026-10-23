@@ -4,7 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>tachi69gmail Admin Console</title>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Outlined Toast Notification: showToast(type, message) -->
+    <script src="/toast.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link
       rel="stylesheet"
@@ -557,10 +558,6 @@
         <div id="mBody"></div>
       </div>
     </div>
-    <div
-      id="toast"
-      class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] bg-slate-900 text-white text-sm px-4 py-2 rounded-xl shadow-lg"
-    ></div>
 
     <script>
       const KEY = "tachi69_db";
@@ -660,37 +657,8 @@
       }
       const userModeEl = () => document.getElementById("userMode");
 
-      // UI helpers
-      function simpanData(message = "Data berhasil disimpan!", icon) {
-        const text = String(message || "");
-        const alertIcon = icon ||
-          (/gagal|kesalahan|\berror\b|tidak dapat|akses ditolak/i.test(text)
-            ? "error"
-            : /berhasil|diterima|diselesaikan|selesai|diperbarui|tersimpan|disalin|diekspor|dikoreksi|diajukan|terkirim|dibuka|ditutup|ditolak|dikembalikan|dihapus|diblokir/i.test(
-                  text,
-                )
-              ? "success"
-              : "warning");
-        if (window.Swal) {
-          return Swal.fire({
-            toast: true,
-            position: "top-end",
-            icon: alertIcon,
-            title: message,
-            showConfirmButton: false,
-            timer: 3000,
-            timerProgressBar: true,
-          });
-        }
-        toastEl().textContent = message;
-        toastEl().classList.remove("hidden");
-        clearTimeout(window._t);
-        window._t = setTimeout(() => toastEl().classList.add("hidden"), 2200);
-      }
-      function toast(message, icon) {
-        return simpanData(message, icon);
-      }
-      const toastEl = () => document.getElementById("toast");
+      // UI helpers — notifikasi memakai window.showToast(type, message) dari /toast.js.
+      const NOT_SAVED = "⚠️ Fitur ini belum terhubung ke server, perubahan TIDAK disimpan.";
       function openModal(t, b) {
         mTitle.textContent = t;
         mBody.innerHTML = b;
@@ -699,11 +667,16 @@
       function closeModal() {
         modal.classList.add("hidden");
       }
-      function copy(t) {
-        navigator.clipboard
-          ?.writeText(t)
-          .then(() => toast("Disalin: " + t))
-          .catch(() => toast("Gagal menyalin"));
+      async function copy(t) {
+        if (!t) return showToast("warning", "⚠️ Tidak ada teks untuk disalin.");
+        if (!navigator.clipboard) return showToast("error", "Gagal menyalin: browser tidak mendukung clipboard.");
+        try {
+          await navigator.clipboard.writeText(t);
+          showToast("success", "Berhasil disalin: " + t);
+        } catch (error) {
+          console.error("Copy Error:", error);
+          showToast("error", "Gagal menyalin teks. Tidak ada izin akses clipboard.");
+        }
       }
       const badge = (s) =>
         ({
@@ -851,16 +824,8 @@
         const s = db.setoran.find((x) => x.id === id);
         const n = parseInt(accN.value);
         if (!(n >= 1 && n <= s.emails.length))
-          return toast("Jumlah tidak valid (1–" + s.emails.length + ")");
-        const u = db.users.find((x) => x.username === s.user);
-        s.status = "diterima";
-        s.accepted = n;
-        s.verifiedAt = Date.now();
-        s.earned = n * db.settings.rate;
-        if (u) u.saldo += s.earned;
-        closeModal();
-        save();
-        toast("Setoran diterima, saldo +" + rp(s.earned));
+          return showToast("warning", "⚠️ Jumlah tidak valid (1–" + s.emails.length + ").");
+        showToast("warning", NOT_SAVED);
       }
       function rejModal(id) {
         const s = db.setoran.find((x) => x.id === id);
@@ -876,15 +841,9 @@
         let r = document.querySelector("input[name=rr]:checked").value;
         if (r === "Alasan Lain") {
           r = rCustom.value.trim();
-          if (!r) return toast("Isi alasan kustom");
+          if (!r) return showToast("warning", "⚠️ Harap isi alasan penolakan kustom!");
         }
-        const s = db.setoran.find((x) => x.id === id);
-        s.status = "ditolak";
-        s.reason = r;
-        s.verifiedAt = Date.now();
-        closeModal();
-        save();
-        toast("Setoran ditolak: " + r);
+        showToast("warning", NOT_SAVED);
       }
 
       function renderPayout() {
@@ -938,13 +897,7 @@
           '<tr><td colspan="9" class="p-6 text-center text-slate-400">Belum ada permintaan</td></tr>';
       }
       function accWd(id) {
-        const w = db.withdrawals.find((x) => x.id === id);
-        w.status = "selesai";
-        w.doneAt = Date.now();
-        const u = db.users.find((x) => x.username === w.user);
-        if (u) u.withdrawn += w.amount;
-        save();
-        toast("Pencairan selesai");
+        showToast("warning", NOT_SAVED);
       }
       function rejWdModal(id) {
         openModal(
@@ -955,15 +908,8 @@
       }
       function rejWd(id) {
         const r = wdR.value.trim();
-        if (!r) return toast("Alasan wajib diisi");
-        const w = db.withdrawals.find((x) => x.id === id);
-        w.status = "ditolak";
-        w.reason = r;
-        const u = db.users.find((x) => x.username === w.user);
-        if (u) u.saldo += w.amount;
-        closeModal();
-        save();
-        toast("Penarikan ditolak, saldo dikembalikan");
+        if (!r) return showToast("warning", "⚠️ Alasan penolakan penarikan wajib diisi!");
+        showToast("warning", NOT_SAVED);
       }
 
       function renderUsers() {
@@ -994,9 +940,8 @@
         );
       }
       function toggleVip(n) {
-        const u = db.users.find((x) => x.username === n);
-        u.vip = !u.vip;
-        save();
+        // Status VIP belum ada di server: jangan ubah data lokal seolah-olah tersimpan.
+        showToast("warning", NOT_SAVED);
       }
       function saldoModal(n) {
         const u = db.users.find((x) => x.username === n);
@@ -1008,19 +953,17 @@
       }
       function doAdj(n) {
         const v = parseInt(adj.value);
-        if (!v) return toast("Nominal tidak valid");
+        if (!v) return showToast("warning", "⚠️ Nominal koreksi saldo tidak valid.");
         const u = db.users.find((x) => x.username === n);
-        if (u.saldo + v < 0) return toast("Saldo tidak boleh minus");
-        u.saldo += v;
-        closeModal();
-        save();
-        toast("Saldo dikoreksi");
+        if (u.saldo + v < 0) return showToast("warning", "⚠️ Saldo user tidak boleh minus.");
+        // Belum ada endpoint koreksi saldo di server -> jangan tampilkan success palsu.
+        showToast("warning", NOT_SAVED);
       }
       function resetPw(n) {
+        // Belum ada endpoint reset password di server: password acak ini tidak akan berlaku.
+        showToast("warning", NOT_SAVED);
+        return;
         const np = Math.random().toString(36).slice(-8);
-        const u = db.users.find((x) => x.username === n);
-        u.password = np;
-        save();
         openModal(
           "Password Direset",
           `<p class="text-sm">Password baru untuk <b>${esc(n)}</b>:</p><div class="flex gap-2 mt-2"><input readonly value="${np}" class="inp font-mono"><button onclick="copy('${np}')" class="btn-p px-4 rounded-xl"><i class="fa fa-copy"></i></button></div>`,
@@ -1030,7 +973,7 @@
       function renderSettings() {
         const s = db.settings;
         const t = (k, l, d) =>
-          `<div class="flex items-center justify-between p-3 rounded-xl bg-white border border-blue-50"><div><div class="font-semibold text-sm">${l}</div><div class="text-xs ${s[k] ? "text-green-600" : "text-red-500"} font-bold">${s[k] ? "● BUKA" : "● TUTUP"} <span class="text-slate-400 font-normal">— ${d}</span></div></div><div class="tgl ${s[k] ? "on" : ""}" onclick="db.settings.${k}=!db.settings.${k};save();toast('${l} '+(db.settings.${k}?'dibuka':'ditutup'))"></div></div>`;
+          `<div class="flex items-center justify-between p-3 rounded-xl bg-white border border-blue-50"><div><div class="font-semibold text-sm">${l}</div><div class="text-xs ${s[k] ? "text-green-600" : "text-red-500"} font-bold">${s[k] ? "● BUKA" : "● TUTUP"} <span class="text-slate-400 font-normal">— ${d}</span></div></div><div class="tgl ${s[k] ? "on" : ""}" onclick="toggleFeature('${k}','${l}')"></div></div>`;
         toggles.innerHTML =
           t("storOpen", "Stor Gmail", "Halaman setor user") +
           t("tarikOpen", "Tarik Saldo", "Form penarikan user") +
@@ -1061,8 +1004,8 @@
       function saveSettings(e) {
         e.preventDefault();
         const lim = parseInt(cLimit.value);
-        if (!(lim >= 1 && lim <= 50)) return toast("Limit per transaksi harus 1–50");
-        if (!cPass.value.trim()) return toast("Password wajib harus diisi");
+        if (!(lim >= 1 && lim <= 50)) return showToast("warning", "⚠️ Limit per transaksi harus 1–50.");
+        if (!cPass.value.trim()) return showToast("warning", "⚠️ Password wajib harus diisi!");
         Object.assign(db.settings, {
           rate: Math.max(0, +cRate.value),
           minTarik: Math.max(0, +cMin.value),
@@ -1072,9 +1015,7 @@
           dailyMax: Math.max(0, +cDaily.value),
           announcement: cAnn.value.trim(),
         });
-        document.activeElement?.blur();
-        save();
-        toast("Konfigurasi disimpan");
+        showToast("warning", NOT_SAVED);
       }
 
       // USER MODE SIMULATOR
@@ -1137,44 +1078,23 @@
               .filter(Boolean),
           ),
         ];
-        if (!em.length) return toast("Masukkan minimal 1 email");
+        if (!em.length) return showToast("warning", "⚠️ Masukkan minimal 1 email.");
         const bad = em.find((x) => !/^[a-z0-9._%+-]{1,64}@gmail\.com$/.test(x));
-        if (bad) return toast("Format tidak valid: " + bad);
+        if (bad) return showToast("warning", "⚠️ Format Gmail tidak valid: " + bad);
         const max = Math.min(50, s.limit);
-        if (em.length > max) return toast("Maksimal " + max + " akun per transaksi");
+        if (em.length > max) return showToast("warning", "⚠️ Maksimal " + max + " akun per transaksi.");
         if (s.dailyMax > 0 && db.daily.count + em.length > s.dailyMax)
-          return toast("Melebihi kuota harian");
-        if (uCp.value.trim() !== s.campaignPass) return toast("Password wajib salah");
-        db.setoran.push({
-          id: uid("STR"),
-          date: Date.now(),
-          user: uSel.value,
-          emails: em,
-          status: "pending",
-        });
-        db.daily.count += em.length;
-        save();
-        toast("Setoran terkirim ke antrean admin");
+          return showToast("warning", "⚠️ Setoran melebihi kuota harian.");
+        if (uCp.value.trim() !== s.campaignPass) return showToast("error", "Password wajib salah! Setoran tidak dikirim.");
+        showToast("warning", NOT_SAVED);
       }
       function uTarikDo() {
         const s = db.settings,
           u = db.users.find((x) => x.username === uSel.value);
         const a = parseInt(uAmt.value);
-        if (!(a >= s.minTarik)) return toast("Minimal " + rp(s.minTarik));
-        if (a > u.saldo) return toast("Saldo tidak cukup");
-        u.saldo -= a;
-        db.withdrawals.push({
-          id: uid("WD"),
-          date: Date.now(),
-          user: u.username,
-          name: u.wallet.name,
-          dana: u.wallet.dana,
-          amount: a,
-          fee: Math.min(s.fee, a),
-          status: "pending",
-        });
-        save();
-        toast("Penarikan diajukan");
+        if (!(a >= s.minTarik)) return showToast("warning", "⚠️ Minimal penarikan " + rp(s.minTarik) + ".");
+        if (a > u.saldo) return showToast("warning", "⚠️ Saldo tidak cukup untuk penarikan ini.");
+        showToast("warning", NOT_SAVED);
       }
     </script>
     <script src="/admin-api.js"></script>

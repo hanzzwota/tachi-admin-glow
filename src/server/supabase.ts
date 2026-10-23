@@ -1,27 +1,48 @@
-const SUPABASE_URL = process.env.SUPABASE_URL ?? `https://eiwjpbfkxmtytmtiqpfj.supabase.co`;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
 const SESSION_COOKIE = "tachi_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
 
 type Row = Record<string, unknown>;
 
-function requireSupabase() {
-  if (!SUPABASE_SERVICE_ROLE_KEY) {
-    throw new Error("SUPABASE_SERVICE_ROLE_KEY belum dikonfigurasi di deployment");
+/** Thrown when the database cannot be reached at all (DNS, network, server down). */
+export class DatabaseUnavailableError extends Error {
+  constructor(cause: unknown) {
+    super("Server tidak dapat terhubung ke database. Silakan coba lagi beberapa saat lagi.");
+    this.name = "DatabaseUnavailableError";
+    this.cause = cause;
   }
 }
 
+// Read config per request: env vars are only guaranteed inside handlers on the edge runtime.
+function supabaseConfig() {
+  const url = process.env["SUPABASE_URL"]?.trim().replace(/\/+$/, "") ?? "";
+  const key =
+    process.env["SUPABASE_SECRET_KEY"]?.trim() ||
+    process.env["SUPABASE_SERVICE_ROLE_KEY"]?.trim() ||
+    "";
+  if (!url || !key) {
+    throw new Error(
+      "Koneksi database belum dikonfigurasi di server (SUPABASE_URL / SUPABASE_SECRET_KEY)",
+    );
+  }
+  return { url: url.replace(/\/$/, ""), key };
+}
+
 export async function supabaseFetch<T = Row>(path: string, init: RequestInit = {}): Promise<T> {
-  requireSupabase();
-  const response = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    ...init,
-    headers: {
-      apikey: SUPABASE_SERVICE_ROLE_KEY,
-      Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-      "Content-Type": "application/json",
-      ...(init.headers ?? {}),
-    },
-  });
+  const { url, key } = supabaseConfig();
+  const headers: Record<string, string> = {
+    apikey: key,
+    "Content-Type": "application/json",
+    ...((init.headers as Record<string, string>) ?? {}),
+  };
+  // New-style keys (sb_secret_...) are opaque, not JWTs: sending them as a Bearer token is rejected.
+  if (!key.startsWith("sb_")) headers["Authorization"] = `Bearer ${key}`;
+  let response: Response;
+  try {
+    response = await fetch(`${url}/rest/v1/${path}`, { ...init, headers });
+  } catch (error) {
+    console.error("[supabaseFetch] network error:", error);
+    throw new DatabaseUnavailableError(error);
+  }
   if (!response.ok) {
     const message = await response.text();
     throw new Error(`Supabase ${response.status}: ${message}`);
@@ -124,7 +145,7 @@ export async function requireUser(request: Request) {
 
 export async function requireAdmin(request: Request) {
   const user = await requireUser(request);
-  if (user.role !== "admin")
+  if (user["role"] !== "admin")
     throw new Response(JSON.stringify({ error: "Akses admin ditolak" }), {
       status: 403,
       headers: { "content-type": "application/json" },
@@ -150,6 +171,14 @@ export function json(data: unknown, init: ResponseInit = {}) {
 
 export function errorResponse(error: unknown) {
   console.error(error);
+  if (error instanceof DatabaseUnavailableError) {
+    return json({ error: error.message }, { status: 503 });
+  }
   const message = error instanceof Error ? error.message : "Terjadi kesalahan server";
-  return json({ error: message }, { status: 500 });
+  // Validation raised by the withdrawal trigger is a user-facing 400, not a server error.
+  const minimum = message.match(/"message"\s*:\s*"(Minimal penarikan[^"]*)"/);
+  if (minimum) return json({ error: minimum[1] }, { status: 400 });
+  // Never leak raw database errors to the browser.
+  const safe = message.startsWith("Supabase ") ? "Terjadi kesalahan pada database server" : message;
+  return json({ error: safe }, { status: 500 });
 }

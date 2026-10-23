@@ -1,15 +1,33 @@
 (() => {
+  // Semua request ke backend. Melempar Error bila jaringan gagal, HTTP bukan 2xx,
+  // atau backend mengembalikan field `error` — sehingga pemanggil hanya
+  // menampilkan toast success setelah `await api(...)` benar-benar berhasil.
   const api = async (path, options = {}) => {
-    const response = await fetch(`/api/${path}`, {
-      credentials: "include",
-      headers: { "content-type": "application/json", ...(options.headers || {}) },
-      ...options,
-    });
+    let response;
+    try {
+      response = await fetch(`/api/${path}`, {
+        credentials: "include",
+        ...options,
+        headers: { "content-type": "application/json", ...(options.headers || {}) },
+      });
+    } catch (cause) {
+      console.error(`[api] Fetch Error /api/${path}:`, cause);
+      const error = new Error("Koneksi gagal! Periksa jaringan Anda lalu coba lagi.");
+      error.isNetworkError = true;
+      error.cause = cause;
+      throw error;
+    }
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.error || "Permintaan gagal");
+    if (!response.ok || data.error) {
+      const error = new Error(data.error || data.message || `Permintaan gagal (HTTP ${response.status})`);
+      error.status = response.status;
+      error.data = data;
+      throw error;
+    }
     return data;
   };
-  const toast = (message) => window.showToast?.(message);
+  const showToast = (type, message) => window.showToast?.(type, message);
+  const errorText = (error, fallback) => window.toastErrorMessage?.(error, fallback) || fallback;
   const format = (value) => `Rp${Number(value || 0).toLocaleString("id-ID")}`;
   const paymentMethods = ["DANA", "OVO", "GoPay", "ShopeePay", "BCA", "BRI", "Mandiri"];
   const FEE_STEP = 1000;
@@ -70,7 +88,7 @@
     if (isDanaOnly() && select.value !== "DANA") {
       select.value = "DANA";
       resetPaymentToDana();
-      toast("Payment DANA saja yang dibuka admin. Isi ulang data payment DANA.", "error");
+      showToast("warning", "⚠️ Admin hanya membuka payment DANA. Silakan isi ulang data payment DANA.");
     }
   };
   const syncAdminProfileAction = (user) => {
@@ -346,28 +364,97 @@
     event.preventDefault();
     const fields = [...event.target.querySelectorAll("input")];
     const isRegister = fields.length > 2;
+    const payload = isRegister
+      ? {
+          displayName: fields[0].value.trim(),
+          username: fields[1].value.trim(),
+          password: fields[3].value,
+        }
+      : { username: fields[0].value.trim(), password: fields[1].value };
+
+    // Validasi input -> WARNING (bukan error sistem, bukan success).
+    if (!payload.username || !payload.password || (isRegister && !payload.displayName)) {
+      showToast("warning", "⚠️ Harap isi semua kolom yang wajib!");
+      return;
+    }
+    if (!/^[a-zA-Z0-9_.]{3,30}$/.test(payload.username)) {
+      showToast("warning", "⚠️ Username 3-30 karakter: huruf, angka, titik, atau underscore.");
+      return;
+    }
+    if (payload.password.length < 6) {
+      showToast("warning", "⚠️ Kata sandi minimal 6 karakter.");
+      return;
+    }
+
+    const submitButton = event.target.querySelector('button[type="submit"]');
+    if (submitButton) submitButton.disabled = true;
     try {
-      const payload = isRegister
-        ? { displayName: fields[0].value, username: fields[1].value, password: fields[3].value }
-        : { username: fields[0].value, password: fields[1].value };
+      console.log(isRegister ? "Mencoba daftar dengan payload:" : "Mencoba login dengan payload:", {
+        username: payload.username,
+      });
       const result = await api(isRegister ? "auth/register" : "auth/login", {
         method: "POST",
         body: JSON.stringify(payload),
       });
-      if (result.user.role === "admin") {
-        location.href = "/admin";
+      console.log("Response dari server:", { user: result?.user?.username, role: result?.user?.role });
+
+      // SUCCESS hanya jika server benar-benar mengembalikan user (sesi cookie sudah dibuat).
+      if (!result || !result.user || !result.user.id) {
+        showToast(
+          "error",
+          isRegister
+            ? "Pendaftaran gagal! Server tidak mengembalikan data akun. Coba lagi. 😟"
+            : "Login gagal! Server tidak mengembalikan sesi login. Coba lagi. 😟",
+        );
         return;
       }
-      await syncAppData();
-      toast(isRegister ? "Akun berhasil dibuat" : "Login berhasil");
+      if (result.user.role === "admin") {
+        showToast("success", "Login admin berhasil! Mengalihkan ke dashboard admin... 🚀");
+        setTimeout(() => window.top.location.assign("/admin"), 600);
+        return;
+      }
+      showToast(
+        "success",
+        isRegister
+          ? `Pendaftaran berhasil! Selamat datang, ${result.user.displayName || result.user.username}. 🎉`
+          : "Login berhasil! Mengalihkan ke dashboard... 🚀",
+      );
+      try {
+        await syncAppData();
+      } catch (syncError) {
+        console.error("Gagal memuat data akun:", syncError);
+        showToast("warning", "⚠️ Anda sudah masuk, tetapi data akun belum termuat. Muat ulang halaman.");
+      }
       setTimeout(() => window.navigateTo?.("dashboard"), 250);
     } catch (error) {
-      toast(error.message, "error");
+      console.error(isRegister ? "Register Error:" : "Login Error:", error);
+      if (error.isNetworkError) {
+        showToast("error", "Koneksi gagal! Silakan periksa jaringan Anda atau coba lagi nanti.");
+      } else if (error.status === 429) {
+        showToast("error", error.message || "Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi.");
+      } else if (error.status >= 500) {
+        showToast(
+          "error",
+          isRegister
+            ? "Terjadi kesalahan sistem saat mendaftar. Coba lagi nanti."
+            : "Terjadi kesalahan sistem saat mencoba login. Coba lagi nanti.",
+        );
+      } else {
+        showToast(
+          "error",
+          error.message ||
+            (isRegister
+              ? "Pendaftaran gagal! Periksa kembali data Anda. 😟"
+              : "Login gagal! Username atau password salah. 😟"),
+        );
+      }
+    } finally {
+      if (submitButton) submitButton.disabled = false;
     }
   };
   window.openChecker = () => {
     if (state.settings?.checker_open === false) {
-      toast("Checker sedang ditutup admin. Silakan coba lagi nanti");
+      showToast("warning", "⚠️ Email Checker sedang ditutup admin. Silakan coba lagi nanti.");
       return;
     }
     window.openModal?.(
@@ -382,25 +469,39 @@
         .split(/\s+/)
         .map((value) => value.trim().toLowerCase())
         .filter(Boolean) || [];
+    if (!emails.length) {
+      showToast("warning", "⚠️ Masukkan minimal 1 alamat Gmail sebelum menyetor!");
+      return;
+    }
+    if (state.settings?.store_open === false) {
+      showToast("warning", "⚠️ Setoran Gmail sedang ditutup oleh admin.");
+      return;
+    }
     try {
       await api("deposits", {
         method: "POST",
         body: JSON.stringify({ emails, campaignPassword: state.settings?.campaign_password }),
       });
-      input.value = "";
-      await syncAppData();
-      toast("Setoran Gmail berhasil dikirim dan menunggu validasi admin");
-      setTimeout(() => window.navigateTo?.("riwayat"), 300);
     } catch (error) {
-      toast(error.message, "error");
+      showToast("error", `Setoran Gmail gagal dikirim: ${errorText(error, "coba lagi nanti.")}`);
+      return;
     }
+    input.value = "";
+    showToast("success", `${emails.length} Gmail berhasil disetor dan menunggu validasi admin!`);
+    syncAppData().catch((error) => console.error("Gagal memuat ulang data:", error));
+    setTimeout(() => window.navigateTo?.("riwayat"), 300);
   };
   window.copyCampaignPassword = async () => {
+    const value = state.settings?.campaign_password || "";
+    if (!value) {
+      showToast("warning", "⚠️ Password wajib belum diatur admin.");
+      return;
+    }
     try {
-      await navigator.clipboard.writeText(state.settings?.campaign_password || "");
-      toast("Password berhasil disalin");
+      await navigator.clipboard.writeText(value);
+      showToast("success", "Password wajib berhasil disalin!");
     } catch (error) {
-      toast(error.message, "error");
+      showToast("error", "Gagal menyalin password wajib. Salin secara manual.");
     }
   };
   window.generateStockGmail = async () => {
@@ -411,25 +512,30 @@
         input.value = input.value.trim() ? `${input.value.trim()}\n${gmail}` : gmail;
         input.dispatchEvent(new Event("input"));
       }
-      toast(`Gmail stok berhasil ditambahkan: ${gmail}`);
+      if (!gmail) {
+        showToast("error", "Gagal mengambil Gmail stok: server tidak mengirim data.");
+        return;
+      }
+      showToast("success", `Gmail stok berhasil ditambahkan: ${gmail}`);
     } catch (error) {
-      toast(error.message, "error");
+      showToast("error", `Gagal mengambil Gmail stok: ${errorText(error, "coba lagi nanti.")}`);
     }
   };
   window.saveBankDetails = async () => {
     if (document.getElementById("savePaymentButton")?.disabled) {
-      toast("Tekan Edit Nomor terlebih dahulu");
+      showToast("warning", "⚠️ Tekan tombol Edit Nomor terlebih dahulu.");
       return;
     }
     const bank = document.getElementById("bankSelect")?.value || "DANA";
     const name = document.getElementById("atasNamaInput")?.value.trim() || "";
     const number = document.getElementById("rekeningInput")?.value.trim() || "";
     if (!name || !/^[0-9]{8,16}$/.test(number)) {
-      toast("Nama wajib diisi dan nomor harus 8-16 digit angka");
+      showToast("warning", "⚠️ Nama pemilik wajib diisi dan nomor harus 8-16 digit angka.");
       return;
     }
+    let result;
     try {
-      const result = await api("wallet", {
+      result = await api("wallet", {
         method: "PATCH",
         body: JSON.stringify({ bank, name, number }),
       });
@@ -448,19 +554,20 @@
           displayName: state.user?.displayName || result.user.displayName || result.user.username,
         };
       }
-      await syncAppData();
-      window.setPaymentEditMode?.(false);
-      toast("Data payment berhasil disimpan");
     } catch (error) {
-      toast(error.message, "error");
+      showToast("error", `Data payment gagal disimpan: ${errorText(error, "coba lagi nanti.")}`);
+      return;
     }
+    window.setPaymentEditMode?.(false);
+    showToast("success", "Data payment berhasil disimpan!");
+    syncAppData().catch((error) => console.error("Gagal memuat ulang data:", error));
   };
   window.handleTarikSaldo = async () => {
     const wallet = state.user?.wallet || {};
     const bank = wallet.bank || "DANA";
     const number = wallet.number || "";
     if (!number || !wallet.name) {
-      toast("Isi rekening di Profil terlebih dahulu");
+      showToast("warning", "⚠️ Isi data rekening di menu Profil terlebih dahulu.");
       return;
     }
     const amount = Number(document.getElementById("withdrawalAmountInput")?.value);
@@ -472,11 +579,11 @@
     const minimum = minWithdrawalFor(bank, state.settings);
     const balance = Number(state.user?.balance || 0);
     if (!Number.isFinite(amount) || amount <= 0 || amount < minimum) {
-      toast(`Minimal penarikan ${bank} ${format(minimum)}`);
+      showToast("warning", `⚠️ Minimal penarikan ${bank} adalah ${format(minimum)}.`);
       return;
     }
     if (amount + fee > balance) {
-      toast("Saldo tidak cukup untuk nominal dan fee");
+      showToast("warning", "⚠️ Saldo tidak cukup untuk nominal penarikan dan fee.");
       return;
     }
     const modalBody = document.getElementById("modalBody");
@@ -495,20 +602,27 @@
           method: "POST",
           body: JSON.stringify({ amount, confirmWallet: true }),
         });
-        document.getElementById("withdrawalAmountInput").value = "";
-        await syncAppData();
-        toast("Permintaan penarikan diproses");
       } catch (error) {
-        toast(error.message, "error");
+        showToast("error", `Penarikan saldo gagal: ${errorText(error, "coba lagi nanti.")}`);
+        if (button) button.disabled = false;
+        return;
       }
+      document.getElementById("withdrawalAmountInput").value = "";
+      showToast("success", `Permintaan penarikan ${format(amount)} berhasil dikirim dan sedang diproses!`);
+      syncAppData().catch((error) => console.error("Gagal memuat ulang data:", error));
     });
   };
-  window.updatePassword = () => toast("Perubahan kata sandi belum tersedia pada backend");
+  window.updatePassword = () =>
+    showToast("warning", "⚠️ Fitur ganti kata sandi belum tersedia. Hubungi admin untuk reset.");
   window.logout = async () => {
     try {
       await api("auth/logout", { method: "POST" });
-    } catch {}
-    location.href = "/login";
+      showToast("success", "Logout berhasil. Mengalihkan ke halaman login.");
+      setTimeout(() => window.top.location.assign("/login"), 350);
+    } catch (error) {
+      console.error("Logout Error:", error);
+      showToast("error", `Logout gagal: ${errorText(error, "periksa koneksi lalu coba lagi.")}`);
+    }
   };
   window.addEventListener("DOMContentLoaded", async () => {
     try {
@@ -529,10 +643,12 @@
         document.addEventListener("visibilitychange", refreshWhenVisible);
         window.addEventListener("focus", refreshWhenVisible);
         window.addEventListener("pageshow", refreshWhenVisible);
-      } else if (!["login", "register"].includes(requestedView || "login"))
-        window.navigateTo?.("login");
+      } else if (!["login", "register"].includes(requestedView || "login")) {
+        window.top.location.replace("/login");
+      }
     } catch (error) {
-      console.warn("Backend belum siap:", error.message);
+      console.error("Gagal memuat sesi akun:", error);
+      showToast("error", `Gagal memuat sesi akun: ${errorText(error, "server tidak merespons.")}`);
     }
   });
 })();

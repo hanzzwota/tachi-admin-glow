@@ -1,15 +1,41 @@
 (() => {
+  // Melempar Error bila jaringan gagal, HTTP bukan 2xx, atau backend mengirim `error`.
+  // Toast success hanya boleh muncul setelah `await api(...)` selesai tanpa error.
   const api = async (path, options = {}) => {
-    const response = await fetch(`/api/${path}`, {
-      credentials: "include",
-      headers: { "content-type": "application/json", ...(options.headers || {}) },
-      ...options,
-    });
+    let response;
+    try {
+      response = await fetch(`/api/${path}`, {
+        credentials: "include",
+        ...options,
+        headers: { "content-type": "application/json", ...(options.headers || {}) },
+      });
+    } catch (cause) {
+      console.error(`[admin-api] Fetch Error /api/${path}:`, cause);
+      const error = new Error("Koneksi gagal! Periksa jaringan Anda lalu coba lagi.");
+      error.isNetworkError = true;
+      error.cause = cause;
+      throw error;
+    }
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.error || "Permintaan gagal");
+    if (!response.ok || data.error) {
+      const error = new Error(data.error || data.message || `Permintaan gagal (HTTP ${response.status})`);
+      error.status = response.status;
+      error.data = data;
+      throw error;
+    }
     return data;
   };
-  const notify = (message, icon) => window.toast?.(message, icon);
+  const showToast = (type, message) => window.showToast?.(type, message);
+  const errorText = (error, fallback) => window.toastErrorMessage?.(error, fallback) || fallback;
+  // Aksi utama sudah sukses; kalau hanya memuat ulang tabel yang gagal -> warning, bukan error aksi.
+  const refreshAfterAction = async () => {
+    try {
+      await refresh();
+    } catch (error) {
+      console.error("Gagal memuat ulang data admin:", error);
+      showToast("warning", "⚠️ Perubahan tersimpan, tetapi tabel belum ter-update. Muat ulang halaman.");
+    }
+  };
   const paymentMethods = ["DANA", "OVO", "GoPay", "ShopeePay", "BCA", "BRI", "Mandiri"];
   const FEE_STEP = 1000;
   const FIXED_MIN_WITHDRAWAL = 15000;
@@ -164,17 +190,18 @@
   };
   window.copyDailyGmail = async () => {
     const value = document.getElementById("dailyGmailText")?.value || "";
-    if (!value) return notify("Belum ada Gmail untuk disalin");
+    if (!value) return showToast("warning", "⚠️ Belum ada Gmail rekapan untuk disalin.");
     try {
       await navigator.clipboard.writeText(value);
-      notify(`${value.split("\n").length} Gmail disalin`);
-    } catch {
-      notify("Gagal menyalin Gmail");
+      showToast("success", `${value.split("\n").length} Gmail rekapan berhasil disalin!`);
+    } catch (error) {
+      console.error("Copy Error:", error);
+      showToast("error", "Gagal menyalin Gmail rekapan. Tidak ada izin akses clipboard.");
     }
   };
   window.exportDailyGmail = () => {
     const value = document.getElementById("dailyGmailText")?.value || "";
-    if (!value) return notify("Belum ada Gmail untuk diekspor");
+    if (!value) return showToast("warning", "⚠️ Belum ada Gmail rekapan untuk diekspor.");
     const stamp = recapDate;
     const link = document.createElement("a");
     link.href = URL.createObjectURL(
@@ -183,9 +210,15 @@
       }),
     );
     link.download = `rekapan-gmail-${stamp}.txt`;
-    link.click();
-    URL.revokeObjectURL(link.href);
-    notify("File rekapan berhasil diekspor");
+    try {
+      link.click();
+      showToast("success", `File rekapan Gmail ${stamp} berhasil diekspor!`);
+    } catch (error) {
+      console.error("Export Error:", error);
+      showToast("error", "Gagal mengekspor file rekapan Gmail.");
+    } finally {
+      setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+    }
   };
   let refreshInFlight = null;
   const refresh = async (paymentFeesOverride = null) => {
@@ -257,11 +290,36 @@
         method: "PATCH",
         body: JSON.stringify(settingsPayload()),
       });
-      await refresh();
-      notify("Status fitur diperbarui");
     } catch (error) {
-      notify(error.message, "error");
+      showToast("error", `Gagal memperbarui status fitur: ${errorText(error, "coba lagi nanti.")}`);
+      return false;
     }
+    showToast("success", "Status fitur berhasil diperbarui!");
+    await refreshAfterAction();
+    return true;
+  };
+  // Sakelar Buka/Tutup fitur: toast baru muncul setelah server menjawab.
+  window.toggleFeature = async (key, label) => {
+    if (!db?.settings || !(key in db.settings)) {
+      showToast("warning", "⚠️ Data pengaturan belum termuat. Muat ulang halaman.");
+      return;
+    }
+    const previous = db.settings[key];
+    const next = !previous;
+    db.settings[key] = next;
+    try {
+      await api("admin/settings", {
+        method: "PATCH",
+        body: JSON.stringify(settingsPayload()),
+      });
+    } catch (error) {
+      db.settings[key] = previous; // kembalikan tampilan ke kondisi sebenarnya
+      window.reloadAdminDb?.();
+      showToast("error", `Gagal ${next ? "membuka" : "menutup"} ${label}: ${errorText(error, "coba lagi nanti.")}`);
+      return;
+    }
+    showToast("success", `${label} berhasil ${next ? "dibuka" : "ditutup"}!`);
+    await refreshAfterAction();
   };
   window.doLogin = async (event) => {
     event.preventDefault();
@@ -272,101 +330,151 @@
         method: "POST",
         body: JSON.stringify({ username: lu.value.trim(), password: lp.value }),
       });
-      if (result.user.role !== "admin") throw new Error("Akun ini bukan admin");
-      await refresh();
+      if (!result?.user?.id) throw new Error("Login gagal! Server tidak mengembalikan sesi login. 😟");
+      if (result.user.role !== "admin") {
+        lerr.textContent = "Akun ini bukan admin.";
+        showToast("error", "Login gagal! Akun ini tidak memiliki akses admin.");
+        return;
+      }
+      lerr.classList.add("hidden");
+      showToast("success", "Login admin berhasil! Selamat datang. 🚀");
+      await refreshAfterAction();
       showApp();
     } catch (error) {
-      lerr.textContent = error.message;
+      console.error("Admin Login Error:", error);
+      const message = error.isNetworkError
+        ? "Koneksi gagal! Silakan periksa jaringan Anda atau coba lagi nanti."
+        : error.status >= 500
+          ? "Terjadi kesalahan sistem saat mencoba login. Coba lagi nanti."
+          : error.message || "Login gagal! Username atau password salah. 😟";
+      lerr.textContent = message;
+      showToast("error", message);
     }
   };
   window.doAcc = async (id) => {
+    let acceptedEmails;
     try {
-      const acceptedEmails = [
+      acceptedEmails = [
         ...document.querySelectorAll("input[name='acceptedEmail']:checked"),
       ].map((input) => input.value);
+      if (!acceptedEmails.length) {
+        showToast("warning", "⚠️ Centang minimal 1 Gmail yang ingin diterima!");
+        return;
+      }
       await api(`admin/deposits/${id}/approve`, {
         method: "POST",
         body: JSON.stringify({ acceptedEmails }),
       });
-      closeModal();
-      await refresh();
-      notify("Setoran diterima dan saldo user diperbarui");
     } catch (error) {
-      notify(error.message, "error");
+      showToast("error", `Gagal menerima setoran: ${errorText(error, "coba lagi nanti.")}`);
+      return;
     }
+    closeModal();
+    showToast("success", "Setoran berhasil diterima dan saldo user diperbarui!");
+    await refreshAfterAction();
   };
   window.doRej = async (id) => {
     try {
-      const reason = document.querySelector('input[name="rr"]:checked')?.value || "Ditolak admin";
+      let reason = document.querySelector('input[name="rr"]:checked')?.value || "Ditolak admin";
+      if (reason === "Alasan Lain") {
+        reason = document.getElementById("rCustom")?.value.trim() || "";
+        if (!reason) {
+          showToast("warning", "⚠️ Harap isi alasan penolakan kustom!");
+          return;
+        }
+      }
       const rejectedEmails = [
         ...document.querySelectorAll("input[name='rejectedEmail']:checked"),
       ].map((input) => input.value);
+      if (!rejectedEmails.length) {
+        showToast("warning", "⚠️ Centang minimal 1 Gmail yang ingin ditolak!");
+        return;
+      }
       await api(`admin/deposits/${id}/reject`, {
         method: "POST",
         body: JSON.stringify({ reason, rejectedEmails }),
       });
-      closeModal();
-      await refresh();
-      notify("Setoran ditolak");
     } catch (error) {
-      notify(error.message, "error");
+      showToast("error", `Gagal menolak setoran: ${errorText(error, "coba lagi nanti.")}`);
+      return;
     }
+    closeModal();
+    showToast("success", "Setoran berhasil ditolak dan alasan tersimpan.");
+    await refreshAfterAction();
   };
   window.accWd = async (id) => {
     try {
       await api(`admin/withdrawals/${id}/approve`, { method: "POST" });
-      finishWithdrawalAction(id, "selesai");
-      notify("Penarikan diselesaikan");
     } catch (error) {
-      notify(error.message, "error");
+      showToast("error", `Gagal menyelesaikan pencairan: ${errorText(error, "coba lagi nanti.")}`);
+      return;
     }
+    finishWithdrawalAction(id, "selesai");
+    showToast("success", "Pencairan saldo berhasil ditandai selesai!");
   };
   window.rejWd = async (id) => {
     const reason = document.getElementById("wdR")?.value.trim();
-    if (!reason) return notify("Alasan wajib diisi");
+    if (!reason) return showToast("warning", "⚠️ Alasan penolakan penarikan wajib diisi!");
     try {
       await api(`admin/withdrawals/${id}/reject`, {
         method: "POST",
         body: JSON.stringify({ reason }),
       });
-      closeModal();
-      finishWithdrawalAction(id, "ditolak", reason);
-      notify("Penarikan ditolak dan saldo dikembalikan");
     } catch (error) {
-      notify(error.message, "error");
+      showToast("error", `Gagal menolak penarikan: ${errorText(error, "coba lagi nanti.")}`);
+      return;
     }
+    closeModal();
+    finishWithdrawalAction(id, "ditolak", reason);
+    showToast("success", "Penarikan berhasil ditolak dan saldo dikembalikan ke user.");
+  };
+  const userActionText = {
+    delete: { ok: "Akun user berhasil dihapus beserta riwayatnya.", fail: "Gagal menghapus akun user" },
+    block: { ok: "Akun user berhasil diblokir.", fail: "Gagal memblokir akun user" },
+    unblock: { ok: "Blokir akun user berhasil dibuka.", fail: "Gagal membuka blokir akun user" },
   };
   const userAction = async (id, action) => {
+    const text = userActionText[action];
     try {
       await api(`admin/users/${id}/${action}`, { method: "POST" });
-      await refresh();
-      notify(
-        action === "delete"
-          ? "Akun dihapus"
-          : action === "block"
-            ? "Akun diblokir"
-            : "Akun dibuka kembali",
-      );
     } catch (error) {
-      notify(error.message, "error");
+      const reason = error.status === 403 ? "Tidak ada akses admin." : errorText(error, "coba lagi nanti.");
+      showToast("error", `${text.fail}: ${reason}`);
+      return;
     }
+    showToast("success", text.ok);
+    await refreshAfterAction();
   };
   window.blockUser = (id) => userAction(id, "block");
   window.unblockUser = (id) => userAction(id, "unblock");
   window.deleteUser = (id) => {
     if (confirm("Hapus akun user beserta riwayatnya? Tindakan ini tidak dapat dibatalkan."))
       userAction(id, "delete");
+    else showToast("warning", "⚠️ Penghapusan akun dibatalkan.");
   };
   window.saveSettings = async (event) => {
     event.preventDefault();
+    const limit = parseInt(cLimit.value, 10);
+    if (!(limit >= 1 && limit <= 50)) {
+      showToast("warning", "⚠️ Limit akun per transaksi harus 1–50.");
+      return;
+    }
+    if (!cPass.value.trim()) {
+      showToast("warning", "⚠️ Password wajib harus diisi!");
+      return;
+    }
+    let paymentFees;
     try {
       const feeValues = [
         cFee.value,
         ...paymentMethods.map((key) => document.getElementById(`fee${key}`)?.value),
       ];
       if (feeValues.some((value) => Number(value || 0) < 0 || Number(value || 0) % FEE_STEP !== 0))
-        throw new Error("Fee harus kelipatan Rp1.000 (contoh: 0, 1.000, 2.000)");
-      const paymentFees = Object.fromEntries(
+        {
+          showToast("warning", "⚠️ Fee harus kelipatan Rp1.000 (contoh: 0, 1.000, 2.000).");
+          return;
+        }
+      paymentFees = Object.fromEntries(
         paymentMethods.map((key) => [
           key,
           normalizeFee(document.getElementById(`fee${key}`)?.value || 0),
@@ -395,13 +503,19 @@
           }),
         ),
       });
-      db.settings.paymentFees = paymentFees;
-      db.settings.paymentMode = cPaymentMode.value;
-      db.settings.rulesText = cRules.value;
-      await refresh(paymentFees);
-      notify("Pengaturan tersimpan");
     } catch (error) {
-      notify(error.message, "error");
+      showToast("error", `Pengaturan gagal disimpan: ${errorText(error, "coba lagi nanti.")}`);
+      return;
+    }
+    db.settings.paymentFees = paymentFees;
+    db.settings.paymentMode = cPaymentMode.value;
+    db.settings.rulesText = cRules.value;
+    showToast("success", "Pengaturan platform berhasil disimpan!");
+    try {
+      await refresh(paymentFees);
+    } catch (error) {
+      console.error("Gagal memuat ulang data admin:", error);
+      showToast("warning", "⚠️ Pengaturan tersimpan, tetapi tampilan belum ter-update. Muat ulang halaman.");
     }
   };
   window.save = async () => {
@@ -410,23 +524,28 @@
         method: "PATCH",
         body: JSON.stringify(settingsPayload()),
       });
-      await refresh();
     } catch (error) {
-      notify(error.message, "error");
+      showToast("error", `Gagal menyimpan perubahan: ${errorText(error, "coba lagi nanti.")}`);
+      return false;
     }
+    await refreshAfterAction();
+    return true;
   };
   window.logout = async () => {
     try {
       await api("auth/logout", { method: "POST" });
-    } finally {
-      location.href = "/login";
+      showToast("success", "Logout berhasil. Mengalihkan ke halaman login.");
+      setTimeout(() => window.top.location.assign("/login"), 350);
+    } catch (error) {
+      console.error("Admin Logout Error:", error);
+      showToast("error", `Logout admin gagal: ${errorText(error, "periksa koneksi lalu coba lagi.")}`);
     }
   };
   window.addEventListener("DOMContentLoaded", async () => {
     try {
       const { user } = await api("auth/me");
       if (!user || user.role !== "admin") {
-        location.href = "/login";
+        window.top.location.replace("/login");
         return;
       }
       await refresh();
@@ -435,7 +554,8 @@
         if (document.visibilityState === "visible") refresh().catch(() => {});
       }, 15000);
     } catch (error) {
-      notify(error.message, "error");
+      console.error("Gagal memuat dashboard admin:", error);
+      showToast("error", `Gagal memuat dashboard admin: ${errorText(error, "server tidak merespons.")}`);
     }
   });
 })();

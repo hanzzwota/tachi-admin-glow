@@ -4,7 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>tachi69gmail - Platform Setor & Jual Beli Gmail</title>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Outlined Toast Notification: showToast(type, message) -->
+    <script src="/toast.js"></script>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons CDN -->
@@ -33,7 +34,7 @@
       .bg-mesh {
         background: radial-gradient(circle at 50% 0%, #dbeafe 0%, #eff6ff 50%, #e0f2fe 100%);
         position: relative;
-        overflow-x: hidden;
+        overflow-x: clip;
       }
 
       /* Ambient floating blurred spheres */
@@ -1414,7 +1415,7 @@
 
         <button
           id="adminProfileAction"
-          onclick="window.location.href = '/admin'"
+          onclick="window.top.location.assign('/admin')"
           class="hidden w-full rounded-2xl bg-blue-600 px-4 py-3 text-left text-xs font-extrabold text-white shadow-lg shadow-blue-500/20 active:scale-[.99] transition"
         >
           <i class="fa-solid fa-shield-halved mr-2"></i>Dashboard Admin
@@ -1717,14 +1718,6 @@
       </div>
     </div>
 
-    <!-- Notification Toast Element -->
-    <div
-      id="toast"
-      class="fixed top-12 left-1/2 -translate-x-1/2 bg-slate-900/90 backdrop-blur text-white text-xs font-semibold px-4 py-2.5 rounded-full shadow-xl z-50 opacity-0 transition-opacity pointer-events-none flex items-center gap-2 border border-slate-700"
-    >
-      <i class="fa-solid fa-circle-info text-blue-400"></i>
-      <span id="toastMsg">Notifikasi</span>
-    </div>
 
     <script>
       // Announcement carousel data (sinkron dengan pengaturan Admin)
@@ -1907,6 +1900,26 @@
 
       // View Navigation Handler
       function navigateTo(viewName) {
+        const routeByView = {
+          login: "/login",
+          register: "/register",
+          dashboard: "/dashboard",
+          stor: "/setor",
+          saldo: "/saldo",
+          profil: "/profil",
+          riwayat: "/riwayat",
+        };
+        const route = routeByView[viewName];
+        if (!route) return;
+        try {
+          const topWindow = window.top;
+          if (topWindow && topWindow.location.pathname !== route) {
+            topWindow.location.assign(route);
+            return;
+          }
+        } catch (error) {
+          console.warn("Tidak dapat mengubah route halaman:", error);
+        }
         const views = ["login", "register", "dashboard", "stor", "saldo", "profil", "riwayat"];
 
         views.forEach((v) => {
@@ -1985,19 +1998,15 @@
       }
 
       // Form Submission logic
-      function handleAuthSubmit(event, targetView) {
+      // Placeholder sampai /api-client.js termuat (fungsi asli menimpa ini).
+      // Tidak boleh menampilkan success karena belum ada request ke server.
+      function handleAuthSubmit(event) {
         event.preventDefault();
-        showToast("Berhasil diproses! Mengalihkan...");
-        setTimeout(() => {
-          navigateTo(targetView);
-        }, 500);
+        showToast("warning", "⚠️ Sistem belum siap. Muat ulang halaman lalu coba lagi.");
       }
 
       function logout() {
-        showToast("Berhasil keluar dari akun");
-        setTimeout(() => {
-          navigateTo("login");
-        }, 500);
+        showToast("warning", "⚠️ Sistem belum siap. Muat ulang halaman lalu coba lagi.");
       }
 
       // Password visibility toggle helper
@@ -2014,21 +2023,29 @@
       }
 
       // Clipboard copy function
-      function copyToClipboard(text) {
-        if (navigator.clipboard && window.isSecureContext) {
-          navigator.clipboard.writeText(text);
-        } else {
-          let textArea = document.createElement("textarea");
-          textArea.value = text;
-          document.body.appendChild(textArea);
-          textArea.focus();
-          textArea.select();
-          try {
-            document.execCommand("copy");
-          } catch (err) {}
-          document.body.removeChild(textArea);
+      async function copyToClipboard(text) {
+        if (!text) {
+          showToast("warning", "⚠️ Tidak ada teks untuk disalin.");
+          return;
         }
-        showToast("Password berhasil disalin!");
+        try {
+          if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(text);
+          } else {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            const copied = document.execCommand("copy");
+            document.body.removeChild(textArea);
+            if (!copied) throw new Error("execCommand copy gagal");
+          }
+          showToast("success", "Teks berhasil disalin ke clipboard!");
+        } catch (err) {
+          console.error("Copy Error:", err);
+          showToast("error", "Gagal menyalin teks. Silakan salin secara manual.");
+        }
       }
 
       // Line counter for Stor Email textarea
@@ -2045,15 +2062,10 @@
       function submitGmailStoran() {
         const input = document.getElementById("gmailListInput");
         if (!input.value.trim()) {
-          showToast("Masukkan setidaknya 1 alamat Gmail!");
+          showToast("warning", "⚠️ Masukkan minimal 1 alamat Gmail sebelum menyetor!");
           return;
         }
-        showToast("Setoran Gmail berhasil dikirim!");
-        input.value = "";
-        updateLineCounter();
-        setTimeout(() => {
-          navigateTo("riwayat");
-        }, 800);
+        showToast("warning", "⚠️ Sistem belum siap. Muat ulang halaman lalu coba lagi.");
       }
 
       // Account / Bank Details saving logic
@@ -2063,30 +2075,18 @@
         const nama = document.getElementById("atasNamaInput").value.trim();
 
         if (!rek || !nama) {
-          showToast("Lengkapi nomor rekening dan nama pemilik!");
+          showToast("warning", "⚠️ Lengkapi nomor rekening dan nama pemilik!");
           return;
         }
-
-        userBankData = { bank: bank, rekening: rek, nama: nama };
-        document.getElementById("summaryRekening").innerText = `${bank} - ${rek}`;
-        document.getElementById("summaryAtasNama").innerText = nama;
-        updateTarikSaldoButton();
-        showToast("Data rekening berhasil disimpan!");
+        showToast("warning", "⚠️ Sistem belum siap. Muat ulang halaman lalu coba lagi.");
       }
 
       function handleTarikSaldo() {
         if (!isRekeningTerisi()) {
-          showToast("Isi rekening di Profil terlebih dahulu!");
+          showToast("warning", "⚠️ Isi data rekening di menu Profil terlebih dahulu.");
           return;
         }
-
-        const amount = Number(document.getElementById("withdrawalAmountInput").value);
-        if (!amount || amount < 4000) {
-          showToast("Minimal penarikan adalah Rp4.000!");
-          return;
-        }
-        showToast("Permintaan penarikan diproses!");
-        document.getElementById("withdrawalAmountInput").value = "";
+        showToast("warning", "⚠️ Sistem belum siap. Muat ulang halaman lalu coba lagi.");
       }
 
       function updatePassword() {
@@ -2094,12 +2094,10 @@
         const newP = document.getElementById("new-password").value;
 
         if (!oldP || !newP) {
-          showToast("Isi kata sandi lama dan kata sandi baru!");
+          showToast("warning", "⚠️ Isi kata sandi lama dan kata sandi baru!");
           return;
         }
-        showToast("Kata sandi berhasil diperbarui!");
-        document.getElementById("old-password").value = "";
-        document.getElementById("new-password").value = "";
+        showToast("warning", "⚠️ Fitur ganti kata sandi belum tersedia. Hubungi admin untuk reset.");
       }
 
       // Password Wajib selalu mengikuti pengaturan admin terbaru.
@@ -2174,37 +2172,7 @@
         document.getElementById("appModal").classList.add("hidden");
       }
 
-      // Notification Toast Handler
-      function simpanData(message = "Data berhasil disimpan!", icon) {
-        const alertIcon =
-          icon ||
-          (/gagal|salah|tidak|minimal|isi |lengkapi|wajib|harus|pilih|alasan|tekan edit|terlebih dahulu|saldo tidak|belum|ditutup|invalid|error/i.test(
-            message,
-          )
-            ? "error"
-            : "success");
-        if (window.Swal) {
-          return Swal.fire({
-            toast: true,
-            position: "top-end",
-            icon: alertIcon,
-            title: message,
-            showConfirmButton: false,
-            timer: 3000,
-            timerProgressBar: true,
-          });
-        }
-        const toast = document.getElementById("toast");
-        const toastMsg = document.getElementById("toastMsg");
-        if (toast && toastMsg) {
-          toastMsg.innerText = message;
-          toast.classList.remove("opacity-0");
-          setTimeout(() => toast.classList.add("opacity-0"), 2500);
-        }
-      }
-      function showToast(message, icon) {
-        return simpanData(message, icon);
-      }
+      // Notifikasi memakai window.showToast(type, message) dari /toast.js.
     </script>
     <script>
       /* Backend data is managed by /api-client.js; no browser storage fallback. */
