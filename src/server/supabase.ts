@@ -1,8 +1,7 @@
-const SUPABASE_URL = (process.env.SUPABASE_URL ?? "https://tfepouzhcpaugfcgrekl.supabase.co").replace(/\/+$/, "");
-const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY?.trim() ?? "";
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ?? "";
+const SUPABASE_URL = process.env.SUPABASE_URL ?? "https://tfepouzhcpaugfcgrekl.supabase.co";
+const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY ?? "";
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
 const SUPABASE_API_KEY = SUPABASE_SECRET_KEY || SUPABASE_SERVICE_ROLE_KEY;
-const USE_MODERN_SECRET_KEY = SUPABASE_API_KEY.startsWith("sb_secret_");
 const SESSION_COOKIE = "tachi_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
 
@@ -12,9 +11,6 @@ function requireSupabase() {
   if (!SUPABASE_API_KEY) {
     throw new Error("SUPABASE_SECRET_KEY belum dikonfigurasi di environment server");
   }
-  if (SUPABASE_API_KEY.startsWith("sb_publishable_")) {
-    throw new Error("SUPABASE_PUBLISHABLE_KEY tidak dapat digunakan backend; atur SUPABASE_SECRET_KEY sebagai server secret");
-  }
 }
 
 export async function supabaseFetch<T = Row>(path: string, init: RequestInit = {}): Promise<T> {
@@ -23,7 +19,7 @@ export async function supabaseFetch<T = Row>(path: string, init: RequestInit = {
     ...init,
     headers: {
       apikey: SUPABASE_API_KEY,
-      ...(USE_MODERN_SECRET_KEY ? {} : { Authorization: `Bearer ${SUPABASE_API_KEY}` }),
+      ...(SUPABASE_SECRET_KEY ? {} : { Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` }),
       "Content-Type": "application/json",
       ...(init.headers ?? {}),
     },
