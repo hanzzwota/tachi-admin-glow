@@ -10,16 +10,16 @@ export const Route = createFileRoute("/")({
       },
     ],
     meta: [
-      { title: "tachi69gmail Admin Console" },
+      { title: "tachi69gmail — Setor Gmail, Dapat Saldo" },
       {
         name: "description",
         content:
-          "Dashboard admin untuk verifikasi setoran Gmail, penarikan saldo, dan pengaturan platform tachi69gmail.",
+          "Setor akun Gmail, pantau saldo, dan tarik penghasilan dengan mudah di tachi69gmail.",
       },
-      { property: "og:title", content: "tachi69gmail Admin Console" },
+      { property: "og:title", content: "tachi69gmail — Setor Gmail, Dapat Saldo" },
       {
         property: "og:description",
-        content: "Kelola setoran Gmail, penarikan, user, dan sakelar fitur tachi69gmail.",
+        content: "Setor akun Gmail, pantau saldo, dan tarik penghasilan di tachi69gmail.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
