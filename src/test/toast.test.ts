@@ -21,14 +21,14 @@ const toasts = () => Array.from(document.querySelectorAll<HTMLElement>(".otoast"
 describe("Outlined toast", () => {
   it("tipe yang tidak dikenal tidak pernah tampil sebagai success", () => {
     showToast()("sukses-palsu", "Pesan A");
-    expect(toasts()[0].classList.contains("otoast-success")).toBe(false);
-    expect(toasts()[0].classList.contains("otoast-warning")).toBe(true);
+    expect(toasts()[0]!.classList.contains("otoast-success")).toBe(false);
+    expect(toasts()[0]!.classList.contains("otoast-warning")).toBe(true);
     vi.runAllTimers();
   });
 
   it("warning selalu diawali emoji ⚠️", () => {
     showToast()("warning", "Harap isi semua kolom");
-    expect(toasts()[0].querySelector(".otoast-msg")?.textContent).toBe("⚠️ Harap isi semua kolom");
+    expect(toasts()[0]!.querySelector(".otoast-msg")?.textContent).toBe("⚠️ Harap isi semua kolom");
     vi.runAllTimers();
   });
 
