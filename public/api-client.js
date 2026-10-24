@@ -607,7 +607,8 @@
         if (button) button.disabled = false;
         return;
       }
-      document.getElementById("withdrawalAmountInput").value = "";
+      const withdrawalAmountInput = document.getElementById("withdrawalAmountInput");
+      if (withdrawalAmountInput) withdrawalAmountInput.value = "";
       showToast("success", `Permintaan penarikan ${format(amount)} berhasil dikirim dan sedang diproses!`);
       syncAppData().catch((error) => console.error("Gagal memuat ulang data:", error));
     });
@@ -627,7 +628,24 @@
   window.addEventListener("DOMContentLoaded", async () => {
     try {
       const { user } = await api("auth/me");
-      const requestedView = new URLSearchParams(location.search).get("view");
+      const pathViews = {
+        "/login": "login",
+        "/pages/login.html": "login",
+        "/register": "register",
+        "/pages/register.html": "register",
+        "/dashboard": "dashboard",
+        "/pages/dashboard.html": "dashboard",
+        "/setor": "stor",
+        "/pages/setor.html": "stor",
+        "/saldo": "saldo",
+        "/pages/saldo.html": "saldo",
+        "/profil": "profil",
+        "/pages/profil.html": "profil",
+        "/riwayat": "riwayat",
+        "/pages/riwayat.html": "riwayat",
+      };
+      const requestedView =
+        new URLSearchParams(location.search).get("view") || pathViews[location.pathname] || null;
       if (user) {
         applyIdentityToDom(user);
         const availableViews = ["dashboard", "stor", "saldo", "profil", "riwayat"];

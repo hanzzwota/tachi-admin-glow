@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="id"><head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Dashboard — tachi69gmail</title><meta name="description" content="Ringkasan akun tachi69gmail." />
+<script src="/toast.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7166254458926131" crossorigin="anonymous"></script>
+<link rel="stylesheet" href="/app.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+</head><body>
+<div class="bg-mesh dark-mode min-h-screen flex flex-col items-center justify-start relative selection:bg-blue-200">
+<div class="bg-sphere-1"></div><div class="bg-sphere-2"></div><div class="bg-sphere-3"></div>
+<div class="w-full max-w-lg min-h-screen px-3 sm:px-4 pt-4 pb-48 flex flex-col justify-start relative z-10">
+<div id="appMainNavMount"></div><main id="pageContent" class="flex-1"><div id="view-dashboard" class="flex flex-col gap-4 pb-24 w-full">
+        <!-- Header / Navbar -->
+        <header class="flex items-center justify-between py-1">
+          <div class="flex items-center gap-2.5">
+            <div
+              class="w-10 h-10 rounded-full bg-white flex items-center justify-center overflow-hidden shadow-md border border-slate-200/80"
+            >
+              <img
+                src="https://files.catbox.moe/p4ceks.jpg"
+                alt="tachi69gmail logo"
+                class="w-full h-full object-cover animate-logo-spin"
+                onerror="
+                  this.onerror = null;
+                  this.src = 'https://placehold.co/40x40/2563eb/ffffff?text=T';
+                "
+              />
+            </div>
+            <div>
+              <h1
+                class="font-black text-lg text-slate-900 tracking-tight leading-none flex items-center gap-0.5"
+              >
+                tachi<span class="text-blue-600">69gmail</span>
+              </h1>
+              <p id="welcomeGreeting" class="text-[11px] text-slate-500 font-medium mt-0.5">
+                Selamat pagi, <span id="welcomeName" class="text-slate-800 font-bold">user</span>
+              </p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <div class="flex items-center gap-1.5">
+              <a
+                id="supportWaQuick"
+                href="https://whatsapp.com/channel/0029VbDjSGJ9Gv7YqjohDw2l"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="flex items-center gap-1.5 bg-white border border-slate-200/80 px-2.5 py-1.5 rounded-xl text-[10px] font-semibold text-slate-700 shadow-sm active:scale-95 transition-transform"
+              >
+                <i class="fa-brands fa-whatsapp text-emerald-500 text-sm"></i>
+                <span>Saluran CS</span>
+              </a>
+              <button
+                onclick="
+                  openSupportModal();
+                  return false;
+                "
+                class="flex items-center gap-1.5 bg-white border border-slate-200/80 px-2.5 py-1.5 rounded-xl text-[10px] font-semibold text-blue-600 shadow-sm active:scale-95 transition-transform"
+              >
+                <i class="fa-solid fa-headset text-xs"></i>
+                <span>Support</span>
+              </button>
+            </div>
+
+            <button
+              onclick="logout()"
+              class="flex items-center gap-1 bg-rose-50 border border-rose-200/80 px-2.5 py-1.5 rounded-full text-xs font-semibold text-rose-600 shadow-sm active:scale-95 transition-transform"
+            >
+              <i class="fa-solid fa-right-from-bracket text-xs"></i>
+              <span>Keluar</span>
+            </button>
+          </div>
+        </header>
+
+        <!-- Rate dan banner saldo utama -->
+        <div class="dashboard-saldo-card rounded-3xl p-5 text-white shadow-xl shadow-blue-500/20">
+          <div class="relative z-10">
+            <div class="flex items-center justify-between mb-5">
+              <div
+                class="flex items-center gap-2 text-blue-100 text-[11px] font-bold tracking-wider uppercase"
+              >
+                <i class="fa-solid fa-chart-line text-blue-200"></i>
+                <span>Rate Gmail Terkini</span>
+              </div>
+              <span id="gmailRateTop" class="text-sm font-black text-white">Rp4.500 / Gmail</span>
+            </div>
+
+            <div class="flex justify-between items-start">
+              <div
+                class="flex items-center gap-2 text-blue-100 text-[11px] font-bold tracking-wider uppercase"
+              >
+                <i class="fa-solid fa-wallet text-blue-200"></i>
+                <span>SALDO ANDA</span>
+              </div>
+              <div
+                class="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner overflow-hidden"
+              >
+                <img
+                  src="https://files.catbox.moe/p4ceks.jpg"
+                  alt="tachi logo"
+                  class="w-full h-full object-cover animate-logo-spin"
+                  onerror="
+                    this.onerror = null;
+                    this.src = 'https://placehold.co/40x40/2563eb/ffffff?text=T';
+                  "
+                />
+              </div>
+            </div>
+
+            <div class="mt-1">
+              <div id="dashboardBalance" class="text-3xl font-black tracking-tight text-white">
+                Rp0
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3 mt-5">
+              <button
+                onclick="navigateTo('saldo')"
+                class="flex-1 bg-white text-blue-700 font-bold text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-md active:scale-95 transition duration-150"
+              >
+                <i class="fa-solid fa-circle-arrow-down text-sm"></i>
+                <span id="btnTarikSaldoText">Isi Terlebih Dahulu</span>
+              </button>
+              <button
+                onclick="navigateTo('riwayat')"
+                class="flex-1 bg-blue-500/30 hover:bg-blue-500/40 border border-white/20 text-white font-bold text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 backdrop-blur-sm active:scale-95 transition duration-150"
+              >
+                <i class="fa-solid fa-clock-rotate-left text-sm"></i>
+                <span>Riwayat</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Diterima & Pending Stats Row -->
+        <div class="grid grid-cols-2 gap-3.5">
+          <div
+            class="bg-white rounded-2xl p-3.5 flex items-center gap-3 card-soft-shadow border border-slate-100"
+          >
+            <div
+              class="w-11 h-11 rounded-xl icon-soft-box-green flex items-center justify-center text-white text-lg shrink-0"
+            >
+              <i class="fa-solid fa-circle-check"></i>
+            </div>
+            <div>
+              <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block"
+                >DITERIMA</span
+              >
+              <span class="text-xl font-extrabold text-slate-800 leading-tight">0</span>
+            </div>
+          </div>
+
+          <div
+            class="bg-white rounded-2xl p-3.5 flex items-center gap-3 card-soft-shadow border border-slate-100"
+          >
+            <div
+              class="w-11 h-11 rounded-xl icon-soft-box-orange flex items-center justify-center text-white text-lg shrink-0"
+            >
+              <i class="fa-solid fa-hourglass-half"></i>
+            </div>
+            <div>
+              <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block"
+                >PENDING</span
+              >
+              <span class="text-xl font-extrabold text-slate-800 leading-tight">0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Limit Storan Progress Bar -->
+        <div class="bg-white rounded-2xl p-4 card-soft-shadow border border-slate-100">
+          <div class="flex items-center justify-between text-xs mb-2">
+            <div class="flex items-center gap-1.5 font-bold text-slate-700">
+              <i class="fa-solid fa-gauge-high text-blue-500 text-xs"></i>
+              <span>Limit Storan Hari Ini</span>
+            </div>
+            <div class="font-bold text-slate-700">
+              <span id="dailyDepositUsage">0/0</span>
+              <span id="dailyDepositRemaining" class="text-slate-400 font-medium">· Sisa 0</span>
+            </div>
+          </div>
+          <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden relative">
+            <div
+              id="dailyDepositProgress"
+              class="bg-gradient-to-r from-blue-500 to-indigo-600 h-full w-0 rounded-full relative"
+            >
+              <div
+                class="absolute right-0 top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-blue-600 border-2 border-white rounded-full shadow-sm"
+              ></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Menu Utama Section -->
+        <div>
+          <h2 class="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2.5 px-1">
+            Menu Utama
+          </h2>
+          <div class="grid grid-cols-5 gap-2">
+            <button onclick="navigateTo('stor')" class="flex flex-col items-center gap-1.5 group">
+              <div
+                class="w-12 h-12 rounded-2xl icon-soft-box flex items-center justify-center text-white text-lg group-active:scale-95 transition-transform"
+              >
+                <i class="fa-solid fa-paper-plane"></i>
+              </div>
+              <span class="text-xs font-semibold text-slate-700">Stor</span>
+            </button>
+
+            <button
+              onclick="navigateTo('riwayat')"
+              class="flex flex-col items-center gap-1.5 group"
+            >
+              <div
+                class="w-12 h-12 rounded-2xl icon-soft-box flex items-center justify-center text-white text-lg group-active:scale-95 transition-transform"
+              >
+                <i class="fa-solid fa-clock-rotate-left"></i>
+              </div>
+              <span class="text-xs font-semibold text-slate-700">Riwayat</span>
+            </button>
+
+            <button
+              id="checkerFeatureButton"
+              onclick="openChecker()"
+              class="flex flex-col items-center gap-1.5 group"
+            >
+              <div
+                class="w-12 h-12 rounded-2xl icon-soft-box flex items-center justify-center text-white text-lg group-active:scale-95 transition-transform"
+              >
+                <i class="fa-solid fa-magnifying-glass font-bold"></i>
+              </div>
+              <span id="checkerFeatureLabel" class="text-xs font-semibold text-slate-700"
+                >Checker</span
+              >
+            </button>
+
+            <button onclick="navigateTo('saldo')" class="flex flex-col items-center gap-1.5 group">
+              <div
+                class="w-12 h-12 rounded-2xl icon-soft-box flex items-center justify-center text-white text-lg group-active:scale-95 transition-transform"
+              >
+                <i class="fa-solid fa-wallet"></i>
+              </div>
+              <span class="text-xs font-semibold text-slate-700">Saldo</span>
+            </button>
+
+            <button onclick="openRulesToday()" class="flex flex-col items-center gap-1.5 group">
+              <div
+                class="w-12 h-12 rounded-2xl icon-soft-box flex items-center justify-center text-white text-lg group-active:scale-95 transition-transform"
+              >
+                <i class="fa-solid fa-file-lines"></i>
+              </div>
+              <span class="text-xs font-semibold text-slate-700">Rules</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Pengumuman Slider Card -->
+        <div
+          class="bg-white rounded-2xl p-4 card-soft-shadow border border-slate-100 flex flex-col gap-3"
+        >
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2 font-bold text-slate-800 text-sm">
+              <div
+                class="w-8 h-8 rounded-xl bg-sky-100 text-sky-600 flex items-center justify-center text-sm"
+              >
+                <i class="fa-solid fa-bullhorn"></i>
+              </div>
+              <span>Pengumuman</span>
+            </div>
+            <span
+              id="announcementBadge"
+              class="text-xs font-bold text-blue-600 bg-blue-50 border border-blue-200/60 px-2.5 py-0.5 rounded-full"
+              >1/2</span
+            >
+          </div>
+
+          <div
+            class="bg-slate-50/80 border border-slate-200/60 rounded-xl p-3 min-h-[52px] flex items-center"
+          >
+            <p id="announcementText" class="text-xs font-bold text-slate-700 tracking-wide">
+              RATE NAIK. 4,5K
+            </p>
+          </div>
+
+          <div class="flex items-center justify-between pt-1">
+            <span class="text-[11px] font-medium text-slate-400">Geser untuk slide berikutnya</span>
+            <div class="flex items-center gap-1.5">
+              <button
+                onclick="prevSlide()"
+                class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-xs font-bold active:scale-90 transition"
+              >
+                <i class="fa-solid fa-chevron-left"></i>
+              </button>
+              <button
+                onclick="nextSlide()"
+                class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-xs font-bold active:scale-90 transition"
+              >
+                <i class="fa-solid fa-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Syarat & Ketentuan Peek Card -->
+        <div
+          onclick="openRulesToday()"
+          class="bg-white rounded-2xl p-3.5 card-soft-shadow border border-slate-100 flex items-center justify-between cursor-pointer active:scale-98 transition"
+        >
+          <div class="flex items-center gap-3">
+            <div
+              class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-base"
+            >
+              <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div>
+              <h3 class="text-xs font-bold text-slate-800">Syarat & Ketentuan</h3>
+              <p class="text-[11px] text-slate-500 font-medium">
+                Baca ketentuan penggunaan platform
+              </p>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right text-blue-500 text-xs"></i>
+        </div>
+      </div></main>
+</div></div>
+<script src="/app-modal.js"></script><script src="/app-shell.js"></script>
+<script src="/app-runtime.js"></script><script src="/api-client.js"></script>
+</body></html>

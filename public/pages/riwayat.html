@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="id"><head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Riwayat — tachi69gmail</title><meta name="description" content="Lihat riwayat setoran." />
+<script src="/toast.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7166254458926131" crossorigin="anonymous"></script>
+<link rel="stylesheet" href="/app.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+</head><body>
+<div class="bg-mesh dark-mode min-h-screen flex flex-col items-center justify-start relative selection:bg-blue-200">
+<div class="bg-sphere-1"></div><div class="bg-sphere-2"></div><div class="bg-sphere-3"></div>
+<div class="w-full max-w-lg min-h-screen px-3 sm:px-4 pt-4 pb-48 flex flex-col justify-start relative z-10">
+<div id="appMainNavMount"></div><main id="pageContent" class="flex-1"><div id="view-riwayat" class="flex flex-col gap-4 pb-24 w-full min-h-[80vh]">
+        <!-- Top App Header Bar -->
+        <header class="flex items-center justify-between py-1">
+          <div class="flex items-center gap-2.5">
+            <button
+              onclick="navigateTo('dashboard')"
+              class="w-9 h-9 rounded-xl bg-white border border-slate-200/80 flex items-center justify-center text-slate-700 shadow-sm active:scale-90 transition"
+            >
+              <i class="fa-solid fa-chevron-left text-xs"></i>
+            </button>
+            <div>
+              <h1 class="font-extrabold text-base text-slate-900 tracking-tight leading-tight">
+                Riwayat Setoran
+              </h1>
+              <p class="text-[11px] text-slate-500 font-medium">Status verifikasi Gmail kamu</p>
+            </div>
+          </div>
+
+          <button
+            onclick="logout()"
+            class="flex items-center gap-1 bg-rose-50 border border-rose-200/80 px-2.5 py-1.5 rounded-full text-xs font-semibold text-rose-600 shadow-sm active:scale-95 transition-transform"
+          >
+            <i class="fa-solid fa-right-from-bracket text-xs"></i>
+            <span>Keluar</span>
+          </button>
+        </header>
+
+        <!-- Filter Status Tab Bar -->
+        <div
+          class="sticky top-2 z-20 bg-white/95 backdrop-blur-md rounded-2xl p-1.5 card-soft-shadow border border-slate-100 flex items-center justify-between gap-1 flex-shrink-0"
+        >
+          <button
+            onclick="filterRiwayat('semua', this)"
+            class="riwayat-tab-btn flex-1 py-2 text-xs font-extrabold rounded-xl bg-blue-600 text-white transition text-center shadow-sm"
+          >
+            Semua
+          </button>
+          <button
+            onclick="filterRiwayat('diterima', this)"
+            class="riwayat-tab-btn flex-1 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 rounded-xl transition text-center"
+          >
+            Diterima
+          </button>
+          <button
+            onclick="filterRiwayat('pending', this)"
+            class="riwayat-tab-btn flex-1 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 rounded-xl transition text-center"
+          >
+            Pending
+          </button>
+          <button
+            onclick="filterRiwayat('gagal', this)"
+            class="riwayat-tab-btn flex-1 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 rounded-xl transition text-center"
+          >
+            Gagal
+          </button>
+        </div>
+
+        <!-- Content Area List -->
+        <div id="riwayatListContainer" class="flex flex-col gap-3 py-6 text-center">
+          <div
+            class="w-16 h-16 rounded-3xl bg-blue-50 text-blue-500 flex items-center justify-center text-2xl mx-auto mb-2"
+          >
+            <i class="fa-regular fa-folder-open"></i>
+          </div>
+          <h3 class="text-sm font-extrabold text-slate-700">Belum ada riwayat setoran</h3>
+          <p class="text-xs text-slate-400 font-medium max-w-[220px] mx-auto">
+            Setor Gmail kamu sekarang untuk mulai mendapatkan saldo!
+          </p>
+        </div>
+      </div></main>
+</div></div>
+<script src="/app-modal.js"></script><script src="/app-shell.js"></script>
+<script src="/app-runtime.js"></script><script src="/api-client.js"></script>
+</body></html>

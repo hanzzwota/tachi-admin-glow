@@ -1,9 +1,8 @@
-import type { ReactNode } from "react";
-
 export function StaticPageFrame({ view }: { view: string }) {
+  const page = view === "stor" ? "setor" : view;
   return (
     <iframe
-      src={`/app.html?view=${view}`}
+      src={`/pages/${page}.html`}
       title={`tachi69gmail ${view}`}
       className="block h-screen w-full border-0"
       style={{ height: "100dvh" }}

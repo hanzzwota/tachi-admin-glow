@@ -29,5 +29,12 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  return <iframe src="/app.html" title="tachi69gmail" className="block h-screen w-full border-0" />;
+  return (
+    <iframe
+      src="/pages/dashboard.html"
+      title="tachi69gmail"
+      className="block h-screen w-full border-0"
+      style={{ height: "100dvh" }}
+    />
+  );
 }

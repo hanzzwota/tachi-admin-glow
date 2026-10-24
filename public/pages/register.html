@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="id"><head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Daftar — tachi69gmail</title><meta name="description" content="Buat akun tachi69gmail baru." />
+<script src="/toast.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7166254458926131" crossorigin="anonymous"></script>
+<link rel="stylesheet" href="/app.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+</head><body>
+<div class="bg-mesh dark-mode min-h-screen flex flex-col items-center justify-start relative selection:bg-blue-200">
+<div class="bg-sphere-1"></div><div class="bg-sphere-2"></div><div class="bg-sphere-3"></div>
+<div class="w-full max-w-lg min-h-screen px-3 sm:px-4 pt-4 pb-48 flex flex-col justify-start relative z-10">
+<div id="appMainNavMount"></div><main id="pageContent" class="flex-1"><div
+        id="view-register"
+        class="flex flex-col items-center justify-center min-h-[85vh] w-full py-4 my-auto"
+      >
+        <!-- Rotating Logo Header -->
+        <div class="flex flex-col items-center text-center mb-5">
+          <div class="w-20 h-20 mb-2 relative flex items-center justify-center">
+            <img
+              src="https://files.catbox.moe/p4ceks.jpg"
+              alt="tachi69gmail logo"
+              class="w-full h-full object-cover rounded-full shadow-md border-2 border-white/60 animate-logo-spin"
+              onerror="
+                this.onerror = null;
+                this.src = 'https://placehold.co/100x100/2563eb/ffffff?text=Tachi';
+              "
+            />
+          </div>
+          <h1 class="text-xl font-black text-slate-900 tracking-tight flex items-center gap-1">
+            tachi<span class="text-blue-600">69gmail</span>
+          </h1>
+          <p class="text-xs text-slate-500 max-w-[260px] font-medium leading-relaxed mt-1">
+            Setor Gmail, pantau verifikasi, dan tarik saldo — semua dalam satu aplikasi.
+          </p>
+        </div>
+
+        <!-- Register Card -->
+        <div class="w-full bg-white rounded-3xl p-6 auth-card-shadow border border-slate-100/80">
+          <div class="mb-4">
+            <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">Buat Akun</h2>
+            <p class="text-xs text-slate-500 font-medium mt-0.5">Daftar member tachi69gmail</p>
+          </div>
+
+          <form novalidate onsubmit="handleAuthSubmit(event, 'dashboard')" class="flex flex-col gap-3.5">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Nama Lengkap</label>
+              <div class="custom-input rounded-xl px-3.5 py-2.5 flex items-center gap-3">
+                <i class="fa-regular fa-user text-blue-500 text-sm"></i>
+                <input
+                  type="text"
+                  placeholder="Nama lengkap"
+                  required
+                  class="bg-transparent text-xs text-slate-800 placeholder-slate-400 focus:outline-none w-full font-medium"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Username</label>
+              <div class="custom-input rounded-xl px-3.5 py-2.5 flex items-center gap-3">
+                <span class="text-blue-500 font-bold text-xs">@</span>
+                <input
+                  type="text"
+                  placeholder="username"
+                  required
+                  class="bg-transparent text-xs text-slate-800 placeholder-slate-400 focus:outline-none w-full font-medium"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Email atau WhatsApp</label>
+              <div class="custom-input rounded-xl px-3.5 py-2.5 flex items-center gap-3">
+                <i class="fa-solid fa-mobile-screen text-blue-500 text-sm"></i>
+                <input
+                  type="text"
+                  placeholder="email@gmail.com atau 08xxxxxxxxxx"
+                  required
+                  class="bg-transparent text-xs text-slate-800 placeholder-slate-400 focus:outline-none w-full font-medium"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Kata Sandi</label>
+              <div class="custom-input rounded-xl px-3.5 py-2.5 flex items-center gap-3">
+                <i class="fa-solid fa-lock text-blue-500 text-sm"></i>
+                <input
+                  id="register-password"
+                  type="password"
+                  placeholder="••••••••"
+                  required
+                  class="bg-transparent text-xs text-slate-800 placeholder-slate-400 focus:outline-none w-full font-medium"
+                />
+                <button
+                  type="button"
+                  onclick="togglePasswordVisibility('register-password', this)"
+                  class="text-slate-400 hover:text-slate-600 text-xs"
+                >
+                  <i class="fa-regular fa-eye"></i>
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1"
+                >Kode Referral (opsional)</label
+              >
+              <div class="custom-input rounded-xl px-3.5 py-2.5 flex items-center gap-3">
+                <i class="fa-solid fa-gift text-blue-500 text-sm"></i>
+                <input
+                  type="text"
+                  placeholder="KM-XXXX"
+                  class="bg-transparent text-xs text-slate-800 placeholder-slate-400 focus:outline-none w-full font-medium uppercase"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              class="btn-glossy w-full text-white font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-2 mt-2 active:scale-98 transition-transform"
+            >
+              <span>Daftar Sekarang</span>
+              <i class="fa-solid fa-arrow-right text-xs"></i>
+            </button>
+          </form>
+
+          <div class="text-center mt-4 pt-1">
+            <p class="text-xs text-slate-500 font-medium">
+              Sudah punya akun?
+              <button onclick="navigateTo('login')" class="text-blue-600 font-bold hover:underline">
+                Masuk
+              </button>
+            </p>
+          </div>
+        </div>
+      </div></main>
+</div></div>
+<script src="/app-modal.js"></script><script src="/app-shell.js"></script>
+<script src="/app-runtime.js"></script><script src="/api-client.js"></script>
+</body></html>
