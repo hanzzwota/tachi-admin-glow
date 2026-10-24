@@ -1,5 +1,25 @@
 /* Shared user-app navigation shell for standalone page documents. */
 (() => {
+  // Each page is rendered in an iframe by the router; navigate the top-level route.
+  const routes = {
+    login: "/login",
+    register: "/register",
+    dashboard: "/dashboard",
+    stor: "/setor",
+    setor: "/setor",
+    saldo: "/saldo",
+    profil: "/profil",
+    riwayat: "/riwayat",
+  };
+  window.navigateTo = (view) => {
+    const path = routes[view];
+    if (!path) return false;
+    const target = window.top || window;
+    const current = new URL(target.location.href);
+    if (current.pathname !== path || current.search) target.location.assign(path);
+    return true;
+  };
+
   const mount = document.getElementById("appMainNavMount");
   if (!mount) return;
   const navigation = `<nav

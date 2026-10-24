@@ -24,8 +24,17 @@ export function rateLimit(request: Request, scope: string, limit: number, window
   }
   current.count += 1;
   if (current.count > limit) {
+    const action =
+      scope === "auth/login"
+        ? "percobaan login"
+        : scope === "auth/register"
+          ? "percobaan pendaftaran"
+          : "percobaan";
+    const waitMinutes = Math.max(1, Math.ceil((current.resetAt - now) / 60_000));
     return Response.json(
-      { error: "Terlalu banyak percobaan. Silakan tunggu beberapa saat." },
+      {
+        error: `Terlalu banyak ${action}. Silakan tunggu ${waitMinutes} menit sebelum mencoba lagi.`,
+      },
       {
         status: 429,
         headers: {

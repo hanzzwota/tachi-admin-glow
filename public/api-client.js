@@ -117,17 +117,21 @@
     if (profileName) profileName.textContent = displayName;
     const profileUsername = document.getElementById("profileUsername");
     if (profileUsername) profileUsername.textContent = `Username: @${user.username || ""}`;
+    const profileRole = document.getElementById("profileRole");
+    if (profileRole)
+      profileRole.textContent = user.role === "admin" ? "STATUS: ADMIN" : "STATUS: MEMBER REGULER";
   };
   const applyUserDom = () => {
     const { user, settings } = state;
     applyIdentityToDom(user);
-    if (!user || !settings) return;
+    if (!user) return;
     ["dashboardBalance", "saldoBalance", "withdrawAvailableBalance", "profileBalance"].forEach(
       (id) => {
         const element = document.getElementById(id);
         if (element) element.textContent = format(user.balance);
       },
     );
+    if (!settings) return;
     ["gmailRateTop", "gmailRateSaldo"].forEach((id) => {
       const element = document.getElementById(id);
       if (element) element.textContent = `${format(settings.rate)} / Gmail`;
