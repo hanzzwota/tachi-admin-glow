@@ -176,7 +176,7 @@
         <section id="t-setoran" class="glass rounded-2xl p-4">
           <div class="mb-3 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-amber-800" role="status" aria-live="polite">
             <i class="fa fa-hourglass-half mt-0.5"></i>
-            <p class="text-xs"><b><span id="depositProcessingCount">0</span> setoran sedang diproses.</b> Tinjau detail Gmail, lalu pilih ACC atau Tolak untuk menyelesaikan pemeriksaan.</p>
+            <p class="text-xs"><b><span id="depositProcessingCount">0</span> user memiliki setoran dalam proses.</b> Satu baris merangkum seluruh kiriman setiap user; buka Kelola untuk memeriksa per kiriman.</p>
           </div>
           <div class="flex flex-col md:flex-row gap-2 mb-3">
             <div class="relative flex-1">
@@ -194,10 +194,10 @@
             <table class="w-full text-sm">
               <thead class="text-left text-slate-500 text-xs uppercase">
                 <tr>
-                  <th class="p-2">ID</th>
-                  <th class="p-2">Tanggal</th>
+                  <th class="p-2">ID / Kiriman</th>
+                  <th class="p-2">Update Terakhir</th>
                   <th class="p-2">User</th>
-                  <th class="p-2">Gmail</th>
+                  <th class="p-2">Akun Gmail</th>
                   <th class="p-2">Status</th>
                   <th class="p-2 text-right">Aksi</th>
                 </tr>
@@ -759,9 +759,19 @@
 
       let sf = "semua";
       function renderSetoran() {
+        const groups = new Map();
+        db.setoran.forEach((deposit) => {
+          const userId = String(deposit.user_id || deposit.user);
+          if (!groups.has(userId)) groups.set(userId, []);
+          groups.get(userId).push(deposit);
+        });
         const processingCount = document.getElementById("depositProcessingCount");
         if (processingCount)
-          processingCount.textContent = String(db.setoran.filter((item) => item.status === "pending").length);
+          processingCount.textContent = String(
+            [...groups.values()].filter((deposits) =>
+              deposits.some((deposit) => deposit.status === "pending"),
+            ).length,
+          );
         const filterLabels = { semua: "Semua", pending: "Diproses", diterima: "Diterima", ditolak: "Ditolak" };
         sfilter.innerHTML = ["semua", "pending", "diterima", "ditolak"]
           .map(
@@ -774,42 +784,95 @@
           .split(/\s+/)
           .map((value) => value.trim().toLowerCase())
           .filter(Boolean);
-        const rows = db.setoran
-          .filter(
-            (s) =>
-              (sf === "semua" || s.status === sf) &&
-              ((!q && !bulkQueries.length) ||
-                [q, ...bulkQueries].some((query) =>
-                  `${s.id} ${s.user} ${s.emails.join(" ")}`.toLowerCase().includes(query),
-                )),
-          )
-          .sort((a, b) => b.date - a.date);
+        const queries = [q, ...bulkQueries].filter(Boolean);
+        const rows = [...groups.entries()]
+          .map(([userId, deposits]) => {
+            const matchingDeposits = deposits
+              .filter((deposit) => sf === "semua" || deposit.status === sf)
+              .filter(
+                (deposit) =>
+                  !queries.length ||
+                  queries.some((query) =>
+                    `${deposit.id} ${deposit.user} ${deposit.emails.join(" ")}`
+                      .toLowerCase()
+                      .includes(query),
+                  ),
+              )
+              .sort((a, b) => b.date - a.date);
+            if (!matchingDeposits.length) return null;
+            const emailMap = new Map();
+            matchingDeposits.forEach((deposit) =>
+              deposit.emails.forEach((email) => {
+                const key = String(email).trim().toLowerCase();
+                if (key && !emailMap.has(key)) emailMap.set(key, String(email));
+              }),
+            );
+            const statusCounts = { pending: 0, diterima: 0, ditolak: 0 };
+            matchingDeposits.forEach((deposit) => {
+              if (Object.hasOwn(statusCounts, deposit.status)) statusCounts[deposit.status] += 1;
+            });
+            return {
+              userId,
+              user: matchingDeposits[0].user,
+              deposits: matchingDeposits,
+              latest: matchingDeposits[0],
+              emails: [...emailMap.values()],
+              statusCounts,
+            };
+          })
+          .filter(Boolean)
+          .sort((a, b) => b.latest.date - a.latest.date);
         setoranBody.innerHTML =
           rows
-            .map((s) => {
-              const hit =
-                q || bulkQueries.length
-                  ? s.emails
-                      .filter((e) =>
-                        [q, ...bulkQueries].some((query) => e.toLowerCase().includes(query)),
-                      )
-                      .slice(0, 2)
-                      .map((e) => `<div class="text-[11px] text-blue-600">${esc(e)}</div>`)
-                      .join("")
-                  : "";
-              return `<tr class="border-t border-blue-50"><td class="p-2 font-mono text-xs">${s.id}</td><td class="p-2 text-xs">${fmt(s.date)}</td><td class="p-2 font-semibold">${esc(s.user)}</td>
-    <td class="p-2">${s.emails.length}${s.status === "diterima" ? ` <span class="text-xs text-green-600">(${s.accepted} valid)</span>` : ""}${hit}</td>
-    <td class="p-2">${badge(s.status)}${s.reason ? `<div class="text-[11px] text-red-500 mt-1">${esc(s.reason)}</div>` : ""}</td>
-    <td class="p-2 text-right whitespace-nowrap"><button onclick="viewSetoran('${s.id}')" class="px-2 py-1.5 rounded-lg bg-slate-100 text-xs"><i class="fa fa-eye"></i></button>
-    ${
-      s.status === "pending"
-        ? `<button onclick="accModal('${s.id}')" class="px-2 py-1.5 rounded-lg bg-green-500 text-white text-xs font-bold">ACC</button>
-    <button onclick="rejModal('${s.id}')" class="px-2 py-1.5 rounded-lg bg-red-500 text-white text-xs font-bold">Tolak</button>`
-        : ""
-    }</td></tr>`;
+            .map((group) => {
+              const statusSummary = Object.entries(group.statusCounts)
+                .filter(([, count]) => count)
+                .map(
+                  ([status, count]) =>
+                    `<div class="mb-1 whitespace-nowrap">${badge(status)} <span class="text-[10px] text-slate-500">${count} kiriman</span></div>`,
+                )
+                .join("");
+              const emailRows = group.emails
+                .map((email) => `<div class="break-all py-0.5 font-mono">${esc(email)}</div>`)
+                .join("");
+              return `<tr class="border-t border-blue-50"><td class="p-2 font-mono text-xs"><div>${esc(String(group.latest.id).slice(0, 8))}</div><div class="mt-1 font-sans text-[10px] text-slate-500">${group.deposits.length} kiriman</div></td><td class="p-2 text-xs">${fmt(group.latest.date)}</td><td class="p-2 font-semibold">${esc(group.user)}</td>
+    <td class="p-2"><div class="text-xs font-bold">${group.emails.length} Gmail unik</div><details class="mt-1 text-[10px] text-blue-600" ${queries.length ? "open" : ""}><summary class="cursor-pointer">Daftar akun</summary><div class="mt-1 max-h-24 overflow-y-auto rounded-lg bg-slate-50 p-2 text-slate-700">${emailRows || "Tidak ada Gmail"}</div></details></td>
+    <td class="p-2">${statusSummary}</td>
+    <td class="p-2 text-right whitespace-nowrap"><button onclick="viewUserSetoran('${group.userId}','${sf}')" class="px-2.5 py-1.5 rounded-lg bg-slate-100 text-xs font-bold"><i class="fa fa-list-check mr-1"></i>Kelola</button></td></tr>`;
             })
             .join("") ||
           '<tr><td colspan="6" class="p-6 text-center text-slate-400">Tidak ada data</td></tr>';
+      }
+      function viewUserSetoran(userId, statusFilter = "semua") {
+        const selectedFilter = ["semua", "pending", "diterima", "ditolak"].includes(statusFilter)
+          ? statusFilter
+          : "semua";
+        const deposits = db.setoran
+          .filter(
+            (deposit) =>
+              String(deposit.user_id || deposit.user) === String(userId) &&
+              (selectedFilter === "semua" || deposit.status === selectedFilter),
+          )
+          .sort((a, b) => b.date - a.date);
+        if (!deposits.length) return showToast("warning", "Setoran user tidak ditemukan.");
+        const user = deposits[0].user;
+        const uniqueEmails = new Map();
+        deposits.forEach((deposit) =>
+          deposit.emails.forEach((email) => {
+            const key = String(email).trim().toLowerCase();
+            if (key && !uniqueEmails.has(key)) uniqueEmails.set(key, String(email));
+          }),
+        );
+        const history = deposits
+          .map(
+            (deposit) =>
+              `<article class="rounded-xl border border-slate-200 bg-white p-3"><div class="flex items-start justify-between gap-2"><div><b class="text-xs">Kiriman #${esc(String(deposit.id).slice(0, 8))}</b><div class="mt-1 text-[10px] text-slate-500">${fmt(deposit.date)} · ${deposit.emails.length} Gmail</div></div>${badge(deposit.status)}</div>${deposit.reason ? `<p class="mt-2 text-[11px] text-rose-600">Alasan: ${esc(deposit.reason)}</p>` : ""}<details class="mt-2 text-xs"><summary class="cursor-pointer font-semibold text-blue-700">Lihat Gmail (${deposit.emails.length})</summary><div class="mt-2 max-h-32 overflow-y-auto rounded-lg bg-slate-50 p-2 font-mono text-[11px]">${deposit.emails.map((email) => `<div class="break-all py-0.5">${esc(email)}</div>`).join("")}</div></details>${deposit.status === "pending" ? `<div class="mt-3 flex gap-2"><button onclick="accModal('${deposit.id}')" class="flex-1 rounded-lg bg-green-500 px-3 py-2 text-xs font-bold text-white">ACC</button><button onclick="rejModal('${deposit.id}')" class="flex-1 rounded-lg bg-red-500 px-3 py-2 text-xs font-bold text-white">Tolak</button></div>` : ""}</article>`,
+          )
+          .join("");
+        openModal(
+          `Setoran ${user}`,
+          `<div class="mb-3 flex items-center justify-between gap-2 rounded-xl bg-blue-50 p-3 text-xs"><span><b>${deposits.length} kiriman</b> · ${uniqueEmails.size} Gmail unik</span><button onclick="copy(${esc(JSON.stringify([...uniqueEmails.values()].join("\n")))})" class="rounded-lg bg-white px-2.5 py-1.5 font-bold text-blue-700"><i class="fa fa-copy mr-1"></i>Salin akun unik</button></div><div class="max-h-[65vh] space-y-3 overflow-y-auto">${history}</div>`,
+        );
       }
       function viewSetoran(id) {
         const s = db.setoran.find((x) => x.id === id);
