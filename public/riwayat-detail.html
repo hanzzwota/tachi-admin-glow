@@ -42,7 +42,7 @@
 </head>
 <body>
   <main class="page">
-    <a class="back" href="/riwayat">← <span>Kembali</span></a>
+    <a class="back" target="_top" href="/dashboard?view=riwayat">← <span>Kembali</span></a>
     <section class="card" id="summary"><p class="error">Memuat detail transaksi...</p></section>
     <section class="card">
       <h1>Timeline Storan</h1>
@@ -56,7 +56,7 @@
     const money = (value) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(value || 0));
     const date = (value) => value ? new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }).format(new Date(value)) : 'Menunggu pemeriksaan';
     const safe = (value) => String(value ?? '-').replace(/[&<>"']/g, (char) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
-    const showError = (message, login) => { summary.innerHTML = `<p class="error">${safe(message)}</p>${login ? '<a class="retry" href="/auth?view=login">Masuk kembali</a>' : '<a class="retry" href="/riwayat">Kembali ke riwayat</a>'}`; timeline.innerHTML = ''; };
+    const showError = (message, login) => { summary.innerHTML = `<p class="error">${safe(message)}</p>${login ? '<a class="retry" target="_top" href="/auth?view=login">Masuk kembali</a>' : '<a class="retry" target="_top" href="/dashboard?view=riwayat">Kembali ke riwayat</a>'}`; timeline.innerHTML = ''; };
     const render = (deposit) => {
       const emails = Array.isArray(deposit.emails) ? deposit.emails : [];
       const accepted = Array.isArray(deposit.accepted_emails) ? deposit.accepted_emails.length : 0;
