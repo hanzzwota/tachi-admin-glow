@@ -277,7 +277,7 @@
         color: #e2e8f0 !important;
       }
       body.dark-mode .nav-shell {
-        background: rgba(15, 23, 42, 0.94) !important;
+        background: linear-gradient(135deg, #071a32, #102847) !important;
         border-color: #334155 !important;
       }
       body.dark-mode .theme-toggle {
@@ -360,6 +360,10 @@
 
       /* Navbar aplikasi fixed di bawah layar, di atas safe area perangkat */
       .nav-shell {
+        background: linear-gradient(135deg, #071a32, #102847) !important;
+        border-color: rgba(148, 163, 184, 0.28) !important;
+        color: #e2e8f0;
+        box-shadow: 0 14px 38px rgba(2, 12, 27, 0.4) !important;
         position: fixed !important;
         display: flex;
         border-radius: 1.25rem;
@@ -376,14 +380,19 @@
         display: none;
       }
       .nav-button {
+        color: #cbd5e1 !important;
         border-radius: 0.85rem;
         min-width: 3.5rem;
         padding: 0.35rem 0.25rem;
       }
       .nav-button:hover {
-        background: rgba(59, 130, 246, 0.08);
+        background: rgba(148, 163, 184, 0.13);
+      }
+      .nav-button.text-cyan-200 {
+        color: #a5f3fc !important;
       }
       .nav-stor-button {
+        color: #cbd5e1 !important;
         border-radius: 0.85rem !important;
         width: auto !important;
         height: auto !important;
@@ -406,8 +415,11 @@
         box-shadow: 0 5px 12px rgba(37, 99, 235, 0.28);
       }
       .nav-stor-button span {
-        color: #64748b;
+        color: #cbd5e1 !important;
         margin-top: 0.15rem;
+      }
+      .nav-stor-button.text-cyan-200 span {
+        color: #a5f3fc !important;
       }
       body.dark-mode .nav-stor-button,
       body.dark-mode .nav-stor-button span {
@@ -431,12 +443,12 @@
       <!-- Bottom Navigation Bar -->
       <nav
         id="appMainNav"
-        class="nav-shell hidden fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white/95 backdrop-blur-md border border-slate-200/80 px-2 py-2 items-center justify-around gap-1 z-[60] shadow-lg"
+        class="nav-shell hidden fixed bottom-0 left-0 right-0 max-w-lg mx-auto backdrop-blur-md border px-2 py-2 items-center justify-around gap-1 z-[60] shadow-lg"
       >
         <button
           onclick="navigateTo('dashboard')"
           id="nav-item-dashboard"
-          class="nav-button flex-1 flex flex-col items-center gap-1 text-blue-600"
+          class="nav-button flex-1 flex flex-col items-center gap-1 text-cyan-200"
         >
           <i class="fa-solid fa-house text-base"></i>
           <span class="text-[10px] font-bold">Beranda</span>
@@ -444,7 +456,7 @@
         <button
           onclick="navigateTo('riwayat')"
           id="nav-item-riwayat"
-          class="nav-button flex-1 flex flex-col items-center gap-1 text-slate-400"
+          class="nav-button flex-1 flex flex-col items-center gap-1 text-slate-300"
         >
           <i class="fa-solid fa-clock-rotate-left text-base"></i>
           <span class="text-[10px] font-semibold">Riwayat</span>
@@ -460,7 +472,7 @@
         <button
           onclick="navigateTo('saldo')"
           id="nav-item-saldo"
-          class="nav-button flex-1 flex flex-col items-center gap-1 text-slate-400"
+          class="nav-button flex-1 flex flex-col items-center gap-1 text-slate-300"
         >
           <i class="fa-solid fa-wallet text-base"></i>
           <span class="text-[10px] font-semibold">Saldo</span>
@@ -468,7 +480,7 @@
         <button
           onclick="navigateTo('profil')"
           id="nav-item-profil"
-          class="nav-button flex-1 flex flex-col items-center gap-1 text-slate-400"
+          class="nav-button flex-1 flex flex-col items-center gap-1 text-slate-300"
         >
           <i class="fa-solid fa-user text-base"></i>
           <span class="text-[10px] font-semibold">Profil</span>
@@ -1964,15 +1976,15 @@
               if (item === viewName) {
                 navBtn.className =
                   item === "stor"
-                    ? "nav-stor-button flex-1 flex flex-col items-center gap-1 text-blue-600"
-                    : "nav-button flex-1 flex flex-col items-center gap-1 text-blue-600";
+                    ? "nav-stor-button flex-1 flex flex-col items-center gap-1 text-cyan-200"
+                    : "nav-button flex-1 flex flex-col items-center gap-1 text-cyan-200";
                 const txt = navBtn.querySelector("span");
                 if (txt) txt.className = "text-[10px] font-bold";
               } else {
                 navBtn.className =
                   item === "stor"
-                    ? "nav-stor-button flex-1 flex flex-col items-center gap-1 text-slate-400"
-                    : "nav-button flex-1 flex flex-col items-center gap-1 text-slate-400";
+                    ? "nav-stor-button flex-1 flex flex-col items-center gap-1 text-slate-300"
+                    : "nav-button flex-1 flex flex-col items-center gap-1 text-slate-300";
                 const txt = navBtn.querySelector("span");
                 if (txt) txt.className = "text-[10px] font-semibold";
               }
@@ -2178,5 +2190,14 @@
       /* Backend data is managed by /api-client.js; no browser storage fallback. */
     </script>
     <script src="/api-client.js"></script>
+    <script>
+      (() => {
+        const requestedView = new URLSearchParams(window.location.search).get("view");
+        const viewAliases = { setor: "stor" };
+        const view = viewAliases[requestedView] || requestedView;
+        const allowedViews = ["login", "register", "dashboard", "stor", "saldo", "profil", "riwayat"];
+        window.navigateTo(allowedViews.includes(view) ? view : "dashboard");
+      })();
+    </script>
   </body>
 </html>
