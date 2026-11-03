@@ -1,6 +1,5 @@
-/* Shared user-app navigation shell for standalone page documents. */
+/* Compatibility navigation for the standalone page documents. */
 (() => {
-  // Each page is rendered in an iframe by the router; navigate the top-level route.
   const routes = {
     login: "/login",
     register: "/register",
@@ -10,63 +9,27 @@
     saldo: "/saldo",
     profil: "/profil",
     riwayat: "/riwayat",
+    admin: "/admin",
   };
-  window.navigateTo = (view) => {
+
+  function navigate(view) {
     const path = routes[view];
     if (!path) return false;
     const target = window.top || window;
-    const current = new URL(target.location.href);
-    if (current.pathname !== path || current.search) target.location.assign(path);
+    try {
+      const current = new URL(target.location.href);
+      if (current.pathname === path && !current.search) return true;
+      target.history.pushState({ view }, "", path);
+      target.dispatchEvent(new PopStateEvent("popstate", { state: { view } }));
+    } catch (error) {
+      console.warn("Navigasi SPA tidak tersedia, memakai fallback:", error);
+      target.location.assign(path);
+    }
     return true;
-  };
+  }
 
-  const mount = document.getElementById("appMainNavMount");
-  if (!mount) return;
-  const navigation = `<nav
-        id="appMainNav"
-        class="nav-shell hidden fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white/95 backdrop-blur-md border border-slate-200/80 px-2 py-2 items-center justify-around gap-1 z-[60] shadow-lg"
-      >
-        <button
-          onclick="navigateTo('dashboard')"
-          id="nav-item-dashboard"
-          class="nav-button flex-1 flex flex-col items-center gap-1 text-blue-600"
-        >
-          <i class="fa-solid fa-house text-base"></i>
-          <span class="text-[10px] font-bold">Beranda</span>
-        </button>
-        <button
-          onclick="navigateTo('riwayat')"
-          id="nav-item-riwayat"
-          class="nav-button flex-1 flex flex-col items-center gap-1 text-slate-400"
-        >
-          <i class="fa-solid fa-clock-rotate-left text-base"></i>
-          <span class="text-[10px] font-semibold">Riwayat</span>
-        </button>
-        <button
-          onclick="navigateTo('stor')"
-          id="nav-item-stor"
-          class="nav-stor-button flex-1 flex flex-col items-center gap-1"
-        >
-          <i class="fa-solid fa-paper-plane text-sm"></i>
-          <span class="text-[10px] font-semibold">Setor</span>
-        </button>
-        <button
-          onclick="navigateTo('saldo')"
-          id="nav-item-saldo"
-          class="nav-button flex-1 flex flex-col items-center gap-1 text-slate-400"
-        >
-          <i class="fa-solid fa-wallet text-base"></i>
-          <span class="text-[10px] font-semibold">Saldo</span>
-        </button>
-        <button
-          onclick="navigateTo('profil')"
-          id="nav-item-profil"
-          class="nav-button flex-1 flex flex-col items-center gap-1 text-slate-400"
-        >
-          <i class="fa-solid fa-user text-base"></i>
-          <span class="text-[10px] font-semibold">Profil</span>
-        </button>
-      </nav>`;
-  mount.insertAdjacentHTML("beforebegin", navigation);
-  mount.remove();
+  window.navigateTo = navigate;
+  // The persistent React shell owns the navigation bar. The mount point is
+  // intentionally removed so legacy pages do not render a second nav.
+  document.getElementById("appMainNavMount")?.remove();
 })();

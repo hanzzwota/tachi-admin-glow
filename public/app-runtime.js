@@ -179,102 +179,25 @@
       // View Navigation Handler
       function navigateTo(viewName) {
         const routeByView = {
-          login: "/login",
-          register: "/register",
-          dashboard: "/dashboard",
-          stor: "/setor",
-          saldo: "/saldo",
-          profil: "/profil",
-          riwayat: "/riwayat",
+          login: "/login", register: "/register", dashboard: "/dashboard",
+          stor: "/setor", setor: "/setor", saldo: "/saldo", profil: "/profil", riwayat: "/riwayat",
         };
         const route = routeByView[viewName];
-        if (!route) return;
+        if (!route) return false;
+        const target = window.top || window;
         try {
-          const topWindow = window.top;
-          if (topWindow && topWindow.location.pathname !== route) {
-            topWindow.location.assign(route);
-            return;
+          const current = new URL(target.location.href);
+          if (current.pathname !== route || current.search) {
+            target.history.pushState({ view: viewName }, "", route);
+            target.dispatchEvent(new PopStateEvent("popstate", { state: { view: viewName } }));
           }
         } catch (error) {
-          console.warn("Tidak dapat mengubah route halaman:", error);
+          console.warn("Tidak dapat mengubah route SPA:", error);
+          target.location.assign(route);
         }
-        const views = ["login", "register", "dashboard", "stor", "saldo", "profil", "riwayat"];
-
-        views.forEach((v) => {
-          const el = document.getElementById(`view-${v}`);
-          const btn = document.getElementById(`btn-switch-${v}`);
-
-          if (el) {
-            if (v === viewName) {
-              el.classList.remove("hidden");
-              el.classList.add("flex");
-            } else {
-              el.classList.add("hidden");
-              el.classList.remove("flex");
-            }
-          }
-
-          if (btn) {
-            if (v === viewName) {
-              btn.className =
-                "px-2 py-0.5 rounded-md text-[10px] font-semibold bg-blue-600 text-white transition shrink-0";
-            } else {
-              btn.className =
-                "px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-700 text-slate-300 hover:bg-slate-600 transition shrink-0";
-            }
-          }
-        });
-
-        // Handle bottom nav visibility and active state highlight
-        const appNav = document.getElementById("appMainNav");
-        if (viewName === "login" || viewName === "register") {
-          appNav.classList.add("hidden");
-          appNav.classList.remove("flex");
-        } else {
-          appNav.classList.remove("hidden");
-          appNav.classList.add("flex");
-
-          // Update bottom nav button active highlight
-          const navItems = ["dashboard", "riwayat", "stor", "saldo", "profil"];
-          navItems.forEach((item) => {
-            const navBtn = document.getElementById(`nav-item-${item}`);
-            if (navBtn) {
-              if (item === viewName) {
-                navBtn.className =
-                  item === "stor"
-                    ? "nav-stor-button flex-1 flex flex-col items-center gap-1 text-blue-600"
-                    : "nav-button flex-1 flex flex-col items-center gap-1 text-blue-600";
-                const txt = navBtn.querySelector("span");
-                if (txt) txt.className = "text-[10px] font-bold";
-              } else {
-                navBtn.className =
-                  item === "stor"
-                    ? "nav-stor-button flex-1 flex flex-col items-center gap-1 text-slate-400"
-                    : "nav-button flex-1 flex flex-col items-center gap-1 text-slate-400";
-                const txt = navBtn.querySelector("span");
-                if (txt) txt.className = "text-[10px] font-semibold";
-              }
-            }
-          });
-        }
-
-        if (viewName === "dashboard" || viewName === "saldo") {
-          syncUserBankDataFromInputs();
-          updateTarikSaldoButton();
-        }
-
-        if (viewName === "profil") {
-          const bankSelect = document.getElementById("bankSelect");
-          const rekeningInput = document.getElementById("rekeningInput");
-          const atasNamaInput = document.getElementById("atasNamaInput");
-          if (bankSelect) bankSelect.value = userBankData.bank;
-          if (rekeningInput) rekeningInput.value = userBankData.rekening;
-          if (atasNamaInput) atasNamaInput.value = userBankData.nama;
-        }
-
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        return true;
       }
-
+      window.navigateTo = navigateTo;
       // Form Submission logic
       // Placeholder sampai /api-client.js termuat (fungsi asli menimpa ini).
       // Tidak boleh menampilkan success karena belum ada request ke server.

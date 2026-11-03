@@ -8,34 +8,39 @@ const appShell = readFileSync(resolve(process.cwd(), "public/app-shell.js"), "ut
 function loadNavigation(currentUrl = "https://app.test/login") {
   const assigned: string[] = [];
   const targetWindow = {
-    location: {
-      href: currentUrl,
-      assign(path: string) {
-        assigned.push(path);
+    location: new URL(currentUrl),
+    history: {
+      pushState(_state: unknown, _title: string, path: string) {
+        targetWindow.location = new URL(path, targetWindow.location.href);
       },
+    },
+    dispatchEvent() {
+      return true;
     },
   };
   const window: { top: typeof targetWindow; navigateTo?: (view: string) => boolean } = {
     top: targetWindow,
   };
   const document = { getElementById: () => null };
-  runInNewContext(appShell, { window, document, URL });
-  return { navigateTo: window.navigateTo!, assigned };
+  const PopStateEvent = class PopStateEvent {};
+  runInNewContext(appShell, { window, document, URL, PopStateEvent, console });
+  return { navigateTo: window.navigateTo!, assigned, targetWindow };
 }
 
 describe("standalone page navigation", () => {
-  it("redirects the top-level app to dashboard after login", () => {
-    const { navigateTo, assigned } = loadNavigation("https://app.test/login");
+  it("updates the top-level URL without a document reload", () => {
+    const { navigateTo, assigned, targetWindow } = loadNavigation("https://app.test/login");
 
     expect(navigateTo("dashboard")).toBe(true);
-    expect(assigned).toEqual(["/dashboard"]);
+    expect(targetWindow.location.pathname).toBe("/dashboard");
+    expect(assigned).toEqual([]);
   });
 
   it("maps the legacy stor view to the standalone setor route", () => {
-    const { navigateTo, assigned } = loadNavigation("https://app.test/dashboard");
+    const { navigateTo, targetWindow } = loadNavigation("https://app.test/dashboard");
 
     expect(navigateTo("stor")).toBe(true);
-    expect(assigned).toEqual(["/setor"]);
+    expect(targetWindow.location.pathname).toBe("/setor");
   });
 
   it("ignores unknown views", () => {
