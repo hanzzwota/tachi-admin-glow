@@ -1705,30 +1705,13 @@
 
       <!-- ==================== VIEW 7: RIWAYAT PAGE (image4) ==================== -->
       <div id="view-riwayat" class="hidden flex-col gap-0 pb-28 w-full min-h-[80vh]">
-        <header class="sticky top-0 z-40 -mt-4 w-screen border-b border-blue-100 bg-sky-50/95 shadow-sm backdrop-blur-xl" style="margin-left: calc(50% - 50vw);">
-          <div class="mx-auto flex w-full max-w-lg items-center justify-between px-5 py-3">
-            <div class="flex items-center gap-2.5">
-              <div class="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-blue-100 bg-white shadow-sm">
-                <img src="https://files.catbox.moe/p4ceks.jpg" alt="tachi69gmail logo" class="h-full w-full object-cover" onerror="this.onerror=null;this.src='https://placehold.co/40x40/2563eb/ffffff?text=T';" />
-              </div>
-              <div>
-                <h1 class="flex items-center gap-0.5 text-lg font-black leading-none tracking-tight text-slate-900">tachi<span class="text-blue-600">69gmail</span></h1>
-                <p class="mt-0.5 text-[11px] font-medium text-slate-500">Riwayat Gmail</p>
-              </div>
-            </div>
-            <a href="https://whatsapp.com/channel/0029VbDjSGJ9Gv7YqjohDw2l" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1.5 rounded-xl border border-slate-200/80 bg-white px-2.5 py-1.5 text-[10px] font-semibold text-slate-700 shadow-sm">
-              <i class="fa-brands fa-whatsapp text-sm text-emerald-500"></i><span>Saluran WA</span>
-            </a>
-          </div>
-        </header>
-
-        <main class="mt-6 rounded-[28px] border border-blue-100/80 bg-white/75 p-3.5 shadow-[0_12px_36px_rgba(59,130,246,0.10)] sm:p-4">
+        <main class="mt-3 w-screen max-w-none rounded-[28px] border border-blue-200/80 bg-sky-100/80 p-4 shadow-[0_12px_36px_rgba(59,130,246,0.10)] sm:p-6" style="margin-left: calc(50% - 50vw);">
           <label class="relative block">
             <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-            <input id="riwayatSearch" type="search" oninput="renderRiwayat()" placeholder="Cari Gmail..." class="w-full rounded-2xl border border-blue-100 bg-white/80 py-3 pl-11 pr-4 text-sm text-slate-700 shadow-sm outline-none placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
+            <input id="riwayatSearch" type="search" oninput="renderRiwayat()" placeholder="Cari Gmail..." class="w-full rounded-2xl border border-blue-100 bg-sky-100/90 py-3 pl-11 pr-4 text-sm text-slate-700 shadow-sm outline-none placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
           </label>
 
-          <div class="mt-3 overflow-x-auto rounded-2xl border border-blue-100 bg-white/80 p-1 no-scrollbar">
+          <div class="mt-3 overflow-x-auto rounded-2xl border border-blue-100 bg-sky-100/90 p-1 no-scrollbar">
             <div class="flex min-w-max items-center gap-1">
               <button data-riwayat-status="semua" onclick="filterRiwayat('semua', this)" class="riwayat-tab-btn rounded-xl bg-blue-600 px-3 py-2 text-xs font-extrabold text-white shadow-sm">Semua <span id="riwayatCountSemua"></span></button>
               <button data-riwayat-status="pending" onclick="filterRiwayat('pending', this)" class="riwayat-tab-btn rounded-xl px-3 py-2 text-xs font-bold text-slate-600">Pending <span id="riwayatCountPending"></span></button>
@@ -1741,12 +1724,12 @@
           <div class="mt-2 grid grid-cols-[minmax(7rem,0.9fr)_minmax(0,1.2fr)] gap-2">
             <label class="relative">
               <span class="sr-only">Filter jalur</span>
-              <select id="riwayatJalurFilter" onchange="renderRiwayat()" class="w-full appearance-none rounded-2xl border border-blue-100 bg-white/85 px-3.5 py-3 pr-9 text-xs font-medium text-slate-700 outline-none focus:border-blue-400">
+              <select id="riwayatJalurFilter" onchange="renderRiwayat()" class="w-full appearance-none rounded-2xl border border-blue-100 bg-sky-100/90 px-3.5 py-3 pr-9 text-xs font-medium text-slate-700 outline-none focus:border-blue-400">
                 <option value="semua">Semua Jalur</option>
               </select>
               <i class="fa-solid fa-chevron-down pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-500"></i>
             </label>
-            <div class="flex overflow-x-auto rounded-2xl border border-blue-100 bg-white/85 p-1 no-scrollbar">
+            <div class="flex overflow-x-auto rounded-2xl border border-blue-100 bg-sky-100/90 p-1 no-scrollbar">
               <button data-riwayat-range="semua" onclick="filterRiwayatRange('semua', this)" class="riwayat-range-btn shrink-0 rounded-xl bg-blue-600 px-2.5 py-2 text-xs font-bold text-white">Semua</button>
               <button data-riwayat-range="hari" onclick="filterRiwayatRange('hari', this)" class="riwayat-range-btn shrink-0 rounded-xl px-2.5 py-2 text-xs font-medium text-slate-600">Hari ini</button>
               <button data-riwayat-range="7hari" onclick="filterRiwayatRange('7hari', this)" class="riwayat-range-btn shrink-0 rounded-xl px-2.5 py-2 text-xs font-medium text-slate-600">7 Hari</button>
@@ -1754,20 +1737,20 @@
             </div>
           </div>
 
-          <details class="mt-2 rounded-2xl border border-blue-100 bg-white/80">
+          <details class="mt-2 rounded-2xl border border-blue-100 bg-sky-100/90">
             <summary class="flex cursor-pointer list-none items-center gap-2 px-3.5 py-3 text-xs font-medium text-slate-600">
               <i class="fa-regular fa-calendar text-slate-500"></i><span>Filter Tanggal</span><i class="fa-solid fa-chevron-down ml-auto text-[10px]"></i>
             </summary>
             <div class="grid grid-cols-1 gap-2 border-t border-blue-50 p-3 sm:grid-cols-2">
-              <label class="text-[11px] font-semibold text-slate-500">Dari tanggal<input id="riwayatDateFrom" type="date" onchange="renderRiwayat()" class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700" /></label>
-              <label class="text-[11px] font-semibold text-slate-500">Sampai tanggal<input id="riwayatDateTo" type="date" onchange="renderRiwayat()" class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700" /></label>
+              <label class="text-[11px] font-semibold text-slate-500">Dari tanggal<input id="riwayatDateFrom" type="date" onchange="renderRiwayat()" class="mt-1 w-full rounded-xl border border-slate-200 bg-sky-100 px-3 py-2 text-xs text-slate-700" /></label>
+              <label class="text-[11px] font-semibold text-slate-500">Sampai tanggal<input id="riwayatDateTo" type="date" onchange="renderRiwayat()" class="mt-1 w-full rounded-xl border border-slate-200 bg-sky-100 px-3 py-2 text-xs text-slate-700" /></label>
               <button type="button" onclick="clearRiwayatDateFilter()" class="text-left text-[11px] font-bold text-blue-600 sm:col-span-2">Hapus filter tanggal</button>
             </div>
           </details>
 
           <h2 id="riwayatResultHeading" class="mb-2 mt-4 text-xs font-extrabold text-slate-600">Semua Gmail</h2>
           <div id="riwayatListContainer" class="space-y-3">
-            <div class="rounded-2xl border border-blue-50 bg-white/80 p-6 text-center text-sm font-semibold text-slate-500">Memuat riwayat Gmail...</div>
+            <div class="rounded-2xl border border-blue-50 bg-sky-100/90 p-6 text-center text-sm font-semibold text-slate-500">Memuat riwayat Gmail...</div>
           </div>
         </main>
       </div>
