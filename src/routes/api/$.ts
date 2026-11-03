@@ -204,7 +204,7 @@ function publicUser(user: Record<string, unknown>) {
 async function userDeposits(request: Request, admin = false) {
   const user = admin ? await requireAdmin(request) : await requireUser(request);
   const query = admin
-    ? "deposits?select=*,profiles(username,display_name)&order=created_at.desc&limit=500"
+    ? "deposits?select=*,profiles!deposits_user_id_fkey(username,display_name)&order=created_at.desc&limit=500"
     : `deposits?select=*&user_id=eq.${encodeURIComponent(String(user.id))}&order=created_at.desc&limit=100`;
   const rows = await supabaseFetch<Record<string, unknown>[]>(query);
   return json({ deposits: rows });
