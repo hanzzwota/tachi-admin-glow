@@ -481,6 +481,9 @@
               >Password Wajib<input id="cPass" class="inp mt-1" maxlength="50"
             /></label>
             <label class="block text-xs font-semibold text-slate-500"
+              >Tulisan CAPTCHA<input id="cCaptcha" class="inp mt-1 font-black text-slate-900" maxlength="80" placeholder="CAPTCHA"
+            /></label>
+            <label class="block text-xs font-semibold text-slate-500"
               >Limit Maks Akun per Transaksi (1–50)<input
                 id="cLimit"
                 type="number"
@@ -637,6 +640,9 @@
             minTarik: 4000,
             fee: 0,
             campaignPass: "sgsg1122",
+            pwOpen: true,
+            captchaOpen: false,
+            captchaText: "CAPTCHA",
             limit: 1,
             dailyMax: 500,
             announcement:
@@ -1131,7 +1137,9 @@
           t("storOpen", "Stor Gmail", "Halaman setor user") +
           storeClosedReasonEditor +
           t("tarikOpen", "Tarik Saldo", "Form penarikan user") +
-          t("checkerOpen", "Checker Gmail", "Fitur cek Gmail user");
+          t("checkerOpen", "Checker Gmail", "Fitur cek Gmail user") +
+          t("pwOpen", "Jalur PW", "Pilihan password wajib di halaman setor") +
+          t("captchaOpen", "Jalur CAPTCHA", "Pilihan CAPTCHA di halaman setor");
         if (document.activeElement?.closest("form")) return;
         setSupportToggle("supportWhatsappToggle", s.supportChannels?.whatsappEnabled !== false);
         setSupportToggle("supportTelegramToggle", s.supportChannels?.telegramEnabled !== false);
@@ -1140,6 +1148,7 @@
         cPaymentMode.value = s.paymentMode || "all";
         cFee.value = s.fee;
         cPass.value = s.campaignPass;
+        cCaptcha.value = s.captchaText || "CAPTCHA";
         cLimit.value = s.limit;
         cDaily.value = s.dailyMax;
         cAnn.value = s.announcement;

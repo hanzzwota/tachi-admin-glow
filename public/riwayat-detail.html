@@ -64,7 +64,9 @@
       const approved = ['diterima', 'accepted', 'approved'].includes(status);
       const rejected = ['ditolak', 'rejected'].includes(status);
       const rate = Number(deposit.rate || 0);
-      summary.innerHTML = `<p class="eyebrow">Gmail</p><p class="email">${safe(emails.join(', ') || '-')}</p><div class="grid"><div class="stat"><p class="eyebrow">Jalur</p><strong>${safe(deposit.jalur || 'PW')} · ${money(rate)}</strong></div><div class="stat"><p class="eyebrow">Tanggal Setor</p><strong>${date(deposit.submitted_at || deposit.created_at)}</strong></div></div><p class="trx">Nomor transaksi: ${safe(deposit.transaction_number || deposit.id)}</p>`;
+      const route = String(deposit.jalur || 'PW');
+      const routePassword = route.toUpperCase() === 'PW' ? String(deposit.campaign_password || '-') : '-';
+      summary.innerHTML = `<p class="eyebrow">Gmail</p><p class="email">${safe(emails.join(', ') || '-')}</p><div class="grid"><div class="stat"><p class="eyebrow">Jalur</p><strong>${safe(route)}</strong><strong class="mt-1">PW: ${safe(routePassword)} · ${money(rate)}</strong></div><div class="stat"><p class="eyebrow">Tanggal Setor</p><strong>${date(deposit.submitted_at || deposit.created_at)}</strong></div></div><p class="trx">Nomor transaksi: ${safe(deposit.transaction_number || deposit.id)}</p>`;
       const steps = [
         ['Setoran Terkirim', `Gmail berhasil dikirim ke sistem · ${date(deposit.submitted_at || deposit.created_at)}`],
         ['Pending', approved || rejected ? 'Setoran telah diproses oleh admin.' : 'Menunggu untuk diproses oleh admin.'],
@@ -88,7 +90,7 @@
         const body = await response.json().catch(() => ({}));
         if (response.status === 401) return showError('Sesi login sudah berakhir.', true);
         if (!response.ok || !body.deposit) return showError(body.error || 'Transaksi tidak ditemukan.', false);
-        render(body.deposit);
+        render({ ...body.deposit, campaign_password: body.settings?.campaign_password || '' });
       } catch (error) { showError('Gagal memuat detail. Periksa koneksi lalu coba lagi.', false); }
     })();
   </script>

@@ -219,7 +219,14 @@ async function userDepositDetail(request: Request, id: string) {
     : `deposits?select=*&transaction_number=eq.${encodeURIComponent(id)}&${userFilter}`;
   const rows = await supabaseFetch<Record<string, unknown>[]>(query);
   if (!rows[0]) return json({ error: "Transaksi tidak ditemukan" }, { status: 404 });
-  return json({ deposit: rows[0] });
+  const settings = await getSettings();
+  return json({
+    deposit: rows[0],
+    settings: {
+      campaign_password: settings?.campaign_password ?? "",
+      pw_enabled: settings?.pw_enabled !== false,
+    },
+  });
 }
 
 async function adminUsers(request: Request) {
@@ -260,7 +267,7 @@ async function createDeposit(request: Request) {
       },
       { status: 423 },
     );
-  if (text(payload.campaignPassword) !== String(settings.campaign_password))
+  if (settings.pw_enabled !== false && text(payload.campaignPassword) !== String(settings.campaign_password))
     return json({ error: "Password wajib salah" }, { status: 403 });
   if (emails.length > Number(settings.batch_limit))
     return json({ error: `Maksimal ${settings.batch_limit} Gmail per transaksi` }, { status: 400 });
@@ -371,6 +378,9 @@ async function updateSettings(request: Request) {
       normalizeFee(payload.fee ?? current?.fee),
     ),
     campaign_password: text(payload.campaignPassword ?? current?.campaign_password),
+    pw_enabled: booleanValue(payload.pwEnabled, current?.pw_enabled !== false),
+    captcha_enabled: booleanValue(payload.captchaEnabled, current?.captcha_enabled === true),
+    captcha_text: text(payload.captchaText ?? current?.captcha_text) || "CAPTCHA",
     store_open: booleanValue(payload.storeOpen, current?.store_open !== false),
     withdraw_open: booleanValue(payload.withdrawOpen, current?.withdraw_open !== false),
     checker_open: booleanValue(payload.checkerOpen, current?.checker_open !== false),

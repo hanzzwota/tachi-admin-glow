@@ -158,6 +158,19 @@
     });
     const campaign = document.getElementById("requiredPasswordText");
     if (campaign) campaign.textContent = settings.campaign_password;
+    const rateText = format(settings.rate);
+    ["pwRouteRate", "captchaRouteRate"].forEach((id) => {
+      const element = document.getElementById(id);
+      if (element) element.textContent = rateText;
+    });
+    const pwCard = document.getElementById("pwRouteCard");
+    const captchaCard = document.getElementById("captchaRouteCard");
+    if (pwCard) pwCard.classList.toggle("hidden", settings.pw_enabled === false);
+    if (captchaCard) captchaCard.classList.toggle("hidden", settings.captcha_enabled !== true);
+    const passwordCard = document.getElementById("requiredPasswordText")?.closest("div.bg-white");
+    if (passwordCard) passwordCard.classList.toggle("hidden", settings.pw_enabled === false);
+    const captchaText = document.getElementById("captchaRouteText");
+    if (captchaText) captchaText.textContent = settings.captcha_text || "CAPTCHA";
     const danaOnly = isDanaOnly();
     const bankSelect = document.getElementById("bankSelect");
     if (bankSelect) {
@@ -482,7 +495,9 @@
       const date = new Date(value);
       return Number.isNaN(date.getTime()) ? "Menunggu pemeriksaan" : new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" }).format(date);
     };
-    summary.innerHTML = `<div><p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Gmail</p><p class="mt-1 break-all font-mono text-sm font-bold text-slate-800">${escapeHtml(emails.join(", ") || "-")}</p></div><div class="grid grid-cols-2 gap-3"><div class="rounded-2xl bg-sky-50 p-3"><p class="text-[11px] font-semibold text-slate-400">Jalur</p><p class="mt-1 text-sm font-extrabold text-slate-800">${escapeHtml(deposit.jalur || "PW")} · ${format(rate)}</p></div><div class="rounded-2xl bg-sky-50 p-3"><p class="text-[11px] font-semibold text-slate-400">Tanggal Stor</p><p class="mt-1 text-xs font-bold text-slate-800">${formatDate(deposit.created_at)}</p></div></div><p class="text-[11px] text-slate-400">Nomor transaksi: <span class="font-mono">${escapeHtml(deposit.id)}</span></p>`;
+    const route = String(deposit.jalur || "PW");
+    const routePassword = route.toUpperCase() === "PW" ? String(state.settings?.campaign_password || "-") : "-";
+    summary.innerHTML = `<div><p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Gmail</p><p class="mt-1 break-all font-mono text-sm font-bold text-slate-800">${escapeHtml(emails.join(", ") || "-")}</p></div><div class="grid grid-cols-2 gap-3"><div class="rounded-2xl bg-sky-50 p-3"><p class="text-[11px] font-semibold text-slate-400">Jalur</p><p class="mt-1 text-sm font-extrabold text-slate-800">${escapeHtml(route)}</p><p class="mt-1 text-xs font-black text-slate-700">PW: ${escapeHtml(routePassword)} · ${format(rate)}</p></div><div class="rounded-2xl bg-sky-50 p-3"><p class="text-[11px] font-semibold text-slate-400">Tanggal Stor</p><p class="mt-1 text-xs font-bold text-slate-800">${formatDate(deposit.created_at)}</p></div></div><p class="text-[11px] text-slate-400">Nomor transaksi: <span class="font-mono">${escapeHtml(deposit.transaction_number || deposit.id)}</span></p>`;
     const steps = [
       { label: "Setoran Terkirim", detail: `Gmail berhasil dikirim ke sistem · ${formatDate(deposit.created_at)}` },
       { label: "Pending", detail: approved || rejected ? "Setoran telah diproses oleh admin." : "Menunggu untuk diproses oleh admin." },
