@@ -1880,6 +1880,8 @@
 
       let lastInformationShown = "";
       function maybeShowInformationOverlay() {
+        const dashboard = document.getElementById("view-dashboard");
+        if (!dashboard || dashboard.classList.contains("hidden")) return;
         const information = window.tachiApiState?.settings?.announcement?.trim() || "";
         if (!information || information === lastInformationShown) return;
         lastInformationShown = information;
@@ -2080,6 +2082,7 @@
           if (atasNamaInput) atasNamaInput.value = userBankData.nama;
         }
 
+        if (viewName === "dashboard") window.maybeShowInformationOverlay?.();
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
 
