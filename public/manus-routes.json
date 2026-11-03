@@ -1,1 +1,1 @@
-{"routes":[{"path":"/","title":"Home"},{"path":"/login","title":"Login"},{"path":"/register","title":"Register"},{"path":"/dashboard","title":"Dashboard"},{"path":"/admin","title":"Admin"}]}
+{"routes":[{"path":"/","title":"Home"},{"path":"/dashboard","title":"Dashboard"},{"path":"/admin","title":"Admin"},{"path":"/login","title":"Login"},{"path":"/register","title":"Register"}]}

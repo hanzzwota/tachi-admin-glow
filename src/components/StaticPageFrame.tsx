@@ -1,23 +1,32 @@
-import type { ReactNode } from "react";
+const pageForView: Record<string, string> = {
+  dashboard: "dashboard",
+  login: "login",
+  register: "register",
+  profil: "profil",
+  riwayat: "riwayat",
+  saldo: "saldo",
+  setor: "setor",
+};
 
 export function StaticPageFrame({ view }: { view: string }) {
+  const page = pageForView[view] ?? "dashboard";
+
   return (
-    <iframe
-      src={`/app.html?view=${view}`}
-      title={`tachi69gmail ${view}`}
-      className="block h-screen w-full border-0"
-      style={{ height: "100dvh" }}
-    />
+    <div className="route-frame-shell">
+      <iframe
+        key={page}
+        src={`/pages/${page}.html`}
+        title={`tachi69gmail ${view}`}
+        className="route-frame"
+      />
+    </div>
   );
 }
 
 export function AdminPageFrame() {
   return (
-    <iframe
-      src="/admin.html"
-      title="tachi69gmail Admin"
-      className="block h-screen w-full border-0"
-      style={{ height: "100dvh" }}
-    />
+    <div className="route-frame-shell route-frame-shell-admin">
+      <iframe src="/admin.html" title="tachi69gmail Admin" className="route-frame" />
+    </div>
   );
 }

@@ -117,17 +117,21 @@
     if (profileName) profileName.textContent = displayName;
     const profileUsername = document.getElementById("profileUsername");
     if (profileUsername) profileUsername.textContent = `Username: @${user.username || ""}`;
+    const profileRole = document.getElementById("profileRole");
+    if (profileRole)
+      profileRole.textContent = user.role === "admin" ? "STATUS: ADMIN" : "STATUS: MEMBER REGULER";
   };
   const applyUserDom = () => {
     const { user, settings } = state;
     applyIdentityToDom(user);
-    if (!user || !settings) return;
+    if (!user) return;
     ["dashboardBalance", "saldoBalance", "withdrawAvailableBalance", "profileBalance"].forEach(
       (id) => {
         const element = document.getElementById(id);
         if (element) element.textContent = format(user.balance);
       },
     );
+    if (!settings) return;
     ["gmailRateTop", "gmailRateSaldo"].forEach((id) => {
       const element = document.getElementById(id);
       if (element) element.textContent = `${format(settings.rate)} / Gmail`;
@@ -489,7 +493,7 @@
     input.value = "";
     showToast("success", `${emails.length} Gmail berhasil disetor dan menunggu validasi admin!`);
     syncAppData().catch((error) => console.error("Gagal memuat ulang data:", error));
-    setTimeout(() => window.navigateTo?.("riwayat"), 300);
+    setTimeout(() => window.navigateTo?.("dashboard"), 300);
   };
   window.copyCampaignPassword = async () => {
     const value = state.settings?.campaign_password || "";
@@ -607,7 +611,8 @@
         if (button) button.disabled = false;
         return;
       }
-      document.getElementById("withdrawalAmountInput").value = "";
+      const withdrawalAmountInput = document.getElementById("withdrawalAmountInput");
+      if (withdrawalAmountInput) withdrawalAmountInput.value = "";
       showToast("success", `Permintaan penarikan ${format(amount)} berhasil dikirim dan sedang diproses!`);
       syncAppData().catch((error) => console.error("Gagal memuat ulang data:", error));
     });
@@ -627,10 +632,15 @@
   window.addEventListener("DOMContentLoaded", async () => {
     try {
       const { user } = await api("auth/me");
-      const requestedView = new URLSearchParams(location.search).get("view");
+      const pathViews = {
+        "/dashboard": "dashboard",
+        "/pages/dashboard.html": "dashboard",
+      };
+      const requestedView =
+        new URLSearchParams(location.search).get("view") || pathViews[location.pathname] || null;
       if (user) {
         applyIdentityToDom(user);
-        const availableViews = ["dashboard", "stor", "saldo", "profil", "riwayat"];
+        const availableViews = ["dashboard"];
         const initialView = availableViews.includes(requestedView) ? requestedView : "dashboard";
         window.navigateTo?.(initialView);
         await syncAppData();

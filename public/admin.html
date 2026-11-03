@@ -619,6 +619,11 @@
         };
       }
       let db = normalizeDb(null);
+      // Hitungan harian direset otomatis saat tanggal WIB berganti (00:00 WIB).
+      function resetDaily() {
+        const today = wibDate();
+        if (!db.daily || db.daily.date !== today) db.daily = { date: today, count: 0 };
+      }
       function load() {
         return normalizeDb(null);
       }
