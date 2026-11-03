@@ -212,14 +212,12 @@ async function userDeposits(request: Request, admin = false) {
 
 async function userDepositDetail(request: Request, id: string) {
   const user = await requireUser(request);
-  let rows = await supabaseFetch<Record<string, unknown>[]>(
-    `deposits?select=*&id=eq.${encodeURIComponent(id)}&user_id=eq.${encodeURIComponent(String(user.id))}&limit=1`,
-  );
-  if (!rows[0]) {
-    rows = await supabaseFetch<Record<string, unknown>[]>(
-      `deposits?select=*&transaction_number=eq.${encodeURIComponent(id)}&user_id=eq.${encodeURIComponent(String(user.id))}&limit=1`,
-    );
-  }
+  const userFilter = `user_id=eq.${encodeURIComponent(String(user.id))}&limit=1`;
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+  const query = isUuid
+    ? `deposits?select=*&id=eq.${encodeURIComponent(id)}&${userFilter}`
+    : `deposits?select=*&transaction_number=eq.${encodeURIComponent(id)}&${userFilter}`;
+  const rows = await supabaseFetch<Record<string, unknown>[]>(query);
   if (!rows[0]) return json({ error: "Transaksi tidak ditemukan" }, { status: 404 });
   return json({ deposit: rows[0] });
 }
