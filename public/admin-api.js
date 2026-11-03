@@ -111,13 +111,28 @@
       gmailStock: Array.isArray(settings?.gmail_stock) ? settings.gmail_stock : [],
     },
     setoran: Array.isArray(deposits)
-      ? deposits.map((item) => ({
-          ...item,
-          id: item.id,
-          date: new Date(item.created_at).getTime(),
-          user: item.profiles?.username || item.user_id,
-          emails: Array.isArray(item.emails) ? item.emails : [],
-        }))
+      ? deposits.map((item) => {
+          const acceptedEmails = Array.isArray(item.accepted_emails) ? item.accepted_emails : [];
+          const rejectedEmails = Array.isArray(item.rejected_emails) ? item.rejected_emails : [];
+          const acceptedCount = Number(item.accepted_count);
+          const earned = Number(item.earned);
+          const createdAt = Date.parse(item.created_at || "");
+          const verifiedAt = item.verified_at ? Date.parse(item.verified_at) : Number.NaN;
+          return {
+            ...item,
+            id: item.id,
+            date: Number.isFinite(createdAt) ? createdAt : 0,
+            verifiedAt: Number.isFinite(verifiedAt) ? verifiedAt : null,
+            accepted: Number.isFinite(acceptedCount)
+              ? Math.max(0, acceptedCount, acceptedEmails.length)
+              : acceptedEmails.length,
+            earned: Number.isFinite(earned) ? Math.max(0, earned) : 0,
+            accepted_emails: acceptedEmails,
+            rejected_emails: rejectedEmails,
+            user: item.profiles?.username || item.user_id,
+            emails: Array.isArray(item.emails) ? item.emails : [],
+          };
+        })
       : [],
     users: Array.isArray(users)
       ? users.map((item) => ({
@@ -169,44 +184,85 @@
     window.renderDailyRecap?.();
   };
   window.renderDailyRecap = () => {
-    const rows = dailyDeposits();
-    const emails = [
-      ...new Set(rows.flatMap((item) => (Array.isArray(item.emails) ? item.emails : []))),
-    ];
+    const rows = dailyDeposits().sort((a, b) => Number(b.date || 0) - Number(a.date || 0));
+    const statusByEmail = new Map();
+    rows.forEach((item) => {
+      const accepted = new Set(
+        (Array.isArray(item.accepted_emails) ? item.accepted_emails : []).map((email) =>
+          String(email).trim().toLowerCase(),
+        ),
+      );
+      const rejected = new Set(
+        (Array.isArray(item.rejected_emails) ? item.rejected_emails : []).map((email) =>
+          String(email).trim().toLowerCase(),
+        ),
+      );
+      (Array.isArray(item.emails) ? item.emails : []).forEach((rawEmail) => {
+        const email = String(rawEmail).trim();
+        const key = email.toLowerCase();
+        if (!key || statusByEmail.has(key)) return;
+        let status = "pending";
+        if (accepted.has(key) || (item.status === "diterima" && !rejected.has(key)))
+          status = "diterima";
+        else if (rejected.has(key) || item.status === "ditolak") status = "ditolak";
+        statusByEmail.set(key, { email, status });
+      });
+    });
+    const classifiedEmails = [...statusByEmail.values()];
+    const pendingEmails = classifiedEmails
+      .filter((item) => item.status === "pending")
+      .map((item) => item.email);
+    const acceptedEmails = classifiedEmails
+      .filter((item) => item.status === "diterima")
+      .map((item) => item.email);
+    const rejectedCount = classifiedEmails.filter((item) => item.status === "ditolak").length;
     const stats = document.getElementById("dailyRecapStats");
-    const text = document.getElementById("dailyGmailText");
+    const pendingText = document.getElementById("dailyPendingGmailText");
+    const acceptedText = document.getElementById("dailyAcceptedGmailText");
     if (stats)
       stats.innerHTML = [
         `${recapDate} · ${rows.length} transaksi`,
-        `${emails.length} Gmail`,
-        `${rows.filter((item) => item.status === "diterima").length} diterima`,
-        `${rows.filter((item) => item.status === "pending").length} pending`,
+        `${classifiedEmails.length} Gmail unik`,
+        `${acceptedEmails.length} diterima`,
+        `${pendingEmails.length} pending`,
+        `${rejectedCount} ditolak`,
       ]
         .map(
           (value) =>
             `<div class="rounded-xl border border-blue-50 bg-white p-3 text-center text-sm font-extrabold text-blue-700">${value}</div>`,
         )
         .join("");
-    if (text) text.value = emails.join("\n");
+    if (pendingText) pendingText.value = pendingEmails.join("\n");
+    if (acceptedText) acceptedText.value = acceptedEmails.join("\n");
   };
-  window.copyDailyGmail = async () => {
-    const value = document.getElementById("dailyGmailText")?.value || "";
-    if (!value) return showToast("warning", "⚠️ Belum ada Gmail rekapan untuk disalin.");
+  window.copyDailyGmail = async (status) => {
+    const isPending = status === "pending";
+    const value =
+      document.getElementById(isPending ? "dailyPendingGmailText" : "dailyAcceptedGmailText")
+        ?.value || "";
+    const label = isPending ? "pending" : "berhasil diterima";
+    if (!value) return showToast("warning", `Belum ada Gmail ${label} untuk disalin.`);
     try {
       await navigator.clipboard.writeText(value);
-      showToast("success", `${value.split("\n").length} Gmail rekapan berhasil disalin!`);
+      showToast(
+        "success",
+        `${value.split("\n").filter(Boolean).length} Gmail ${label} berhasil disalin!`,
+      );
     } catch (error) {
       console.error("Copy Error:", error);
       showToast("error", "Gagal menyalin Gmail rekapan. Tidak ada izin akses clipboard.");
     }
   };
   window.exportDailyGmail = () => {
-    const value = document.getElementById("dailyGmailText")?.value || "";
-    if (!value) return showToast("warning", "⚠️ Belum ada Gmail rekapan untuk diekspor.");
+    const pending = document.getElementById("dailyPendingGmailText")?.value || "";
+    const accepted = document.getElementById("dailyAcceptedGmailText")?.value || "";
+    if (!pending && !accepted)
+      return showToast("warning", "Belum ada Gmail pending atau berhasil untuk diekspor.");
     const stamp = recapDate;
+    const value = `Rekapan Gmail Setoran ${stamp}\n\nGMAIL PENDING\n${pending || "-"}\n\nGMAIL BERHASIL DITERIMA\n${accepted || "-"}\n`;
     const link = document.createElement("a");
     link.href = URL.createObjectURL(
-      new Blob([`Rekapan Gmail Setoran ${stamp}\n\n${value}\n`], {
+      new Blob([value], {
         type: "text/plain;charset=utf-8",
       }),
     );

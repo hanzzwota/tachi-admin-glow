@@ -243,12 +243,6 @@
             <div class="flex gap-2">
               <button
                 type="button"
-                onclick="copyDailyGmail()"
-                class="rounded-xl bg-white border border-blue-100 px-3 py-2 text-xs font-bold text-blue-600"
-              >
-                <i class="fa fa-copy mr-1"></i>Salin Semua Gmail</button
-              ><button
-                type="button"
                 onclick="exportDailyGmail()"
                 class="btn-p rounded-xl px-3 py-2 text-xs font-bold"
               >
@@ -256,14 +250,28 @@
               </button>
             </div>
           </div>
-          <div id="dailyRecapStats" class="grid grid-cols-2 gap-3 md:grid-cols-4"></div>
-          <textarea
-            id="dailyGmailText"
-            readonly
-            rows="12"
-            class="inp w-full font-mono text-xs"
-            placeholder="Belum ada Gmail disetor hari ini"
-          ></textarea>
+          <div id="dailyRecapStats" class="grid grid-cols-2 gap-3 md:grid-cols-5"></div>
+          <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <section class="rounded-xl border border-amber-200 bg-amber-50/60 p-3">
+              <div class="mb-2 flex items-center justify-between gap-2">
+                <label for="dailyPendingGmailText" class="text-xs font-extrabold text-amber-800">Gmail Sedang Diproses</label>
+                <button type="button" onclick="copyDailyGmail('pending')" class="rounded-lg bg-white px-2.5 py-1.5 text-[11px] font-bold text-amber-700">
+                  <i class="fa fa-copy mr-1"></i>Salin Pending
+                </button>
+              </div>
+              <textarea id="dailyPendingGmailText" readonly rows="10" class="inp w-full font-mono text-xs" placeholder="Tidak ada Gmail pending"></textarea>
+            </section>
+            <section class="rounded-xl border border-green-200 bg-green-50/60 p-3">
+              <div class="mb-2 flex items-center justify-between gap-2">
+                <label for="dailyAcceptedGmailText" class="text-xs font-extrabold text-green-800">Gmail Berhasil Diterima</label>
+                <button type="button" onclick="copyDailyGmail('diterima')" class="rounded-lg bg-white px-2.5 py-1.5 text-[11px] font-bold text-green-700">
+                  <i class="fa fa-copy mr-1"></i>Salin Berhasil
+                </button>
+              </div>
+              <textarea id="dailyAcceptedGmailText" readonly rows="10" class="inp w-full font-mono text-xs" placeholder="Tidak ada Gmail yang berhasil diterima"></textarea>
+            </section>
+          </div>
+          <p class="text-[11px] text-slate-500">Gmail yang ditolak dihitung pada ringkasan, tetapi tidak dicampur ke daftar pending maupun berhasil.</p>
           <label class="block text-xs font-semibold text-slate-500">
             Bulk search (satu email, username, atau ID per baris)
             <textarea
@@ -723,21 +731,29 @@
       }
 
       function renderStats() {
+        const finite = (value) => {
+          const number = Number(value);
+          return Number.isFinite(number) && number > 0 ? number : 0;
+        };
         const pend = db.setoran.filter((s) => s.status === "pending").length;
         const today = db.setoran
           .filter(
-            (s) =>
-              s.status === "diterima" &&
-              new Date((s.verifiedAt || s.date) + 7 * 3600e3).toISOString().slice(0, 10) ===
-                wibDate(),
+            (s) => {
+              const timestamp = Number(s.verifiedAt ?? s.date);
+              return (
+                finite(s.accepted) > 0 &&
+                Number.isFinite(timestamp) &&
+                wibDate(timestamp) === wibDate()
+              );
+            },
           )
-          .reduce((a, s) => a + s.accepted, 0);
+          .reduce((total, s) => total + finite(s.accepted), 0);
+        const rate = finite(db.settings.rate);
         const hasilGmail = db.setoran
-          .filter((s) => s.status === "diterima")
-          .reduce((a, s) => a + Number(s.earned || (s.accepted || 0) * db.settings.rate), 0);
+          .reduce((total, s) => total + (finite(s.earned) || finite(s.accepted) * rate), 0);
         const harusDibayar = db.withdrawals
           .filter((w) => w.status === "pending")
-          .reduce((a, w) => a + Number(w.amount || 0) + Number(w.fee || 0), 0);
+          .reduce((total, w) => total + finite(w.amount) + finite(w.fee), 0);
         const card = (i, c, l, v) =>
           `<div class="glass rounded-2xl p-4"><div class="w-9 h-9 rounded-xl flex items-center justify-center ${c} mb-2"><i class="fa ${i}"></i></div><div class="text-xs text-slate-500">${l}</div><div class="text-lg font-extrabold">${v}</div></div>`;
         stats.innerHTML =
@@ -856,13 +872,18 @@
           .sort((a, b) => b.date - a.date);
         if (!deposits.length) return showToast("warning", "Setoran user tidak ditemukan.");
         const user = deposits[0].user;
-        const uniqueEmails = new Map();
-        deposits.forEach((deposit) =>
+        const pendingEmails = new Map();
+        deposits.forEach((deposit) => {
+          if (deposit.status !== "pending") return;
+          const accepted = new Set(deposit.accepted_emails.map((email) => String(email).trim().toLowerCase()));
+          const rejected = new Set(deposit.rejected_emails.map((email) => String(email).trim().toLowerCase()));
           deposit.emails.forEach((email) => {
             const key = String(email).trim().toLowerCase();
-            if (key && !uniqueEmails.has(key)) uniqueEmails.set(key, String(email));
-          }),
-        );
+            if (key && !accepted.has(key) && !rejected.has(key) && !pendingEmails.has(key))
+              pendingEmails.set(key, String(email));
+          });
+        });
+        const pendingEmailText = [...pendingEmails.values()].join("\n");
         const history = deposits
           .map(
             (deposit) =>
@@ -871,7 +892,7 @@
           .join("");
         openModal(
           `Setoran ${user}`,
-          `<div class="mb-3 flex items-center justify-between gap-2 rounded-xl bg-blue-50 p-3 text-xs"><span><b>${deposits.length} kiriman</b> · ${uniqueEmails.size} Gmail unik</span><button onclick="copy(${esc(JSON.stringify([...uniqueEmails.values()].join("\n")))})" class="rounded-lg bg-white px-2.5 py-1.5 font-bold text-blue-700"><i class="fa fa-copy mr-1"></i>Salin akun unik</button></div><div class="max-h-[65vh] space-y-3 overflow-y-auto">${history}</div>`,
+          `<div class="mb-3 flex items-center justify-between gap-2 rounded-xl bg-blue-50 p-3 text-xs"><span><b>${deposits.length} kiriman</b> · ${pendingEmails.size} Gmail sedang diproses</span><button ${pendingEmails.size ? "" : "disabled"} onclick="copy(${esc(JSON.stringify(pendingEmailText))})" class="rounded-lg bg-white px-2.5 py-1.5 font-bold text-blue-700 disabled:cursor-not-allowed disabled:opacity-50"><i class="fa fa-copy mr-1"></i>Salin Gmail Pending (${pendingEmails.size})</button></div><div class="max-h-[65vh] space-y-3 overflow-y-auto">${history}</div>`,
         );
       }
       function viewSetoran(id) {

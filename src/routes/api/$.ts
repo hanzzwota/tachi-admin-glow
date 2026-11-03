@@ -217,11 +217,23 @@ async function adminUsers(request: Request) {
 async function createDeposit(request: Request) {
   const user = await requireUser(request);
   const payload = await body(request);
-  const emails = Array.isArray(payload.emails)
-    ? [...new Set(payload.emails.map(text).filter(Boolean))]
-    : [];
+  const emails = Array.isArray(payload.emails) ? payload.emails.map(text).filter(Boolean) : [];
   if (!emails.length || emails.some((email) => !/^[a-z0-9._%+-]{1,64}@gmail\.com$/i.test(email)))
     return json({ error: "Daftar Gmail tidak valid" }, { status: 400 });
+  const seenEmails = new Set<string>();
+  const duplicatesInRequest = new Set<string>();
+  emails.forEach((email) => {
+    const normalized = email.toLowerCase();
+    if (seenEmails.has(normalized)) duplicatesInRequest.add(normalized);
+    seenEmails.add(normalized);
+  });
+  if (duplicatesInRequest.size)
+    return json(
+      {
+        error: `Gmail yang sama tidak boleh dikirim lebih dari satu kali: ${[...duplicatesInRequest].slice(0, 5).join(", ")}`,
+      },
+      { status: 409 },
+    );
   const settings = await getSettings();
   if (!settings?.store_open)
     return json(
@@ -236,6 +248,25 @@ async function createDeposit(request: Request) {
     return json({ error: "Password wajib salah" }, { status: 403 });
   if (emails.length > Number(settings.batch_limit))
     return json({ error: `Maksimal ${settings.batch_limit} Gmail per transaksi` }, { status: 400 });
+  const duplicateRows = await supabaseFetch<Record<string, unknown>[]>(
+    "rpc/find_duplicate_deposit_gmails",
+    {
+      method: "POST",
+      body: JSON.stringify({ p_emails: emails }),
+    },
+  );
+  if (duplicateRows.length) {
+    const duplicateEmails = duplicateRows.map((item) => text(item.email)).filter(Boolean);
+    const shown = duplicateEmails.slice(0, 5).join(", ");
+    const remaining =
+      duplicateEmails.length > 5 ? `, dan ${duplicateEmails.length - 5} lainnya` : "";
+    return json(
+      {
+        error: `Gmail sudah pernah dikirim dan tidak dapat dikirim ulang: ${shown}${remaining}`,
+      },
+      { status: 409 },
+    );
+  }
   const jakartaDate = new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const dayStart = encodeURIComponent(`${jakartaDate}T00:00:00+07:00`);
   const today = await supabaseFetch<Record<string, unknown>[]>(

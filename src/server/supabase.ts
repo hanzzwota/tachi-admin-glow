@@ -179,7 +179,7 @@ export function errorResponse(error: unknown) {
   const minimum = message.match(/"message"\s*:\s*"(Minimal penarikan[^"]*)"/);
   if (minimum) return json({ error: minimum[1] }, { status: 400 });
   const duplicateGmail = message.match(
-    /"message"\s*:\s*"(Gmail ini sudah diklaim oleh akun lain)"/,
+    /"message"\s*:\s*"(Gmail ini sudah diklaim oleh akun lain|Gmail ini sudah pernah dikirim dan tidak dapat dikirim ulang|Gmail yang sama tidak boleh dikirim lebih dari satu kali)"/,
   );
   if (duplicateGmail) return json({ error: duplicateGmail[1] }, { status: 409 });
   const generatedGmailSchemaUnavailable =

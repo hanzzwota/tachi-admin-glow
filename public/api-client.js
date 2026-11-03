@@ -519,6 +519,29 @@
       showToast("warning", "⚠️ Masukkan minimal 1 alamat Gmail sebelum menyetor!");
       return;
     }
+    const seenEmails = new Set();
+    const duplicateEmails = new Set();
+    emails.forEach((email) => {
+      if (seenEmails.has(email)) duplicateEmails.add(email);
+      seenEmails.add(email);
+    });
+    const previouslySubmitted = new Set(
+      state.deposits
+        .flatMap((deposit) => (Array.isArray(deposit.emails) ? deposit.emails : []))
+        .map((email) => String(email).trim().toLowerCase()),
+    );
+    emails.forEach((email) => {
+      if (previouslySubmitted.has(email)) duplicateEmails.add(email);
+    });
+    if (duplicateEmails.size) {
+      const shown = [...duplicateEmails].slice(0, 5).join(", ");
+      const remaining = duplicateEmails.size > 5 ? `, dan ${duplicateEmails.size - 5} lainnya` : "";
+      showToast(
+        "warning",
+        `Gmail yang sama sudah pernah dikirim atau terduplikasi, jadi tidak dapat dikirim lagi: ${shown}${remaining}`,
+      );
+      return;
+    }
     if (state.settings?.store_open === false) {
       const reason = String(state.settings.store_closed_reason || "").trim();
       showToast(
@@ -535,7 +558,17 @@
         body: JSON.stringify({ emails, campaignPassword: state.settings?.campaign_password }),
       });
     } catch (error) {
-      showToast("error", `Setoran Gmail gagal dikirim: ${errorText(error, "coba lagi nanti.")}`);
+      const duplicateConflict =
+        error.status === 409 &&
+        /sudah pernah dikirim|tidak dapat dikirim ulang|sudah diklaim|terduplikasi|yang sama tidak boleh dikirim/i.test(
+          error.message || "",
+        );
+      showToast(
+        duplicateConflict ? "warning" : "error",
+        duplicateConflict
+          ? error.message
+          : `Setoran Gmail gagal dikirim: ${errorText(error, "coba lagi nanti.")}`,
+      );
       return;
     }
     await refreshGeneratedStockGmails().catch((error) =>
