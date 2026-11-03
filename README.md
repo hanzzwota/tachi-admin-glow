@@ -24,7 +24,7 @@ Buatkan aplikasi Dashboard Admin berbasis Web (Single Page Application / Full-St
 
 - **Branding & Logo:** 
 
-  - Logo URL: https://initial-rose-ocrqvxpw.edgeone.dev/ (3D Emblem, Statis / Animasi Muter Dimatikan).
+  - Logo URL: https://files.catbox.moe/p4ceks.jpg (3D Emblem, Statis / Animasi Muter Dimatikan).
 
   - Nama Brand: "tachi69gmail Admin Console".
 
