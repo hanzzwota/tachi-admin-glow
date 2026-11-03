@@ -92,7 +92,7 @@
       enabled: document.getElementById(`supportAdmin${index}Enabled`)?.dataset.enabled !== "false",
     })),
   });
-  const normalize = (settings, deposits, users, withdrawals, paymentFeesOverride = null) => ({
+  const normalize = (settings, deposits, users, withdrawals, assignedGmails = [], paymentFeesOverride = null) => ({
     settings: {
       rate: Number(settings?.rate || 0),
       minTarik: Math.max(FIXED_MIN_WITHDRAWAL, Number(settings?.min_withdrawal || 0)),
@@ -163,6 +163,16 @@
           dana: item.wallet_number,
           amount: Number(item.amount || 0),
           fee: Number(item.fee || 0),
+        }))
+      : [],
+    assignedGmails: Array.isArray(assignedGmails)
+      ? assignedGmails.map((item) => ({
+          id: item.id,
+          gmail: item.gmail,
+          username: item.username || item.user_id || "-",
+          displayName: item.display_name || "",
+          createdAt: item.created_at,
+          archivedAt: item.archived_at,
         }))
       : [],
     daily: {
@@ -288,13 +298,14 @@
   const refresh = async (paymentFeesOverride = null) => {
     if (refreshInFlight) return refreshInFlight;
     refreshInFlight = (async () => {
-      const [{ deposits }, { users }, { settings }, { withdrawals }] = await Promise.all([
+      const [{ deposits }, { users }, { settings }, { withdrawals }, { gmails }] = await Promise.all([
         api("admin/deposits"),
         api("admin/users"),
         api("settings"),
         api("admin/withdrawals"),
+        api("admin/stock/assigned"),
       ]);
-      db = normalize(settings, deposits, users, withdrawals, paymentFeesOverride);
+      db = normalize(settings, deposits, users, withdrawals, gmails, paymentFeesOverride);
       ["DANA", "OVO", "GoPay", "ShopeePay", "BCA", "BRI", "Mandiri"].forEach((key) => {
         const input = document.getElementById(`fee${key}`);
         if (input) input.value = Number(db.settings.paymentFees[key] || 0);
@@ -313,9 +324,10 @@
       api("admin/withdrawals"),
       api("admin/users"),
     ]);
-    const refreshed = normalize({}, [], users, withdrawals);
+    const refreshed = normalize({}, [], users, withdrawals, db.assignedGmails);
     db.withdrawals = refreshed.withdrawals;
     db.users = refreshed.users;
+    db.assignedGmails = refreshed.assignedGmails;
     window.reloadAdminDb?.();
   };
   const finishWithdrawalAction = (id, status, reason = "") => {

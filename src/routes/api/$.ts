@@ -627,6 +627,31 @@ async function archiveGeneratedGmail(request: Request, id: string) {
   return json({ ok: true });
 }
 
+async function adminGeneratedGmailList(request: Request) {
+  await requireAdmin(request);
+  const rows = await supabaseFetch<Record<string, unknown>[]>(
+    "generated_gmail_claims?select=id,gmail,normalized_gmail,user_id,created_at,archived_at,profiles(username,display_name)&order=created_at.desc&limit=5000",
+  );
+  return json({
+    gmails: rows.map((row) => ({
+      id: row.id,
+      gmail: row.gmail,
+      normalized_gmail: row.normalized_gmail,
+      user_id: row.user_id,
+      created_at: row.created_at,
+      archived_at: row.archived_at,
+      username:
+        row.profiles && typeof row.profiles === "object"
+          ? (row.profiles as Record<string, unknown>).username
+          : row.user_id,
+      display_name:
+        row.profiles && typeof row.profiles === "object"
+          ? (row.profiles as Record<string, unknown>).display_name
+          : "",
+    })),
+  });
+}
+
 async function updateWallet(request: Request) {
   const user = await requireUser(request);
   const payload = await body(request);
@@ -878,6 +903,8 @@ async function handler(request: Request, path: string) {
   if (request.method === "PATCH" && path === "admin/settings") return updateSettings(request);
   if (request.method === "POST" && path === "stock/claim") return claimGmailStock(request);
   if (request.method === "GET" && path === "stock/generated") return generatedGmailList(request);
+  if (request.method === "GET" && path === "admin/stock/assigned")
+    return adminGeneratedGmailList(request);
   if (request.method === "DELETE" && path.startsWith("stock/generated/"))
     return archiveGeneratedGmail(request, path.split("/")[2] ?? "");
   if (request.method === "PATCH" && path === "wallet") return updateWallet(request);
