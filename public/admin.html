@@ -174,6 +174,10 @@
 
         <!-- SETORAN -->
         <section id="t-setoran" class="glass rounded-2xl p-4">
+          <div class="mb-3 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-amber-800" role="status" aria-live="polite">
+            <i class="fa fa-hourglass-half mt-0.5"></i>
+            <p class="text-xs"><b><span id="depositProcessingCount">0</span> setoran sedang diproses.</b> Tinjau detail Gmail, lalu pilih ACC atau Tolak untuk menyelesaikan pemeriksaan.</p>
+          </div>
           <div class="flex flex-col md:flex-row gap-2 mb-3">
             <div class="relative flex-1">
               <i class="fa fa-search absolute left-3 top-3.5 text-slate-400"></i>
@@ -681,7 +685,7 @@
       const badge = (s) =>
         ({
           pending:
-            '<span class="px-2 py-1 rounded-lg text-xs font-bold bg-amber-100 text-amber-700">Pending</span>',
+            '<span class="px-2 py-1 rounded-lg text-xs font-bold bg-amber-100 text-amber-700">Diproses</span>',
           diterima:
             '<span class="px-2 py-1 rounded-lg text-xs font-bold bg-green-100 text-green-700">Diterima</span>',
           selesai:
@@ -737,7 +741,7 @@
         const card = (i, c, l, v) =>
           `<div class="glass rounded-2xl p-4"><div class="w-9 h-9 rounded-xl flex items-center justify-center ${c} mb-2"><i class="fa ${i}"></i></div><div class="text-xs text-slate-500">${l}</div><div class="text-lg font-extrabold">${v}</div></div>`;
         stats.innerHTML =
-          card("fa-hourglass-half", "bg-amber-100 text-amber-600", "Setoran Pending", pend) +
+          card("fa-hourglass-half", "bg-amber-100 text-amber-600", "Setoran Dalam Proses", pend) +
           card("fa-circle-check", "bg-green-100 text-green-600", "Gmail Diterima Hari Ini", today) +
           card(
             "fa-wallet",
@@ -755,10 +759,14 @@
 
       let sf = "semua";
       function renderSetoran() {
+        const processingCount = document.getElementById("depositProcessingCount");
+        if (processingCount)
+          processingCount.textContent = String(db.setoran.filter((item) => item.status === "pending").length);
+        const filterLabels = { semua: "Semua", pending: "Diproses", diterima: "Diterima", ditolak: "Ditolak" };
         sfilter.innerHTML = ["semua", "pending", "diterima", "ditolak"]
           .map(
             (f) =>
-              `<button onclick="sf='${f}';renderSetoran()" class="px-3 py-2 rounded-xl text-xs font-bold capitalize ${sf === f ? "btn-p" : "bg-white border border-blue-100 text-slate-600"}">${f}</button>`,
+              `<button onclick="sf='${f}';renderSetoran()" class="px-3 py-2 rounded-xl text-xs font-bold ${sf === f ? "btn-p" : "bg-white border border-blue-100 text-slate-600"}">${filterLabels[f]}</button>`,
           )
           .join("");
         const q = sq.value.trim().toLowerCase();
@@ -817,7 +825,7 @@
           "Pilih Gmail yang Diterima " + id,
           `<p class="text-sm mb-2">Centang Gmail yang ingin diterima. Gmail lain tetap pending dan tidak otomatis ditolak. Rate: <b>${rp(db.settings.rate)}</b></p><div class="max-h-64 overflow-y-auto space-y-2">${s.emails.map((email) => `<label class="flex items-center gap-2 rounded-xl border border-blue-50 bg-white p-2 text-xs"><input type="checkbox" name="acceptedEmail" value="${esc(email)}" ${s.accepted_emails?.includes(email) ? "checked" : ""}><span class="font-mono">${esc(email)}</span></label>`).join("")}</div>
   <p class="text-sm mt-2">Saldo dihitung dari Gmail yang dicentang.</p>
-  <button onclick="doAcc('${id}')" class="w-full py-3 rounded-xl mt-4 font-bold bg-green-500 text-white">Konfirmasi ACC</button>`,
+  <button id="depositActionConfirmButton" data-idle-label="Konfirmasi ACC" onclick="doAcc('${id}')" class="w-full py-3 rounded-xl mt-4 font-bold bg-green-500 text-white">Konfirmasi ACC</button>`,
         );
       }
       function doAcc(id) {
@@ -834,7 +842,7 @@
           `<p class="text-sm mb-3">Centang Gmail yang ditolak. Yang tidak dicentang otomatis diterima.</p><div class="max-h-48 overflow-y-auto space-y-2">${s.emails.map((email) => `<label class="flex items-center gap-2 rounded-xl border border-blue-50 bg-white p-2 text-xs"><input type="checkbox" name="rejectedEmail" value="${esc(email)}"><span class="font-mono">${esc(email)}</span></label>`).join("")}</div><p class="text-sm mb-3 mt-3">Pilih alasan:</p><div class="space-y-2">
   ${["Captcha", "Disable", "Unregist", "Error", "Alasan Lain"].map((r, i) => `<label class="flex items-center gap-2 p-3 rounded-xl border border-blue-100 bg-white cursor-pointer"><input type="radio" name="rr" value="${r}" ${i === 0 ? "checked" : ""} onchange="rCustom.classList.toggle('hidden',this.value!=='Alasan Lain')"><span class="text-sm font-semibold">${i + 1}. ${r}</span></label>`).join("")}</div>
   <textarea id="rCustom" rows="3" maxlength="200" class="inp mt-3 hidden" placeholder="Tulis alasan kustom..."></textarea>
-  <button onclick="doRej('${id}')" class="w-full py-3 rounded-xl mt-4 font-bold bg-red-500 text-white">Tolak Setoran</button>`,
+  <button id="depositActionConfirmButton" data-idle-label="Tolak Setoran" onclick="doRej('${id}')" class="w-full py-3 rounded-xl mt-4 font-bold bg-red-500 text-white">Tolak Setoran</button>`,
         );
       }
       function doRej(id) {

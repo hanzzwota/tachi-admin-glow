@@ -182,6 +182,18 @@ export function errorResponse(error: unknown) {
     /"message"\s*:\s*"(Gmail ini sudah diklaim oleh akun lain)"/,
   );
   if (duplicateGmail) return json({ error: duplicateGmail[1] }, { status: 409 });
+  const generatedGmailSchemaUnavailable =
+    message.startsWith("Supabase ") &&
+    /generated_gmail_claims|claim_gmail_stock_batch/i.test(message);
+  if (generatedGmailSchemaUnavailable) {
+    return json(
+      {
+        error:
+          "Fitur Gmail stok belum siap pada database. Silahkan Hubungi Admin untuk menerapkan migration database.",
+      },
+      { status: 503 },
+    );
+  }
   // Never leak raw database errors to the browser.
   const safe = message.startsWith("Supabase ") ? "Terjadi kesalahan pada database server" : message;
   return json({ error: safe }, { status: 500 });

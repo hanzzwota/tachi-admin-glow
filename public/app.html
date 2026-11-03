@@ -1196,6 +1196,7 @@
             <input id="customStockGenerateCount" type="number" min="1" step="1" inputmode="numeric" oninput="updateStockGenerateCustom(this.value)" placeholder="Contoh: 7" class="w-full custom-input rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none" />
             <p class="text-[10px] text-slate-500 mt-2">Maksimal 5 akun per batch. Target di atas 5 dibuat bertahap lewat tombol Generate Lagi.</p>
           </div>
+          <div id="stockGenerateAlert" class="hidden rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-xs font-semibold text-rose-700" role="alert" aria-live="assertive"></div>
           <p id="stockGenerateProgress" aria-live="polite" class="text-xs font-semibold text-slate-500">Pilih jumlah, lalu generate Gmail.</p>
           <button id="generateStockGmailButton" type="button" onclick="generateStockGmail()" class="btn-glossy w-full text-white font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-2 active:scale-98 transition-transform">
             <i class="fa-solid fa-wand-magic-sparkles text-xs"></i><span>Generate Gmail</span>

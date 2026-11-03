@@ -28,6 +28,22 @@
   };
   const showToast = (type, message) => window.showToast?.(type, message);
   const errorText = (error, fallback) => window.toastErrorMessage?.(error, fallback) || fallback;
+  let generatedGmailLoadErrorActive = false;
+  const showGeneratedGmailError = (message) => {
+    const alert = document.getElementById("stockGenerateAlert");
+    if (alert) {
+      alert.textContent = message;
+      alert.classList.remove("hidden");
+    }
+  };
+  const clearGeneratedGmailError = () => {
+    generatedGmailLoadErrorActive = false;
+    const alert = document.getElementById("stockGenerateAlert");
+    if (alert) {
+      alert.textContent = "";
+      alert.classList.add("hidden");
+    }
+  };
   const format = (value) => `Rp${Number(value || 0).toLocaleString("id-ID")}`;
   const paymentMethods = ["DANA", "OVO", "GoPay", "ShopeePay", "BCA", "BRI", "Mandiri"];
   const FEE_STEP = 1000;
@@ -374,8 +390,16 @@
     }
     if (generatedGmailsResult.status === "fulfilled") {
       replaceGeneratedStockGmails(generatedGmailsResult.value.gmails);
+      clearGeneratedGmailError();
     } else {
       console.warn("Gagal memuat Gmail hasil generate:", generatedGmailsResult.reason);
+      const detail = errorText(generatedGmailsResult.reason, "");
+      const message = detail.includes("Gmail stok belum siap")
+        ? detail
+        : "Gagal mengambil Gmail stok. Silahkan Hubungi Admin.";
+      showGeneratedGmailError(message);
+      if (!generatedGmailLoadErrorActive) showToast("error", message);
+      generatedGmailLoadErrorActive = true;
     }
     window.maybeShowInformationOverlay?.();
     applyUserDom();
@@ -760,12 +784,19 @@
       if (!gmails.length) throw new Error("Server tidak mengirim daftar Gmail.");
       stockGenerateCompleted += gmails.length;
       await refreshGeneratedStockGmails();
+      clearGeneratedGmailError();
       showToast(
         "success",
         `${gmails.length} Gmail berhasil dibuat di panel Generated Gmail (batch maksimal 5).${stockGenerateCompleted < stockGenerateTarget ? " Tekan Generate Lagi untuk melanjutkan target." : ""}`,
       );
     } catch (error) {
-      showToast("error", `Gagal mengambil Gmail stok: ${errorText(error, "coba lagi nanti.")}`);
+      const message =
+        error?.status === 409 && String(error.message || "").includes("Stok Gmail")
+          ? "Stok Gmail sedang kosong. Jika seharusnya tersedia, Silahkan Hubungi Admin."
+          : "Gagal mengambil Gmail stok. Silahkan Hubungi Admin.";
+      showGeneratedGmailError(message);
+      generatedGmailLoadErrorActive = true;
+      showToast("error", message);
     } finally {
       stockGenerateBusy = false;
       syncStockGeneratorControls();

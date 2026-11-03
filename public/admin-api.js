@@ -379,7 +379,18 @@
       showToast("error", message);
     }
   };
+  const setDepositActionProcessing = (isProcessing) => {
+    const button = document.getElementById("depositActionConfirmButton");
+    if (!button) return;
+    button.disabled = isProcessing;
+    button.setAttribute("aria-busy", String(isProcessing));
+    button.innerHTML = isProcessing
+      ? '<i class="fa fa-spinner fa-spin mr-2" aria-hidden="true"></i><span>Memproses setoran…</span>'
+      : button.dataset.idleLabel || "Proses Setoran";
+  };
   window.doAcc = async (id) => {
+    const confirmButton = document.getElementById("depositActionConfirmButton");
+    if (confirmButton?.disabled) return;
     let acceptedEmails;
     try {
       acceptedEmails = [
@@ -389,11 +400,13 @@
         showToast("warning", "⚠️ Centang minimal 1 Gmail yang ingin diterima!");
         return;
       }
+      setDepositActionProcessing(true);
       await api(`admin/deposits/${id}/approve`, {
         method: "POST",
         body: JSON.stringify({ acceptedEmails }),
       });
     } catch (error) {
+      setDepositActionProcessing(false);
       showToast("error", `Gagal menerima setoran: ${errorText(error, "coba lagi nanti.")}`);
       return;
     }
@@ -402,6 +415,8 @@
     await refreshAfterAction();
   };
   window.doRej = async (id) => {
+    const confirmButton = document.getElementById("depositActionConfirmButton");
+    if (confirmButton?.disabled) return;
     try {
       let reason = document.querySelector('input[name="rr"]:checked')?.value || "Ditolak admin";
       if (reason === "Alasan Lain") {
@@ -418,11 +433,13 @@
         showToast("warning", "⚠️ Centang minimal 1 Gmail yang ingin ditolak!");
         return;
       }
+      setDepositActionProcessing(true);
       await api(`admin/deposits/${id}/reject`, {
         method: "POST",
         body: JSON.stringify({ reason, rejectedEmails }),
       });
     } catch (error) {
+      setDepositActionProcessing(false);
       showToast("error", `Gagal menolak setoran: ${errorText(error, "coba lagi nanti.")}`);
       return;
     }
