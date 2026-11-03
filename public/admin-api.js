@@ -493,13 +493,10 @@
     const confirmButton = document.getElementById("depositActionConfirmButton");
     if (confirmButton?.disabled) return;
     try {
-      let reason = document.querySelector('input[name="rr"]:checked')?.value || "Ditolak admin";
-      if (reason === "Alasan Lain") {
-        reason = document.getElementById("rCustom")?.value.trim() || "";
-        if (!reason) {
-          showToast("warning", "⚠️ Harap isi alasan penolakan kustom!");
-          return;
-        }
+      const reason = document.getElementById("rCustom")?.value.trim() || "";
+      if (!reason) {
+        showToast("warning", "⚠️ Alasan penolakan wajib diisi!");
+        return;
       }
       const rejectedEmails = [
         ...document.querySelectorAll("input[name='rejectedEmail']:checked"),

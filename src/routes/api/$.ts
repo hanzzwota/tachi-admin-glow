@@ -212,9 +212,14 @@ async function userDeposits(request: Request, admin = false) {
 
 async function userDepositDetail(request: Request, id: string) {
   const user = await requireUser(request);
-  const rows = await supabaseFetch<Record<string, unknown>[]>(
+  let rows = await supabaseFetch<Record<string, unknown>[]>(
     `deposits?select=*&id=eq.${encodeURIComponent(id)}&user_id=eq.${encodeURIComponent(String(user.id))}&limit=1`,
   );
+  if (!rows[0]) {
+    rows = await supabaseFetch<Record<string, unknown>[]>(
+      `deposits?select=*&transaction_number=eq.${encodeURIComponent(id)}&user_id=eq.${encodeURIComponent(String(user.id))}&limit=1`,
+    );
+  }
   if (!rows[0]) return json({ error: "Transaksi tidak ditemukan" }, { status: 404 });
   return json({ deposit: rows[0] });
 }
@@ -300,116 +305,40 @@ async function createDeposit(request: Request) {
     headers: { Prefer: "return=representation" },
     body: JSON.stringify({
       user_id: user.id,
+      transaction_number: `TRX-${new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date()).replaceAll("-", "")}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
       emails,
       status: "pending",
       jalur: "PW",
       rate: Number(settings.rate ?? 4500),
+      submitted_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     }),
   });
   return json({ deposit: rows[0] }, { status: 201 });
 }
 
 async function approveDeposit(request: Request, id: string) {
-  await requireAdmin(request);
-  const payload = await body(request);
-  const rows = await supabaseFetch<Record<string, unknown>[]>(
-    `deposits?select=*&id=eq.${encodeURIComponent(id)}&limit=1`,
+  const admin = await requireAdmin(request);
+  const result = await supabaseFetch<{ ok: boolean; earned: number; error_code: string | null }[]>(
+    "rpc/approve_deposit_atomic",
+    { method: "POST", body: JSON.stringify({ p_deposit_id: id, p_admin_id: admin.id }) },
   );
-  const deposit = rows[0];
-  if (!deposit || deposit.status !== "pending")
-    return json({ error: "Setoran tidak ditemukan atau sudah diproses" }, { status: 409 });
-  const settings = await getSettings();
-  const emailList = Array.isArray(deposit.emails) ? deposit.emails.map(text) : [];
-  const requested = Array.isArray(payload.acceptedEmails)
-    ? [...new Set(payload.acceptedEmails.map(text))]
-    : emailList.slice(
-        0,
-        Math.max(0, Math.min(emailList.length, Number(payload.acceptedCount ?? emailList.length))),
-      );
-  const previousAccepted = Array.isArray(deposit.accepted_emails)
-    ? deposit.accepted_emails.map(text)
-    : [];
-  const acceptedEmails = [...new Set([...previousAccepted, ...requested])].filter((email) =>
-    emailList.includes(email),
-  );
-  const rejectedEmails = Array.isArray(deposit.rejected_emails)
-    ? deposit.rejected_emails.map(text).filter((email) => emailList.includes(email))
-    : [];
-  const newlyAccepted = acceptedEmails.filter((email) => !previousAccepted.includes(email));
-  const acceptedCount = acceptedEmails.length;
-  const rate = Number(deposit.rate ?? settings?.rate ?? 0);
-  const earned = newlyAccepted.length * rate;
-  await supabaseFetch(`deposits?id=eq.${encodeURIComponent(id)}`, {
-    method: "PATCH",
-    headers: { Prefer: "return=minimal" },
-    body: JSON.stringify({
-      status: acceptedCount === emailList.length ? "diterima" : "pending",
-      accepted_count: acceptedCount,
-      accepted_emails: acceptedEmails,
-      rejected_emails: rejectedEmails,
-      earned,
-      reason: rejectedEmails.length ? `${rejectedEmails.length} Gmail tidak diterima` : null,
-      verified_at: new Date().toISOString(),
-    }),
-  });
-  const userRows = await supabaseFetch<Record<string, unknown>[]>(
-    `profiles?select=balance& id=eq.${encodeURIComponent(String(deposit.user_id))}`.replace(
-      "?select=balance& ",
-      "?select=balance&",
-    ),
-  );
-  const currentBalance = Number(userRows[0]?.balance ?? 0);
-  await supabaseFetch(`profiles?id=eq.${encodeURIComponent(String(deposit.user_id))}`, {
-    method: "PATCH",
-    headers: { Prefer: "return=minimal" },
-    body: JSON.stringify({ balance: currentBalance + earned }),
-  });
-  return json({ ok: true, earned });
+  const outcome = result[0];
+  if (!outcome?.ok) return json({ error: "Setoran tidak ditemukan atau sudah diproses" }, { status: 409 });
+  return json({ ok: true, earned: Number(outcome.earned ?? 0) });
 }
 
 async function rejectDeposit(request: Request, id: string) {
-  await requireAdmin(request);
+  const admin = await requireAdmin(request);
   const payload = await body(request);
-  const rows = await supabaseFetch<Record<string, unknown>[]>(
-    `deposits?select=*&id=eq.${encodeURIComponent(id)}&status=eq.pending&limit=1`,
+  const reason = text(payload.reason);
+  if (!reason) return json({ error: "Alasan penolakan wajib diisi" }, { status: 400 });
+  const result = await supabaseFetch<{ ok: boolean; error_code: string | null }[]>(
+    "rpc/reject_deposit_atomic",
+    { method: "POST", body: JSON.stringify({ p_deposit_id: id, p_admin_id: admin.id, p_reason: reason }) },
   );
-  const deposit = rows[0];
-  if (!deposit)
-    return json({ error: "Setoran tidak ditemukan atau sudah diproses" }, { status: 409 });
-  const emailList = Array.isArray(deposit.emails) ? deposit.emails.map(text) : [];
-  if (Array.isArray(payload.rejectedEmails) && payload.rejectedEmails.length === 0)
-    return json({ error: "Pilih minimal satu Gmail untuk ditolak" }, { status: 400 });
-  const rejectedEmails = Array.isArray(payload.rejectedEmails)
-    ? [...new Set(payload.rejectedEmails.map(text))].filter((email) => emailList.includes(email))
-    : emailList;
-  const acceptedEmails = emailList.filter((email) => !rejectedEmails.includes(email));
-  const settings = await getSettings();
-  const rate = Number(deposit.rate ?? settings?.rate ?? 0);
-  const earned = acceptedEmails.length * rate;
-  await supabaseFetch(`deposits?id=eq.${encodeURIComponent(id)}&status=eq.pending`, {
-    method: "PATCH",
-    headers: { Prefer: "return=minimal" },
-    body: JSON.stringify({
-      status: acceptedEmails.length ? "diterima" : "ditolak",
-      accepted_count: acceptedEmails.length,
-      accepted_emails: acceptedEmails,
-      rejected_emails: rejectedEmails,
-      earned,
-      reason: text(payload.reason) || "Ditolak admin",
-      verified_at: new Date().toISOString(),
-    }),
-  });
-  if (earned) {
-    const userRows = await supabaseFetch<Record<string, unknown>[]>(
-      `profiles?select=balance&id=eq.${encodeURIComponent(String(deposit.user_id))}&limit=1`,
-    );
-    await supabaseFetch(`profiles?id=eq.${encodeURIComponent(String(deposit.user_id))}`, {
-      method: "PATCH",
-      headers: { Prefer: "return=minimal" },
-      body: JSON.stringify({ balance: Number(userRows[0]?.balance ?? 0) + earned }),
-    });
-  }
-  return json({ ok: true, earned });
+  if (!result[0]?.ok) return json({ error: "Setoran tidak ditemukan atau sudah diproses" }, { status: 409 });
+  return json({ ok: true });
 }
 
 async function updateSettings(request: Request) {

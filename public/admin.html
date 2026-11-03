@@ -941,19 +941,15 @@
       function rejModal(id) {
         const s = db.setoran.find((x) => x.id === id);
         openModal(
-          "Pilih Gmail yang Ditolak " + id,
-          `<p class="text-sm mb-3">Centang Gmail yang ditolak. Yang tidak dicentang otomatis diterima.</p><div class="max-h-48 overflow-y-auto space-y-2">${s.emails.map((email) => `<label class="flex items-center gap-2 rounded-xl border border-blue-50 bg-white p-2 text-xs"><input type="checkbox" name="rejectedEmail" value="${esc(email)}"><span class="font-mono">${esc(email)}</span></label>`).join("")}</div><p class="text-sm mb-3 mt-3">Pilih alasan:</p><div class="space-y-2">
-  ${["Captcha", "Disable", "Unregist", "Error", "Alasan Lain"].map((r, i) => `<label class="flex items-center gap-2 p-3 rounded-xl border border-blue-100 bg-white cursor-pointer"><input type="radio" name="rr" value="${r}" ${i === 0 ? "checked" : ""} onchange="rCustom.classList.toggle('hidden',this.value!=='Alasan Lain')"><span class="text-sm font-semibold">${i + 1}. ${r}</span></label>`).join("")}</div>
-  <textarea id="rCustom" rows="3" maxlength="200" class="inp mt-3 hidden" placeholder="Tulis alasan kustom..."></textarea>
+          "Tolak Setoran " + id,
+          `<p class="text-sm mb-3">Centang Gmail yang ditolak, lalu tulis alasan manual untuk transaksi ini.</p><div class="max-h-48 overflow-y-auto space-y-2">${s.emails.map((email) => `<label class="flex items-center gap-2 rounded-xl border border-blue-50 bg-white p-2 text-xs"><input type="checkbox" name="rejectedEmail" value="${esc(email)}"><span class="font-mono">${esc(email)}</span></label>`).join("")}</div>
+  <textarea id="rCustom" rows="4" maxlength="500" class="inp mt-3" placeholder="Alasan Penolakan" required></textarea>
   <button id="depositActionConfirmButton" data-idle-label="Tolak Setoran" onclick="doRej('${id}')" class="w-full py-3 rounded-xl mt-4 font-bold bg-red-500 text-white">Tolak Setoran</button>`,
         );
       }
       function doRej(id) {
-        let r = document.querySelector("input[name=rr]:checked").value;
-        if (r === "Alasan Lain") {
-          r = rCustom.value.trim();
-          if (!r) return showToast("warning", "⚠️ Harap isi alasan penolakan kustom!");
-        }
+        const r = rCustom.value.trim();
+        if (!r) return showToast("warning", "⚠️ Alasan penolakan wajib diisi!");
         showToast("warning", NOT_SAVED);
       }
 

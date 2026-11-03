@@ -346,6 +346,7 @@
           createdAt: deposit.created_at || deposit.date,
           verifiedAt: status === "pending" ? null : verifiedAt,
           reason: deposit.reason || "",
+          transactionNumber: deposit.transaction_number || deposit.id,
           jalur,
           rate,
         };
@@ -455,7 +456,7 @@
     container.innerHTML = filtered
       .map((row) => {
         const [label, badge, icon] = statusStyle[row.status];
-        const details = `<a target="_top" href="/riwayat/${encodeURIComponent(row.depositId || "")}" class="mt-1 inline-flex items-center gap-1 text-xs font-bold text-sky-300">Lihat proses <i class="fa-solid fa-chevron-right text-[9px]"></i></a>`;
+        const details = `<a target="_top" href="/riwayat/${encodeURIComponent(row.transactionNumber || row.depositId || "")}" class="mt-1 inline-flex items-center gap-1 text-xs font-bold text-sky-300">Lihat proses <i class="fa-solid fa-chevron-right text-[9px]"></i></a>`;
         return `<article class="riwayat-card flex items-start justify-between gap-3 rounded-[22px] border border-blue-100/80 bg-blue-100/80 p-3.5 shadow-[0_7px_22px_rgba(59,130,246,0.08)]"><div class="min-w-0 flex-1"><p class="riwayat-email break-all font-mono text-[12px] font-semibold leading-relaxed text-slate-100">${escapeHtml(row.email)}</p><p class="riwayat-meta mt-1 text-[11px] leading-relaxed text-slate-300">Stor: ${escapeHtml(formatDate(row.createdAt))}</p><p class="riwayat-meta text-[11px] leading-relaxed text-slate-300">Verifikasi: ${escapeHtml(formatDate(row.verifiedAt))}</p></div><div class="flex w-[104px] shrink-0 flex-col items-end"><span class="inline-flex items-center gap-1 rounded-full ${badge} px-2.5 py-1 text-[11px] font-extrabold"><i class="fa-solid ${icon}"></i>${label}</span>${details}</div></article>`;
       })
       .join("");
@@ -464,7 +465,7 @@
     const summary = document.getElementById("historyDetailSummary");
     const timeline = document.getElementById("historyDetailTimeline");
     if (!summary || !timeline) return;
-    const deposit = state.deposits.find((item) => String(item.id) === String(depositId));
+    const deposit = state.deposits.find((item) => String(item.id) === String(depositId) || String(item.transaction_number || "") === String(depositId));
     if (!deposit) {
       summary.innerHTML = '<div class="text-sm font-semibold text-rose-600">Transaksi tidak ditemukan.</div>';
       timeline.innerHTML = "";
@@ -483,19 +484,19 @@
     };
     summary.innerHTML = `<div><p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Gmail</p><p class="mt-1 break-all font-mono text-sm font-bold text-slate-800">${escapeHtml(emails.join(", ") || "-")}</p></div><div class="grid grid-cols-2 gap-3"><div class="rounded-2xl bg-sky-50 p-3"><p class="text-[11px] font-semibold text-slate-400">Jalur</p><p class="mt-1 text-sm font-extrabold text-slate-800">${escapeHtml(deposit.jalur || "PW")} · ${format(rate)}</p></div><div class="rounded-2xl bg-sky-50 p-3"><p class="text-[11px] font-semibold text-slate-400">Tanggal Stor</p><p class="mt-1 text-xs font-bold text-slate-800">${formatDate(deposit.created_at)}</p></div></div><p class="text-[11px] text-slate-400">Nomor transaksi: <span class="font-mono">${escapeHtml(deposit.id)}</span></p>`;
     const steps = [
-      { label: "Storan dikirim", detail: `Gmail berhasil dikirim ke sistem · ${formatDate(deposit.created_at)}` },
-      { label: "Pending", detail: "Gmail menunggu untuk diproses." },
-      { label: "Sedang di Cek", detail: "Gmail sedang diverifikasi manual." },
-      { label: approved ? "Disetujui" : "Ditolak", detail: approved ? `${accepted} Gmail · Saldo ${format(deposit.earned || accepted * rate)} sudah ditambahkan.` : rejected ? `Alasan: ${deposit.reason || "Ditolak admin"}` : "Menunggu keputusan admin." },
+      { label: "Setoran Terkirim", detail: `Gmail berhasil dikirim ke sistem · ${formatDate(deposit.created_at)}` },
+      { label: "Pending", detail: approved || rejected ? "Setoran telah diproses oleh admin." : "Menunggu untuk diproses oleh admin." },
+      { label: approved ? "Disetujui" : rejected ? "Ditolak" : "Disetujui / Ditolak", detail: approved ? `Saldo ${format(deposit.earned || accepted * rate)} sudah ditambahkan.` : rejected ? `Alasan: ${deposit.reason || ""}` : "Keputusan admin belum dibuat." },
     ];
-    const activeIndex = approved || rejected ? 3 : 2;
+    const activeIndex = approved || rejected ? 2 : 1;
     timeline.innerHTML = steps.map((step, index) => {
       const completed = approved || index < activeIndex;
       const active = !completed && index === activeIndex;
-      const color = rejected && index === 3 ? "bg-rose-600" : completed ? "bg-emerald-500" : active ? "bg-amber-400" : "bg-slate-300";
-      const text = rejected && index === 3 ? "text-rose-700" : completed ? "text-slate-800" : active ? "text-amber-700" : "text-slate-400";
-      const line = index < steps.length - 1 ? `<span class="absolute left-1/2 top-8 h-9 w-0.5 -translate-x-1/2 ${completed ? "bg-emerald-300" : "bg-slate-200"}"></span>` : "";
-      return `<div class="relative flex gap-3 pb-5"><div class="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${color} text-xs text-white shadow-sm"><i class="fa-solid ${completed ? "fa-check" : rejected && index === 3 ? "fa-xmark" : "fa-clock"}"></i></div><div class="min-w-0"><p class="text-sm font-extrabold ${text}">${step.label}</p><p class="mt-1 text-xs leading-relaxed text-slate-500">${step.detail}</p></div>${line}</div>`;
+      const color = rejected && index === 2 ? "bg-rose-600" : completed ? "bg-emerald-500" : active ? "bg-amber-400" : "bg-slate-300";
+      const text = rejected && index === 2 ? "text-rose-700" : completed ? "text-slate-800" : active ? "text-amber-700" : "text-slate-400";
+      const lineColor = rejected && index === 1 ? "bg-rose-300" : completed ? "bg-emerald-300" : "bg-slate-200";
+      const line = index < steps.length - 1 ? `<span class="absolute left-1/2 top-8 h-9 w-0.5 -translate-x-1/2 ${lineColor}"></span>` : "";
+      return `<div class="relative flex gap-3 pb-5"><div class="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${color} text-xs text-white shadow-sm"><i class="fa-solid ${rejected && index === 2 ? "fa-xmark" : completed ? "fa-check" : "fa-clock"}"></i></div><div class="min-w-0"><p class="text-sm font-extrabold ${text}">${step.label}</p><p class="mt-1 text-xs leading-relaxed text-slate-500">${step.detail}</p></div>${line}</div>`;
     }).join("");
   };
   window.renderRiwayatDetail = renderHistoryDetail;

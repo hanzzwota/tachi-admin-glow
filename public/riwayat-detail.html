@@ -63,15 +63,14 @@
       const status = String(deposit.status || 'pending').toLowerCase();
       const approved = ['diterima', 'accepted', 'approved'].includes(status);
       const rejected = ['ditolak', 'rejected'].includes(status);
-      const rate = Number(deposit.rate || 4500);
-      summary.innerHTML = `<p class="eyebrow">Gmail</p><p class="email">${safe(emails.join(', ') || '-')}</p><div class="grid"><div class="stat"><p class="eyebrow">Jalur</p><strong>${safe(deposit.jalur || 'PW')} · ${money(rate)}</strong></div><div class="stat"><p class="eyebrow">Tanggal Stor</p><strong>${date(deposit.created_at)}</strong></div></div><p class="trx">Nomor transaksi: ${safe(deposit.id)}</p>`;
+      const rate = Number(deposit.rate || 0);
+      summary.innerHTML = `<p class="eyebrow">Gmail</p><p class="email">${safe(emails.join(', ') || '-')}</p><div class="grid"><div class="stat"><p class="eyebrow">Jalur</p><strong>${safe(deposit.jalur || 'PW')} · ${money(rate)}</strong></div><div class="stat"><p class="eyebrow">Tanggal Setor</p><strong>${date(deposit.submitted_at || deposit.created_at)}</strong></div></div><p class="trx">Nomor transaksi: ${safe(deposit.transaction_number || deposit.id)}</p>`;
       const steps = [
-        ['Storan dikirim', `Gmail berhasil dikirim ke sistem · ${date(deposit.created_at)}`],
-        ['Pending', 'Gmail menunggu untuk diproses.'],
-        ['Sedang di Cek', 'Gmail sedang diverifikasi manual.'],
-        [approved ? 'Disetujui' : rejected ? 'Ditolak' : 'Disetujui', approved ? `${accepted} Gmail · Saldo ${money(deposit.earned || accepted * rate)} sudah ditambahkan.` : rejected ? `Alasan: ${deposit.reason || 'Ditolak admin'}` : 'Menunggu keputusan admin.']
+        ['Setoran Terkirim', `Gmail berhasil dikirim ke sistem · ${date(deposit.submitted_at || deposit.created_at)}`],
+        ['Pending', approved || rejected ? 'Setoran telah diproses oleh admin.' : 'Menunggu untuk diproses oleh admin.'],
+        [approved ? 'Disetujui' : rejected ? 'Ditolak' : 'Disetujui / Ditolak', approved ? `Saldo ${money(deposit.earned || accepted * rate)} sudah ditambahkan.` : rejected ? `Alasan: ${deposit.reason || ''}` : 'Keputusan admin belum dibuat.']
       ];
-      const active = approved || rejected ? 3 : 2;
+      const active = approved || rejected ? 2 : 1;
       timeline.innerHTML = steps.map((step, index) => {
         const done = approved || index < active;
         const current = !done && index === active;
