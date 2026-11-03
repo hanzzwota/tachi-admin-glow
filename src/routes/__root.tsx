@@ -10,9 +10,10 @@ import {
   type ErrorComponentProps,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
-import { Home } from "lucide-react";
+import { History, Home, Upload, UserRound, Wallet } from "lucide-react";
 
 import appCss from "../styles.css?url";
+import { shouldShowAppNavigation } from "../lib/app-navigation";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
 function NotFoundComponent() {
@@ -73,12 +74,18 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
   );
 }
 
-const navItems = [{ to: "/dashboard", label: "Beranda", Icon: Home }] as const;
+const navItems = [
+  { to: "/dashboard", label: "Beranda", Icon: Home },
+  { to: "/riwayat", label: "Riwayat", Icon: History },
+  { to: "/setor", label: "Setor", Icon: Upload },
+  { to: "/saldo", label: "Saldo", Icon: Wallet },
+  { to: "/profil", label: "Profil", Icon: UserRound },
+] as const;
 
 function AppNavigation() {
   const { pathname } = useLocation();
   const activePath = pathname === "/" ? "/dashboard" : pathname;
-  const isPrivateApp = navItems.some((item) => item.to === activePath);
+  const isPrivateApp = shouldShowAppNavigation(pathname);
 
   if (!isPrivateApp) return null;
 
