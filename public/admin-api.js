@@ -519,7 +519,17 @@
     showToast("success", "Setoran berhasil ditolak dan alasan tersimpan.");
     await refreshAfterAction();
   };
-  const bulkIds = (id) => [...new Set(String(document.getElementById(id)?.value || "").split(/[\s,]+/).map((value) => value.trim()).filter(Boolean))];
+  const bulkGmails = (id) => [...new Set(String(document.getElementById(id)?.value || "").split(/[\s,]+/).map((value) => value.trim().toLowerCase()).filter(Boolean))];
+  const bulkDepositIdsFromGmails = (gmails) => {
+    const wanted = new Set(gmails);
+    const matched = new Map();
+    (Array.isArray(db?.setoran) ? db.setoran : []).forEach((deposit) => {
+      if (deposit.status !== "pending") return;
+      const found = (Array.isArray(deposit.emails) ? deposit.emails : []).some((email) => wanted.has(String(email).trim().toLowerCase()));
+      if (found) matched.set(String(deposit.id), deposit);
+    });
+    return [...matched.keys()];
+  };
   const setBulkStatus = (message, tone = "text-violet-800") => {
     const status = document.getElementById("bulkActionStatus");
     if (!status) return;
@@ -546,23 +556,27 @@
     return { success, failed };
   };
   window.bulkApproveDeposits = async () => {
-    const ids = bulkIds("bulkApproveIds");
-    if (!ids.length) return showToast("warning", "⚠️ Masukkan minimal satu nomor transaksi untuk Bulk Setuju.");
-    if (!window.confirm(`Setujui ${ids.length} transaksi pending? Saldo akan ditambahkan untuk transaksi yang berhasil.`)) return;
-    setBulkStatus(`Memproses 0/${ids.length} transaksi…`);
+    const gmails = bulkGmails("bulkApproveIds");
+    if (!gmails.length) return showToast("warning", "⚠️ Masukkan minimal satu Gmail untuk Bulk Setuju.");
+    const ids = bulkDepositIdsFromGmails(gmails);
+    if (!ids.length) return showToast("warning", "⚠️ Tidak ada Gmail yang cocok dengan setoran pending.");
+    if (!window.confirm(`Setujui ${gmails.length} Gmail pada ${ids.length} setoran pending?`)) return;
+    setBulkStatus(`Memproses 0/${ids.length} setoran…`);
     const result = await runBulk(ids, { path: "approve" });
     setBulkStatus(`Selesai: ${result.success} berhasil, ${result.failed} gagal.`, result.failed ? "text-amber-800" : "text-green-700");
     showToast(result.failed ? "warning" : "success", `Bulk setuju selesai: ${result.success} berhasil, ${result.failed} gagal.`);
   };
   window.bulkRejectDeposits = async () => {
-    const ids = bulkIds("bulkRejectIds");
-    if (!ids.length) return showToast("warning", "⚠️ Masukkan minimal satu nomor transaksi untuk Bulk Tolak.");
+    const gmails = bulkGmails("bulkRejectIds");
+    if (!gmails.length) return showToast("warning", "⚠️ Masukkan minimal satu Gmail untuk Bulk Tolak.");
+    const ids = bulkDepositIdsFromGmails(gmails);
+    if (!ids.length) return showToast("warning", "⚠️ Tidak ada Gmail yang cocok dengan setoran pending.");
     const type = document.getElementById("bulkRejectReasonType")?.value || "Lainnya";
     const detail = document.getElementById("bulkRejectReason")?.value.trim() || "";
     if (type === "Lainnya" && !detail) return showToast("warning", "⚠️ Tulis alasan penolakan sendiri.");
     const reason = type === "Lainnya" ? detail : detail ? `${type}: ${detail}` : type;
-    if (!window.confirm(`Tolak ${ids.length} transaksi dengan alasan "${reason}"?`)) return;
-    setBulkStatus(`Memproses 0/${ids.length} transaksi…`);
+    if (!window.confirm(`Tolak Gmail dari ${ids.length} setoran dengan alasan "${reason}"?`)) return;
+    setBulkStatus(`Memproses 0/${ids.length} setoran…`);
     const result = await runBulk(ids, { path: "reject", body: { reason } });
     setBulkStatus(`Selesai: ${result.success} berhasil, ${result.failed} gagal.`, result.failed ? "text-amber-800" : "text-green-700");
     showToast(result.failed ? "warning" : "success", `Bulk tolak selesai: ${result.success} berhasil, ${result.failed} gagal.`);

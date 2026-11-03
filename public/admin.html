@@ -211,16 +211,16 @@
             <div class="mb-2 flex items-center gap-2 text-violet-900">
               <i class="fa fa-layer-group"></i><h3 class="font-extrabold">Bulk Otomatis</h3>
             </div>
-            <p class="mb-3 text-xs text-violet-800">Masukkan nomor transaksi atau UUID, satu per baris. Hanya setoran berstatus pending yang diproses.</p>
+            <p class="mb-3 text-xs text-violet-800">Masukkan alamat Gmail, satu per baris. Gmail akan dicocokkan ke setoran pending secara otomatis.</p>
             <div class="grid gap-3 lg:grid-cols-2">
               <div class="rounded-xl border border-green-200 bg-white p-3">
-                <label for="bulkApproveIds" class="text-xs font-extrabold text-green-800">Bulk Setuju</label>
-                <textarea id="bulkApproveIds" rows="4" class="inp mt-1 font-mono text-xs" placeholder="TRX-20261104-AB12CD34&#10;TRX-20261104-EF56GH78"></textarea>
+                <label for="bulkApproveIds" class="text-xs font-extrabold text-green-800">Bulk Setuju via Gmail</label>
+                <textarea id="bulkApproveIds" rows="4" class="inp mt-1 font-mono text-xs" placeholder="akun1@gmail.com&#10;akun2@gmail.com"></textarea>
                 <button type="button" onclick="bulkApproveDeposits()" class="mt-2 w-full rounded-xl bg-green-500 px-3 py-2.5 text-xs font-bold text-white"><i class="fa fa-check-double mr-1"></i>Setujui Semua</button>
               </div>
               <div class="rounded-xl border border-red-200 bg-white p-3">
-                <label for="bulkRejectIds" class="text-xs font-extrabold text-red-800">Bulk Tolak</label>
-                <textarea id="bulkRejectIds" rows="4" class="inp mt-1 font-mono text-xs" placeholder="TRX-20261104-AB12CD34&#10;TRX-20261104-EF56GH78"></textarea>
+                <label for="bulkRejectIds" class="text-xs font-extrabold text-red-800">Bulk Tolak via Gmail</label>
+                <textarea id="bulkRejectIds" rows="4" class="inp mt-1 font-mono text-xs" placeholder="akun1@gmail.com&#10;akun2@gmail.com"></textarea>
                 <div class="mt-2 grid gap-2 sm:grid-cols-2">
                   <select id="bulkRejectReasonType" class="inp text-xs">
                     <option value="Disable">Disable</option><option value="Unregist">Unregist</option><option value="Error">Error</option><option value="Lainnya">Alasan sendiri</option>
