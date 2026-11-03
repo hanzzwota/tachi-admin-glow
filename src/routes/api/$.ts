@@ -224,7 +224,14 @@ async function createDeposit(request: Request) {
     return json({ error: "Daftar Gmail tidak valid" }, { status: 400 });
   const settings = await getSettings();
   if (!settings?.store_open)
-    return json({ error: "Setoran sedang ditutup oleh admin" }, { status: 423 });
+    return json(
+      {
+        error: text(settings?.store_closed_reason)
+          ? `Setoran ditutup oleh admin. Alasan: ${text(settings.store_closed_reason)}`
+          : "Setoran sedang ditutup oleh admin",
+      },
+      { status: 423 },
+    );
   if (text(payload.campaignPassword) !== String(settings.campaign_password))
     return json({ error: "Password wajib salah" }, { status: 403 });
   if (emails.length > Number(settings.batch_limit))
@@ -427,6 +434,10 @@ async function updateSettings(request: Request) {
     ["rules_text", rulesText],
     ["support_channels", supportChannels],
     ["payment_mode", paymentMode],
+    [
+      "store_closed_reason",
+      text(payload.storeClosedReason ?? current?.store_closed_reason).slice(0, 300),
+    ],
   ] as const) {
     try {
       await patchSettings({ [optionalSetting[0]]: optionalSetting[1] });
@@ -435,7 +446,11 @@ async function updateSettings(request: Request) {
       const optionalColumnMissing =
         message.includes("PGRST204") ||
         (message.includes("400") && message.includes(optionalSetting[0]));
-      if (!optionalColumnMissing) throw error;
+      if (
+        !optionalColumnMissing ||
+        (optionalSetting[0] === "store_closed_reason" && optionalSetting[1])
+      )
+        throw error;
     }
   }
   const saved = await getSettings();

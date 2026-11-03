@@ -160,7 +160,16 @@
       amount.disabled = settings.withdraw_open === false;
     }
     const submit = document.getElementById("gmailListInput");
-    if (submit) submit.disabled = settings.store_open === false;
+    const storeIsClosed = settings.store_open === false;
+    if (submit) submit.disabled = storeIsClosed;
+    document.querySelectorAll("[data-store-closed-notice]").forEach((notice) => {
+      notice.classList.toggle("hidden", !storeIsClosed);
+    });
+    document.querySelectorAll("[data-store-closed-reason]").forEach((reason) => {
+      reason.textContent =
+        String(settings.store_closed_reason || "").trim() ||
+        "Admin belum menambahkan alasan penutupan.";
+    });
     const incomingWallet = user.wallet || {};
     const previousWallet = state.user?.wallet || {};
     const bank = incomingWallet.number && incomingWallet.name ? incomingWallet : previousWallet;
@@ -368,6 +377,7 @@
     } else {
       console.warn("Gagal memuat Gmail hasil generate:", generatedGmailsResult.reason);
     }
+    window.maybeShowInformationOverlay?.();
     applyUserDom();
     window.updateSlide?.();
     return state;
@@ -486,7 +496,13 @@
       return;
     }
     if (state.settings?.store_open === false) {
-      showToast("warning", "⚠️ Setoran Gmail sedang ditutup oleh admin.");
+      const reason = String(state.settings.store_closed_reason || "").trim();
+      showToast(
+        "warning",
+        reason
+          ? `Setoran ditutup oleh admin. Alasan: ${reason}`
+          : "⚠️ Setoran Gmail sedang ditutup oleh admin.",
+      );
       return;
     }
     try {

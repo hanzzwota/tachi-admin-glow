@@ -443,7 +443,7 @@
             </label>
             <p class="text-xs text-slate-500" id="dailyInfo"></p>
             <label class="block text-xs font-semibold text-slate-500"
-              >Teks Pengumuman Running<textarea
+              >Teks Pengumuman Running / overlay saat user membuka web<textarea
                 id="cAnn"
                 rows="3"
                 maxlength="300"
@@ -974,8 +974,12 @@
         const s = db.settings;
         const t = (k, l, d) =>
           `<div class="flex items-center justify-between p-3 rounded-xl bg-white border border-blue-50"><div><div class="font-semibold text-sm">${l}</div><div class="text-xs ${s[k] ? "text-green-600" : "text-red-500"} font-bold">${s[k] ? "● BUKA" : "● TUTUP"} <span class="text-slate-400 font-normal">— ${d}</span></div></div><div class="tgl ${s[k] ? "on" : ""}" onclick="toggleFeature('${k}','${l}')"></div></div>`;
+        const storeClosedReasonEditor = !s.storOpen
+          ? `<div class="rounded-xl border border-rose-200 bg-rose-50/70 p-3 space-y-2"><label for="storeClosedReasonInput" class="block text-xs font-bold text-rose-800">Alasan Setoran Ditutup<textarea id="storeClosedReasonInput" rows="3" maxlength="300" class="inp mt-1" placeholder="Contoh: sedang maintenance sampai pukul 20.00">${esc(s.storeClosedReason || "")}</textarea></label><p class="text-[11px] text-rose-700">Alasan ini akan terlihat di dashboard user selama setoran ditutup.</p><button type="button" onclick="saveStoreClosedReason()" class="btn-p w-full rounded-xl py-2.5 text-xs font-bold">Simpan Alasan</button></div>`
+          : "";
         toggles.innerHTML =
           t("storOpen", "Stor Gmail", "Halaman setor user") +
+          storeClosedReasonEditor +
           t("tarikOpen", "Tarik Saldo", "Form penarikan user") +
           t("checkerOpen", "Checker Gmail", "Fitur cek Gmail user");
         if (document.activeElement?.closest("form")) return;

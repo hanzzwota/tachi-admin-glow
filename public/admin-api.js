@@ -102,6 +102,7 @@
       dailyMax: Number(settings?.daily_limit || 0),
       limit: Number(settings?.batch_limit || 0),
       announcement: settings?.announcement || "",
+      storeClosedReason: settings?.store_closed_reason || "",
       rulesText:
         settings?.rules_text ||
         "1. Gmail harus fresh.\n2. Wajib menggunakan password yang dicantumkan di bawah.\n3. Keputusan admin tachi69gmail mutlak.",
@@ -273,6 +274,7 @@
     paymentFees: db.settings.paymentFees,
     campaignPassword: db.settings.campaignPass,
     storeOpen: db.settings.storOpen,
+    storeClosedReason: db.settings.storeClosedReason,
     withdrawOpen: db.settings.tarikOpen,
     checkerOpen: db.settings.checkerOpen,
     dailyLimit: db.settings.dailyMax,
@@ -305,8 +307,10 @@
       return;
     }
     const previous = db.settings[key];
+    const previousClosedReason = db.settings.storeClosedReason;
     const next = !previous;
     db.settings[key] = next;
+    if (key === "storOpen" && next) db.settings.storeClosedReason = "";
     try {
       await api("admin/settings", {
         method: "PATCH",
@@ -314,11 +318,35 @@
       });
     } catch (error) {
       db.settings[key] = previous; // kembalikan tampilan ke kondisi sebenarnya
+      db.settings.storeClosedReason = previousClosedReason;
       window.reloadAdminDb?.();
       showToast("error", `Gagal ${next ? "membuka" : "menutup"} ${label}: ${errorText(error, "coba lagi nanti.")}`);
       return;
     }
     showToast("success", `${label} berhasil ${next ? "dibuka" : "ditutup"}!`);
+    await refreshAfterAction();
+  };
+  window.saveStoreClosedReason = async () => {
+    if (db.settings?.storOpen !== false) {
+      showToast("warning", "Tutup setor terlebih dahulu untuk mengatur alasan penutupan.");
+      return;
+    }
+    const input = document.getElementById("storeClosedReasonInput");
+    const previous = db.settings.storeClosedReason;
+    db.settings.storeClosedReason = String(input?.value || "")
+      .trim()
+      .slice(0, 300);
+    try {
+      await api("admin/settings", {
+        method: "PATCH",
+        body: JSON.stringify(settingsPayload()),
+      });
+    } catch (error) {
+      db.settings.storeClosedReason = previous;
+      showToast("error", `Alasan gagal disimpan: ${errorText(error, "coba lagi nanti.")}`);
+      return;
+    }
+    showToast("success", "Alasan penutupan setor berhasil disimpan.");
     await refreshAfterAction();
   };
   window.doLogin = async (event) => {
