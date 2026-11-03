@@ -72,6 +72,8 @@
     const legacyTelegram = Array.isArray(value?.telegram) ? value.telegram : [];
     const source = Array.isArray(value?.admins) ? value.admins : [];
     return {
+      whatsappEnabled: value?.whatsappEnabled !== false && value?.whatsapp_enabled !== false,
+      telegramEnabled: value?.telegramEnabled !== false && value?.telegram_enabled !== false,
       admins: [0, 1].map((index) => ({
         name: source[index]?.name || `Admin ${index + 1}`,
         whatsapp: source[index]?.whatsapp || legacyWhatsApp[index] || "",
@@ -81,11 +83,13 @@
     };
   };
   const readSupportChannels = () => ({
+    whatsappEnabled: document.getElementById("supportWhatsappToggle")?.dataset.enabled !== "false",
+    telegramEnabled: document.getElementById("supportTelegramToggle")?.dataset.enabled !== "false",
     admins: [1, 2].map((index) => ({
       name: document.getElementById(`supportAdmin${index}Name`).value.trim() || `Admin ${index}`,
       whatsapp: document.getElementById(`supportAdmin${index}Whatsapp`).value.trim(),
       telegram: document.getElementById(`supportAdmin${index}Telegram`).value.trim(),
-      enabled: document.getElementById(`supportAdmin${index}Enabled`).checked,
+      enabled: document.getElementById(`supportAdmin${index}Enabled`)?.dataset.enabled !== "false",
     })),
   });
   const normalize = (settings, deposits, users, withdrawals, paymentFeesOverride = null) => ({

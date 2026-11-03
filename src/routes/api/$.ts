@@ -69,7 +69,11 @@ function canonicalSupportChannels(value: unknown) {
       enabled: item.enabled !== false,
     };
   });
-  return { admins };
+  return {
+    whatsappEnabled: source.whatsappEnabled !== false && source.whatsapp_enabled !== false,
+    telegramEnabled: source.telegramEnabled !== false && source.telegram_enabled !== false,
+    admins,
+  };
 }
 const idFromPath = (path: string) => path.split("/").filter(Boolean).at(-1) ?? "";
 
