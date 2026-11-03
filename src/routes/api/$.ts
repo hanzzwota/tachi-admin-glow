@@ -210,6 +210,15 @@ async function userDeposits(request: Request, admin = false) {
   return json({ deposits: rows });
 }
 
+async function userDepositDetail(request: Request, id: string) {
+  const user = await requireUser(request);
+  const rows = await supabaseFetch<Record<string, unknown>[]>(
+    `deposits?select=*&id=eq.${encodeURIComponent(id)}&user_id=eq.${encodeURIComponent(String(user.id))}&limit=1`,
+  );
+  if (!rows[0]) return json({ error: "Transaksi tidak ditemukan" }, { status: 404 });
+  return json({ deposit: rows[0] });
+}
+
 async function adminUsers(request: Request) {
   await requireAdmin(request);
   const users = await supabaseFetch<Record<string, unknown>[]>(
@@ -289,7 +298,13 @@ async function createDeposit(request: Request) {
   const rows = await supabaseFetch<Record<string, unknown>[]>("deposits", {
     method: "POST",
     headers: { Prefer: "return=representation" },
-    body: JSON.stringify({ user_id: user.id, emails, status: "pending" }),
+    body: JSON.stringify({
+      user_id: user.id,
+      emails,
+      status: "pending",
+      jalur: "PW",
+      rate: Number(settings.rate ?? 4500),
+    }),
   });
   return json({ deposit: rows[0] }, { status: 201 });
 }
@@ -322,7 +337,8 @@ async function approveDeposit(request: Request, id: string) {
     : [];
   const newlyAccepted = acceptedEmails.filter((email) => !previousAccepted.includes(email));
   const acceptedCount = acceptedEmails.length;
-  const earned = newlyAccepted.length * Number(settings?.rate ?? 0);
+  const rate = Number(deposit.rate ?? settings?.rate ?? 0);
+  const earned = newlyAccepted.length * rate;
   await supabaseFetch(`deposits?id=eq.${encodeURIComponent(id)}`, {
     method: "PATCH",
     headers: { Prefer: "return=minimal" },
@@ -368,7 +384,8 @@ async function rejectDeposit(request: Request, id: string) {
     : emailList;
   const acceptedEmails = emailList.filter((email) => !rejectedEmails.includes(email));
   const settings = await getSettings();
-  const earned = acceptedEmails.length * Number(settings?.rate ?? 0);
+  const rate = Number(deposit.rate ?? settings?.rate ?? 0);
+  const earned = acceptedEmails.length * rate;
   await supabaseFetch(`deposits?id=eq.${encodeURIComponent(id)}&status=eq.pending`, {
     method: "PATCH",
     headers: { Prefer: "return=minimal" },
@@ -843,6 +860,8 @@ async function handler(request: Request, path: string) {
     return json({ settings: { ...(safe || {}), ...(await dailyDepositStats(settings)) } });
   }
   if (request.method === "GET" && path === "deposits") return userDeposits(request);
+  if (request.method === "GET" && path.startsWith("deposits/") && path.split("/").length === 2)
+    return userDepositDetail(request, path.split("/")[1]);
   if (request.method === "POST" && path === "deposits") return createDeposit(request);
   if (request.method === "GET" && path === "admin/deposits") return userDeposits(request, true);
   if (request.method === "GET" && path === "admin/users") return adminUsers(request);

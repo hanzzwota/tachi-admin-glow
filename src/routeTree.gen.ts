@@ -20,6 +20,7 @@ import { Route as RiwayatRouteImport } from './routes/riwayat'
 import { Route as SaldoRouteImport } from './routes/saldo'
 import { Route as SetorRouteImport } from './routes/setor'
 import { Route as ApiSplatRouteImport } from './routes/api/$'
+import { Route as RiwayatNomortrxRouteImport } from './routes/riwayat.$nomortrx'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -76,6 +77,11 @@ const ApiSplatRoute = ApiSplatRouteImport.update({
   path: '/api/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RiwayatNomortrxRoute = RiwayatNomortrxRouteImport.update({
+  id: '/$nomortrx',
+  path: '/$nomortrx',
+  getParentRoute: () => RiwayatRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -85,10 +91,11 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/profil': typeof ProfilRoute
   '/register': typeof RegisterRoute
-  '/riwayat': typeof RiwayatRoute
+  '/riwayat': typeof RiwayatRouteWithChildren
   '/saldo': typeof SaldoRoute
   '/setor': typeof SetorRoute
   '/api/$': typeof ApiSplatRoute
+  '/riwayat/$nomortrx': typeof RiwayatNomortrxRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -98,10 +105,11 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/profil': typeof ProfilRoute
   '/register': typeof RegisterRoute
-  '/riwayat': typeof RiwayatRoute
+  '/riwayat': typeof RiwayatRouteWithChildren
   '/saldo': typeof SaldoRoute
   '/setor': typeof SetorRoute
   '/api/$': typeof ApiSplatRoute
+  '/riwayat/$nomortrx': typeof RiwayatNomortrxRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -112,10 +120,11 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/profil': typeof ProfilRoute
   '/register': typeof RegisterRoute
-  '/riwayat': typeof RiwayatRoute
+  '/riwayat': typeof RiwayatRouteWithChildren
   '/saldo': typeof SaldoRoute
   '/setor': typeof SetorRoute
   '/api/$': typeof ApiSplatRoute
+  '/riwayat/$nomortrx': typeof RiwayatNomortrxRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -131,6 +140,7 @@ export interface FileRouteTypes {
     | '/saldo'
     | '/setor'
     | '/api/$'
+    | '/riwayat/$nomortrx'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -144,6 +154,7 @@ export interface FileRouteTypes {
     | '/saldo'
     | '/setor'
     | '/api/$'
+    | '/riwayat/$nomortrx'
   id:
     | '__root__'
     | '/'
@@ -157,6 +168,7 @@ export interface FileRouteTypes {
     | '/saldo'
     | '/setor'
     | '/api/$'
+    | '/riwayat/$nomortrx'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -167,7 +179,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ProfilRoute: typeof ProfilRoute
   RegisterRoute: typeof RegisterRoute
-  RiwayatRoute: typeof RiwayatRoute
+  RiwayatRoute: typeof RiwayatRouteWithChildren
   SaldoRoute: typeof SaldoRoute
   SetorRoute: typeof SetorRoute
   ApiSplatRoute: typeof ApiSplatRoute
@@ -252,8 +264,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/riwayat/$nomortrx': {
+      id: '/riwayat/$nomortrx'
+      path: '/$nomortrx'
+      fullPath: '/riwayat/$nomortrx'
+      preLoaderRoute: typeof RiwayatNomortrxRouteImport
+      parentRoute: typeof RiwayatRoute
+    }
   }
 }
+
+interface RiwayatRouteChildren {
+  RiwayatNomortrxRoute: typeof RiwayatNomortrxRoute
+}
+
+const RiwayatRouteChildren: RiwayatRouteChildren = {
+  RiwayatNomortrxRoute: RiwayatNomortrxRoute,
+}
+
+const RiwayatRouteWithChildren =
+  RiwayatRoute._addFileChildren(RiwayatRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -263,7 +293,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ProfilRoute: ProfilRoute,
   RegisterRoute: RegisterRoute,
-  RiwayatRoute: RiwayatRoute,
+  RiwayatRoute: RiwayatRouteWithChildren,
   SaldoRoute: SaldoRoute,
   SetorRoute: SetorRoute,
   ApiSplatRoute: ApiSplatRoute,

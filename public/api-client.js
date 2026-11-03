@@ -329,7 +329,8 @@
         rejected: "ditolak",
       }[depositStatus];
       const checkingDeposit = ["dicek", "diperiksa", "diproses", "processing", "checking", "checked"].includes(depositStatus);
-      const jalur = String(deposit.jalur || deposit.channel || deposit.source || deposit.path || "").trim();
+      const jalur = String(deposit.jalur || deposit.channel || deposit.source || deposit.path || "PW").trim();
+      const rate = Number(deposit.rate ?? state.settings?.rate ?? 4500);
       const verifiedAt = deposit.verified_at || deposit.verifiedAt || deposit.reviewed_at || deposit.updated_at || null;
       return emails.map((email) => {
         const key = String(email).trim().toLowerCase();
@@ -346,6 +347,7 @@
           verifiedAt: status === "pending" ? null : verifiedAt,
           reason: deposit.reason || "",
           jalur,
+          rate,
         };
       });
     });
@@ -453,11 +455,50 @@
     container.innerHTML = filtered
       .map((row) => {
         const [label, badge, icon] = statusStyle[row.status];
-        const details = `<details class="mt-1 text-right"><summary class="riwayat-summary inline-flex cursor-pointer list-none items-center gap-1 text-xs font-bold text-sky-300">Lihat proses <i class="fa-solid fa-chevron-right text-[9px]"></i></summary><div class="riwayat-detail-panel mt-2 rounded-xl bg-blue-200/70 p-2.5 text-left text-[11px] leading-relaxed text-slate-200"><div>ID Setoran: <span class="font-mono">${escapeHtml(row.depositId || "-")}</span></div><div>Jalur: ${escapeHtml(row.jalur || "- ")}</div>${row.reason ? `<div class="mt-1 text-rose-600">Alasan: ${escapeHtml(row.reason)}</div>` : ""}</div></details>`;
+        const details = `<a target="_top" href="/riwayat/${encodeURIComponent(row.depositId || "")}" class="mt-1 inline-flex items-center gap-1 text-xs font-bold text-sky-300">Lihat proses <i class="fa-solid fa-chevron-right text-[9px]"></i></a>`;
         return `<article class="riwayat-card flex items-start justify-between gap-3 rounded-[22px] border border-blue-100/80 bg-blue-100/80 p-3.5 shadow-[0_7px_22px_rgba(59,130,246,0.08)]"><div class="min-w-0 flex-1"><p class="riwayat-email break-all font-mono text-[12px] font-semibold leading-relaxed text-slate-100">${escapeHtml(row.email)}</p><p class="riwayat-meta mt-1 text-[11px] leading-relaxed text-slate-300">Stor: ${escapeHtml(formatDate(row.createdAt))}</p><p class="riwayat-meta text-[11px] leading-relaxed text-slate-300">Verifikasi: ${escapeHtml(formatDate(row.verifiedAt))}</p></div><div class="flex w-[104px] shrink-0 flex-col items-end"><span class="inline-flex items-center gap-1 rounded-full ${badge} px-2.5 py-1 text-[11px] font-extrabold"><i class="fa-solid ${icon}"></i>${label}</span>${details}</div></article>`;
       })
       .join("");
   };
+  const renderHistoryDetail = (depositId) => {
+    const summary = document.getElementById("historyDetailSummary");
+    const timeline = document.getElementById("historyDetailTimeline");
+    if (!summary || !timeline) return;
+    const deposit = state.deposits.find((item) => String(item.id) === String(depositId));
+    if (!deposit) {
+      summary.innerHTML = '<div class="text-sm font-semibold text-rose-600">Transaksi tidak ditemukan.</div>';
+      timeline.innerHTML = "";
+      return;
+    }
+    const emails = Array.isArray(deposit.emails) ? deposit.emails : [];
+    const accepted = Array.isArray(deposit.accepted_emails) ? deposit.accepted_emails.length : 0;
+    const status = String(deposit.status || "pending").toLowerCase();
+    const rejected = status === "ditolak";
+    const approved = status === "diterima";
+    const rate = Number(deposit.rate ?? state.settings?.rate ?? 4500);
+    const formatDate = (value) => {
+      if (!value) return "Menunggu pemeriksaan";
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? "Menunggu pemeriksaan" : new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" }).format(date);
+    };
+    summary.innerHTML = `<div><p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Gmail</p><p class="mt-1 break-all font-mono text-sm font-bold text-slate-800">${escapeHtml(emails.join(", ") || "-")}</p></div><div class="grid grid-cols-2 gap-3"><div class="rounded-2xl bg-sky-50 p-3"><p class="text-[11px] font-semibold text-slate-400">Jalur</p><p class="mt-1 text-sm font-extrabold text-slate-800">${escapeHtml(deposit.jalur || "PW")} · ${format(rate)}</p></div><div class="rounded-2xl bg-sky-50 p-3"><p class="text-[11px] font-semibold text-slate-400">Tanggal Stor</p><p class="mt-1 text-xs font-bold text-slate-800">${formatDate(deposit.created_at)}</p></div></div><p class="text-[11px] text-slate-400">Nomor transaksi: <span class="font-mono">${escapeHtml(deposit.id)}</span></p>`;
+    const steps = [
+      { label: "Storan dikirim", detail: `Gmail berhasil dikirim ke sistem · ${formatDate(deposit.created_at)}` },
+      { label: "Pending", detail: "Gmail menunggu untuk diproses." },
+      { label: "Sedang di Cek", detail: "Gmail sedang diverifikasi manual." },
+      { label: approved ? "Disetujui" : "Ditolak", detail: approved ? `${accepted} Gmail · Saldo ${format(deposit.earned || accepted * rate)} sudah ditambahkan.` : rejected ? `Alasan: ${deposit.reason || "Ditolak admin"}` : "Menunggu keputusan admin." },
+    ];
+    const activeIndex = approved || rejected ? 3 : 2;
+    timeline.innerHTML = steps.map((step, index) => {
+      const completed = approved || index < activeIndex;
+      const active = !completed && index === activeIndex;
+      const color = rejected && index === 3 ? "bg-rose-600" : completed ? "bg-emerald-500" : active ? "bg-amber-400" : "bg-slate-300";
+      const text = rejected && index === 3 ? "text-rose-700" : completed ? "text-slate-800" : active ? "text-amber-700" : "text-slate-400";
+      const line = index < steps.length - 1 ? `<span class="absolute left-1/2 top-8 h-9 w-0.5 -translate-x-1/2 ${completed ? "bg-emerald-300" : "bg-slate-200"}"></span>` : "";
+      return `<div class="relative flex gap-3 pb-5"><div class="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${color} text-xs text-white shadow-sm"><i class="fa-solid ${completed ? "fa-check" : rejected && index === 3 ? "fa-xmark" : "fa-clock"}"></i></div><div class="min-w-0"><p class="text-sm font-extrabold ${text}">${step.label}</p><p class="mt-1 text-xs leading-relaxed text-slate-500">${step.detail}</p></div>${line}</div>`;
+    }).join("");
+  };
+  window.renderRiwayatDetail = renderHistoryDetail;
   const renderWithdrawals = () => {
     const container = document.getElementById("withdrawalHistoryContainer");
     if (!container) return;
@@ -513,6 +554,9 @@
         ? depositsResult.value.deposits
         : [];
       renderHistory();
+      const detailId = new URLSearchParams(location.search).get("nomortrx");
+      if (new URLSearchParams(location.search).get("view") === "riwayat-detail" && detailId)
+        renderHistoryDetail(detailId);
     } else {
       console.warn("Gagal memuat riwayat setoran:", depositsResult.reason);
     }
@@ -1091,7 +1135,7 @@
       const requestedView = new URLSearchParams(location.search).get("view");
       if (user) {
         applyIdentityToDom(user);
-        const availableViews = ["dashboard", "stor", "saldo", "profil", "riwayat"];
+        const availableViews = ["dashboard", "stor", "saldo", "profil", "riwayat", "riwayat-detail"];
         const initialView = availableViews.includes(requestedView) ? requestedView : "dashboard";
         window.navigateTo?.(initialView);
         await syncAppData();

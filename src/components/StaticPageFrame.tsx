@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
-export function StaticPageFrame({ view }: { view: string }) {
+export function StaticPageFrame({ view, query = "" }: { view: string; query?: string }) {
   const [frameLoaded, setFrameLoaded] = useState(false);
   const frameRef = useRef<HTMLIFrameElement>(null);
   useEffect(() => {
@@ -45,7 +45,7 @@ export function StaticPageFrame({ view }: { view: string }) {
       )}
       <iframe
         ref={frameRef}
-        src={`/app.html?view=${view}`}
+        src={`/app.html?view=${view}${query ? `&${query}` : ""}`}
         title={`tachi69gmail ${view}`}
         onLoad={() => setFrameLoaded(true)}
         className="block h-full w-full border-0"

@@ -1,1 +1,1 @@
-{"routes":[{"path":"/","title":"Home"},{"path":"/auth","title":"Login dan Registrasi"},{"path":"/dashboard","title":"Dashboard"},{"path":"/admin","title":"Admin"}]}
+{"routes":[{"path":"/","title":"Home"},{"path":"/auth","title":"Login dan Registrasi"},{"path":"/dashboard","title":"Dashboard"},{"path":"/admin","title":"Admin"},{"path":"/riwayat","title":"Riwayat"},{"path":"/riwayat/:nomortrx","title":"Detail Riwayat"}]}
