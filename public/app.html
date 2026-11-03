@@ -1704,75 +1704,72 @@
       </div>
 
       <!-- ==================== VIEW 7: RIWAYAT PAGE (image4) ==================== -->
-      <div id="view-riwayat" class="hidden flex-col gap-4 pb-24 w-full min-h-[80vh]">
-        <!-- Top App Header Bar -->
-        <header class="flex items-center justify-between py-1">
-          <div class="flex items-center gap-2.5">
-            <button
-              onclick="navigateTo('dashboard')"
-              class="w-9 h-9 rounded-xl bg-white border border-slate-200/80 flex items-center justify-center text-slate-700 shadow-sm active:scale-90 transition"
-            >
-              <i class="fa-solid fa-chevron-left text-xs"></i>
-            </button>
-            <div>
-              <h1 class="font-extrabold text-base text-slate-900 tracking-tight leading-tight">
-                Riwayat Setoran
-              </h1>
-              <p class="text-[11px] text-slate-500 font-medium">Status verifikasi Gmail kamu</p>
+      <div id="view-riwayat" class="hidden flex-col gap-0 pb-28 w-full min-h-[80vh]">
+        <header class="sticky top-0 z-40 -mt-4 w-screen border-b border-blue-100 bg-sky-50/95 shadow-sm backdrop-blur-xl" style="margin-left: calc(50% - 50vw);">
+          <div class="mx-auto flex w-full max-w-lg items-center justify-between px-5 py-3">
+            <div class="flex items-center gap-2.5">
+              <div class="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-blue-100 bg-white shadow-sm">
+                <img src="https://files.catbox.moe/p4ceks.jpg" alt="tachi69gmail logo" class="h-full w-full object-cover" onerror="this.onerror=null;this.src='https://placehold.co/40x40/2563eb/ffffff?text=T';" />
+              </div>
+              <div>
+                <h1 class="flex items-center gap-0.5 text-lg font-black leading-none tracking-tight text-slate-900">tachi<span class="text-blue-600">69gmail</span></h1>
+                <p class="mt-0.5 text-[11px] font-medium text-slate-500">Riwayat Gmail</p>
+              </div>
+            </div>
+            <a href="https://whatsapp.com/channel/0029VbDjSGJ9Gv7YqjohDw2l" target="_blank" rel="noopener noreferrer" class="flex items-center gap-1.5 rounded-xl border border-slate-200/80 bg-white px-2.5 py-1.5 text-[10px] font-semibold text-slate-700 shadow-sm">
+              <i class="fa-brands fa-whatsapp text-sm text-emerald-500"></i><span>Saluran WA</span>
+            </a>
+          </div>
+        </header>
+
+        <main class="mt-6 rounded-[28px] border border-blue-100/80 bg-white/75 p-3.5 shadow-[0_12px_36px_rgba(59,130,246,0.10)] sm:p-4">
+          <label class="relative block">
+            <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input id="riwayatSearch" type="search" oninput="renderRiwayat()" placeholder="Cari Gmail..." class="w-full rounded-2xl border border-blue-100 bg-white/80 py-3 pl-11 pr-4 text-sm text-slate-700 shadow-sm outline-none placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
+          </label>
+
+          <div class="mt-3 overflow-x-auto rounded-2xl border border-blue-100 bg-white/80 p-1 no-scrollbar">
+            <div class="flex min-w-max items-center gap-1">
+              <button data-riwayat-status="semua" onclick="filterRiwayat('semua', this)" class="riwayat-tab-btn rounded-xl bg-blue-600 px-3 py-2 text-xs font-extrabold text-white shadow-sm">Semua <span id="riwayatCountSemua"></span></button>
+              <button data-riwayat-status="pending" onclick="filterRiwayat('pending', this)" class="riwayat-tab-btn rounded-xl px-3 py-2 text-xs font-bold text-slate-600">Pending <span id="riwayatCountPending"></span></button>
+              <button data-riwayat-status="dicek" onclick="filterRiwayat('dicek', this)" class="riwayat-tab-btn rounded-xl px-3 py-2 text-xs font-bold text-slate-600">Di Cek <span id="riwayatCountDicek"></span></button>
+              <button data-riwayat-status="diterima" onclick="filterRiwayat('diterima', this)" class="riwayat-tab-btn rounded-xl px-3 py-2 text-xs font-bold text-slate-600">Diterima <span id="riwayatCountDiterima"></span></button>
+              <button data-riwayat-status="ditolak" onclick="filterRiwayat('ditolak', this)" class="riwayat-tab-btn rounded-xl px-3 py-2 text-xs font-bold text-slate-600">Ditolak <span id="riwayatCountDitolak"></span></button>
             </div>
           </div>
 
-          <button
-            onclick="logout()"
-            class="flex items-center gap-1 bg-rose-50 border border-rose-200/80 px-2.5 py-1.5 rounded-full text-xs font-semibold text-rose-600 shadow-sm active:scale-95 transition-transform"
-          >
-            <i class="fa-solid fa-right-from-bracket text-xs"></i>
-            <span>Keluar</span>
-          </button>
-        </header>
-
-        <!-- Filter Status Tab Bar -->
-        <div
-          class="sticky top-2 z-20 bg-white/95 backdrop-blur-md rounded-2xl p-1.5 card-soft-shadow border border-slate-100 flex items-center justify-between gap-1 flex-shrink-0"
-        >
-          <button
-            onclick="filterRiwayat('semua', this)"
-            class="riwayat-tab-btn flex-1 py-2 text-xs font-extrabold rounded-xl bg-blue-600 text-white transition text-center shadow-sm"
-          >
-            Semua
-          </button>
-          <button
-            onclick="filterRiwayat('diterima', this)"
-            class="riwayat-tab-btn flex-1 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 rounded-xl transition text-center"
-          >
-            Diterima
-          </button>
-          <button
-            onclick="filterRiwayat('pending', this)"
-            class="riwayat-tab-btn flex-1 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 rounded-xl transition text-center"
-          >
-            Pending
-          </button>
-          <button
-            onclick="filterRiwayat('gagal', this)"
-            class="riwayat-tab-btn flex-1 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 rounded-xl transition text-center"
-          >
-            Gagal
-          </button>
-        </div>
-
-        <!-- Content Area List -->
-        <div id="riwayatListContainer" class="flex flex-col gap-3 py-6 text-center">
-          <div
-            class="w-16 h-16 rounded-3xl bg-blue-50 text-blue-500 flex items-center justify-center text-2xl mx-auto mb-2"
-          >
-            <i class="fa-regular fa-folder-open"></i>
+          <div class="mt-2 grid grid-cols-[minmax(7rem,0.9fr)_minmax(0,1.2fr)] gap-2">
+            <label class="relative">
+              <span class="sr-only">Filter jalur</span>
+              <select id="riwayatJalurFilter" onchange="renderRiwayat()" class="w-full appearance-none rounded-2xl border border-blue-100 bg-white/85 px-3.5 py-3 pr-9 text-xs font-medium text-slate-700 outline-none focus:border-blue-400">
+                <option value="semua">Semua Jalur</option>
+              </select>
+              <i class="fa-solid fa-chevron-down pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-500"></i>
+            </label>
+            <div class="flex overflow-x-auto rounded-2xl border border-blue-100 bg-white/85 p-1 no-scrollbar">
+              <button data-riwayat-range="semua" onclick="filterRiwayatRange('semua', this)" class="riwayat-range-btn shrink-0 rounded-xl bg-blue-600 px-2.5 py-2 text-xs font-bold text-white">Semua</button>
+              <button data-riwayat-range="hari" onclick="filterRiwayatRange('hari', this)" class="riwayat-range-btn shrink-0 rounded-xl px-2.5 py-2 text-xs font-medium text-slate-600">Hari ini</button>
+              <button data-riwayat-range="7hari" onclick="filterRiwayatRange('7hari', this)" class="riwayat-range-btn shrink-0 rounded-xl px-2.5 py-2 text-xs font-medium text-slate-600">7 Hari</button>
+              <button data-riwayat-range="30hari" onclick="filterRiwayatRange('30hari', this)" class="riwayat-range-btn shrink-0 rounded-xl px-2.5 py-2 text-xs font-medium text-slate-600">30 Hari</button>
+            </div>
           </div>
-          <h3 class="text-sm font-extrabold text-slate-700">Belum ada riwayat setoran</h3>
-          <p class="text-xs text-slate-400 font-medium max-w-[220px] mx-auto">
-            Setor Gmail kamu sekarang untuk mulai mendapatkan saldo!
-          </p>
-        </div>
+
+          <details class="mt-2 rounded-2xl border border-blue-100 bg-white/80">
+            <summary class="flex cursor-pointer list-none items-center gap-2 px-3.5 py-3 text-xs font-medium text-slate-600">
+              <i class="fa-regular fa-calendar text-slate-500"></i><span>Filter Tanggal</span><i class="fa-solid fa-chevron-down ml-auto text-[10px]"></i>
+            </summary>
+            <div class="grid grid-cols-1 gap-2 border-t border-blue-50 p-3 sm:grid-cols-2">
+              <label class="text-[11px] font-semibold text-slate-500">Dari tanggal<input id="riwayatDateFrom" type="date" onchange="renderRiwayat()" class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700" /></label>
+              <label class="text-[11px] font-semibold text-slate-500">Sampai tanggal<input id="riwayatDateTo" type="date" onchange="renderRiwayat()" class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700" /></label>
+              <button type="button" onclick="clearRiwayatDateFilter()" class="text-left text-[11px] font-bold text-blue-600 sm:col-span-2">Hapus filter tanggal</button>
+            </div>
+          </details>
+
+          <h2 id="riwayatResultHeading" class="mb-2 mt-4 text-xs font-extrabold text-slate-600">Semua Gmail</h2>
+          <div id="riwayatListContainer" class="space-y-3">
+            <div class="rounded-2xl border border-blue-50 bg-white/80 p-6 text-center text-sm font-semibold text-slate-500">Memuat riwayat Gmail...</div>
+          </div>
+        </main>
       </div>
 
     </div>
@@ -2235,57 +2232,38 @@
 
       // Riwayat setoran dirender dari state API Supabase.
       window.activeRiwayatFilter = "semua";
-      function renderRiwayat(filter = "semua") {
+      window.activeRiwayatRange = "semua";
+      function renderRiwayat(filter = window.activeRiwayatFilter || "semua") {
+        window.activeRiwayatFilter = filter;
         if (window.tachiApiState && typeof window.renderRiwayat === "function") {
-          window.activeRiwayatFilter = filter;
           window.renderRiwayat(filter);
           return;
         }
-        const container = document.getElementById("riwayatListContainer");
-        if (!container || typeof db !== "function") return;
-        window.activeRiwayatFilter = filter;
-        const data = db();
+        const data = typeof db === "function" ? db() : null;
         const username = me();
-        const statusMap = { diterima: "diterima", pending: "pending", gagal: "ditolak" };
-        const records = (data.setoran || [])
-          .filter((item) => item.user === username)
-          .filter((item) => filter === "semua" || item.status === statusMap[filter])
-          .sort((a, b) => (b.date || 0) - (a.date || 0));
-        if (!records.length) {
-          const label =
-            filter === "semua" ? "Belum ada riwayat setoran" : `Belum ada setoran ${filter}`;
-          container.innerHTML = `<div class="w-16 h-16 rounded-3xl bg-blue-50 text-blue-500 flex items-center justify-center text-2xl mx-auto mb-2"><i class="fa-regular fa-folder-open"></i></div><h3 class="text-sm font-extrabold text-slate-700">${label}</h3><p class="text-xs text-slate-400 font-medium max-w-[220px] mx-auto">Setor Gmail kamu sekarang untuk mulai mendapatkan saldo!</p>`;
+        const records = (data?.setoran || []).filter((item) => item.user === username);
+        if (typeof window.renderRiwayatFromDeposits === "function") {
+          window.renderRiwayatFromDeposits(records, filter);
           return;
         }
-        const status = {
-          pending: ["Menunggu", "bg-amber-50 text-amber-700", "fa-hourglass-half"],
-          diterima: ["Diterima", "bg-emerald-50 text-emerald-700", "fa-circle-check"],
-          ditolak: ["Gagal", "bg-rose-50 text-rose-700", "fa-circle-xmark"],
-        };
-        container.classList.remove("my-auto", "py-12", "text-center");
-        container.innerHTML = records
-          .map((item) => {
-            const meta = status[item.status] || status.pending;
-            const earned = item.earned ?? (item.accepted || 0) * (data.settings.rate || 0);
-            const reason = item.reason
-              ? `<p class="text-[11px] text-rose-600 mt-2">Alasan: ${String(item.reason).replace(/[<>&]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" })[c])}</p>`
-              : "";
-            return `<article class="bg-white rounded-2xl p-4 border border-slate-100 card-soft-shadow text-left"><div class="flex items-center justify-between gap-3"><div><p class="font-mono text-xs font-bold text-slate-700">${item.id}</p><p class="text-[11px] text-slate-400 mt-1">${new Date(item.date).toLocaleString("id-ID")}</p></div><span class="${meta[1]} rounded-full px-2.5 py-1 text-[11px] font-extrabold flex items-center gap-1"><i class="fa-solid ${meta[2]}"></i>${meta[0]}</span></div><div class="mt-3 flex justify-between text-xs"><span class="text-slate-500">${item.emails.length} Gmail</span><strong class="${item.status === "diterima" ? "text-emerald-600" : "text-slate-700"}">${item.status === "diterima" ? "+" + "Rp" + earned.toLocaleString("id-ID") : item.status === "ditolak" ? "Tidak dibayar" : "Diproses"}</strong></div>${reason}</article>`;
-          })
-          .join("");
+        const container = document.getElementById("riwayatListContainer");
+        if (container)
+          container.innerHTML = '<div class="rounded-2xl bg-white/80 p-6 text-center text-sm text-slate-500">Riwayat belum dapat dimuat.</div>';
       }
-      function filterRiwayat(filter, btn) {
-        document
-          .querySelectorAll(".riwayat-tab-btn")
-          .forEach(
-            (b) =>
-              (b.className =
-                "riwayat-tab-btn flex-1 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 rounded-xl transition text-center"),
-          );
-        if (btn)
-          btn.className =
-            "riwayat-tab-btn flex-1 py-2 text-xs font-extrabold rounded-xl bg-blue-600 text-white transition text-center shadow-sm";
+      function filterRiwayat(filter) {
+        window.activeRiwayatFilter = filter;
         renderRiwayat(filter);
+      }
+      function filterRiwayatRange(range) {
+        window.activeRiwayatRange = range;
+        renderRiwayat();
+      }
+      function clearRiwayatDateFilter() {
+        const from = document.getElementById("riwayatDateFrom");
+        const to = document.getElementById("riwayatDateTo");
+        if (from) from.value = "";
+        if (to) to.value = "";
+        renderRiwayat();
       }
 
       // Dynamic Modal handlers

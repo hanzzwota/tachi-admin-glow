@@ -293,37 +293,168 @@
     if (checkerButton) checkerButton.classList.toggle("opacity-50", checkerClosed);
     if (checkerLabel) checkerLabel.textContent = checkerClosed ? "Checker (Ditutup)" : "Checker";
   };
-  const renderHistory = (filter = window.activeRiwayatFilter || "semua") => {
+  const renderHistory = (filter = window.activeRiwayatFilter || "semua", deposits = state.deposits) => {
     const container = document.getElementById("riwayatListContainer");
     if (!container) return;
-    const statusMap = { diterima: "diterima", pending: "pending", gagal: "ditolak" };
-    const records = state.deposits.filter(
-      (item) => filter === "semua" || item.status === statusMap[filter],
+    const statusLabels = {
+      semua: "Semua",
+      pending: "Pending",
+      dicek: "Di Cek",
+      diterima: "Diterima",
+      ditolak: "Ditolak",
+    };
+    const statusStyle = {
+      pending: ["Pending", "bg-amber-500 text-white", "fa-hourglass-half"],
+      dicek: ["Di Cek", "bg-blue-600 text-white", "fa-magnifying-glass"],
+      diterima: ["Diterima", "bg-emerald-600 text-white", "fa-circle-check"],
+      ditolak: ["Ditolak", "bg-rose-600 text-white", "fa-circle-xmark"],
+    };
+    const emailSet = (value) =>
+      new Set((Array.isArray(value) ? value : []).map((email) => String(email).trim().toLowerCase()));
+    const rows = deposits.flatMap((deposit) => {
+      const emails = Array.isArray(deposit.emails) ? deposit.emails : [];
+      const accepted = emailSet(deposit.accepted_emails);
+      const rejected = emailSet(deposit.rejected_emails);
+      const checking = emailSet([
+        ...(Array.isArray(deposit.checked_emails) ? deposit.checked_emails : []),
+        ...(Array.isArray(deposit.checking_emails) ? deposit.checking_emails : []),
+        ...(Array.isArray(deposit.processing_emails) ? deposit.processing_emails : []),
+      ]);
+      const hasIndividualDecisions = accepted.size > 0 || rejected.size > 0;
+      const depositStatus = String(deposit.status || "pending").toLowerCase();
+      const wholeDepositStatus = {
+        diterima: "diterima",
+        accepted: "diterima",
+        ditolak: "ditolak",
+        rejected: "ditolak",
+      }[depositStatus];
+      const checkingDeposit = ["dicek", "diperiksa", "diproses", "processing", "checking", "checked"].includes(depositStatus);
+      const jalur = String(deposit.jalur || deposit.channel || deposit.source || deposit.path || "").trim();
+      const verifiedAt = deposit.verified_at || deposit.verifiedAt || deposit.reviewed_at || deposit.updated_at || null;
+      return emails.map((email) => {
+        const key = String(email).trim().toLowerCase();
+        let status = "pending";
+        if (accepted.has(key)) status = "diterima";
+        else if (rejected.has(key)) status = "ditolak";
+        else if (checking.has(key) || checkingDeposit) status = "dicek";
+        else if (!hasIndividualDecisions && wholeDepositStatus) status = wholeDepositStatus;
+        return {
+          email: String(email),
+          status,
+          depositId: deposit.id,
+          createdAt: deposit.created_at || deposit.date,
+          verifiedAt: status === "pending" ? null : verifiedAt,
+          reason: deposit.reason || "",
+          jalur,
+        };
+      });
+    });
+    const counts = Object.fromEntries(
+      ["pending", "dicek", "diterima", "ditolak"].map((status) => [
+        status,
+        rows.filter((row) => row.status === status).length,
+      ]),
     );
-    if (!records.length) {
-      container.innerHTML = `<div class="py-12 text-center text-sm font-bold text-slate-500">Belum ada riwayat setoran</div>`;
+    const countIds = {
+      semua: rows.length,
+      pending: counts.pending,
+      dicek: counts.dicek,
+      diterima: counts.diterima,
+      ditolak: counts.ditolak,
+    };
+    Object.entries(countIds).forEach(([status, count]) => {
+      const id = {
+        semua: "riwayatCountSemua",
+        pending: "riwayatCountPending",
+        dicek: "riwayatCountDicek",
+        diterima: "riwayatCountDiterima",
+        ditolak: "riwayatCountDitolak",
+      }[status];
+      const element = document.getElementById(id);
+      if (element) element.textContent = `(${count})`;
+    });
+    document.querySelectorAll(".riwayat-tab-btn").forEach((button) => {
+      const active = button.dataset.riwayatStatus === filter;
+      button.className = active
+        ? "riwayat-tab-btn rounded-xl bg-blue-600 px-3 py-2 text-xs font-extrabold text-white shadow-sm"
+        : "riwayat-tab-btn rounded-xl px-3 py-2 text-xs font-bold text-slate-600";
+    });
+    const jalurSelect = document.getElementById("riwayatJalurFilter");
+    const selectedJalur = jalurSelect?.value || "semua";
+    if (jalurSelect) {
+      const jalurList = [...new Set(rows.map((row) => row.jalur).filter(Boolean))].sort((a, b) =>
+        a.localeCompare(b, "id"),
+      );
+      jalurSelect.innerHTML = `<option value="semua">Semua Jalur</option>${jalurList
+        .map((jalur) => `<option value="${escapeHtml(jalur)}">${escapeHtml(jalur)}</option>`)
+        .join("")}`;
+      jalurSelect.value = jalurList.includes(selectedJalur) ? selectedJalur : "semua";
+    }
+    const range = window.activeRiwayatRange || "semua";
+    document.querySelectorAll(".riwayat-range-btn").forEach((button) => {
+      const active = button.dataset.riwayatRange === range;
+      button.className = active
+        ? "riwayat-range-btn rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white"
+        : "riwayat-range-btn rounded-xl px-3 py-2 text-xs font-medium text-slate-600";
+    });
+    const search = (document.getElementById("riwayatSearch")?.value || "").trim().toLowerCase();
+    const dateFrom = document.getElementById("riwayatDateFrom")?.value || "";
+    const dateTo = document.getElementById("riwayatDateTo")?.value || "";
+    const localDate = (value) => {
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return "";
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    };
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const daysBack = range === "7hari" ? 6 : range === "30hari" ? 29 : 0;
+    const rangeStart = new Date(today);
+    rangeStart.setDate(rangeStart.getDate() - daysBack);
+    const rangeStartText = localDate(rangeStart);
+    const todayText = localDate(today);
+    const filtered = rows
+      .filter((row) => filter === "semua" || row.status === filter)
+      .filter((row) => selectedJalur === "semua" || row.jalur === selectedJalur)
+      .filter((row) => {
+        const emailText = `${row.email} ${row.depositId || ""} ${row.reason}`.toLowerCase();
+        return !search || emailText.includes(search);
+      })
+      .filter((row) => {
+        const dateText = localDate(row.createdAt);
+        if (!dateText) return false;
+        if (dateFrom && dateText < dateFrom) return false;
+        if (dateTo && dateText > dateTo) return false;
+        if (range === "hari" && dateText !== todayText) return false;
+        if ((range === "7hari" || range === "30hari") && dateText < rangeStartText) return false;
+        return true;
+      })
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const heading = document.getElementById("riwayatResultHeading");
+    if (heading) heading.textContent = `${statusLabels[filter] || "Semua"} (${filtered.length})`;
+    if (!filtered.length) {
+      const hasHistory = rows.length > 0;
+      container.innerHTML = `<div class="rounded-2xl border border-blue-50 bg-white/80 px-4 py-10 text-center"><span class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-lg text-blue-500"><i class="fa-regular fa-folder-open"></i></span><p class="mt-3 text-sm font-extrabold text-slate-700">${hasHistory ? "Tidak ada Gmail yang cocok" : "Belum ada riwayat Gmail"}</p><p class="mt-1 text-xs text-slate-500">${hasHistory ? "Coba ubah kata kunci atau filter yang dipilih." : "Gmail yang kamu setor akan muncul di sini."}</p></div>`;
       return;
     }
-    const labels = {
-      pending: ["Menunggu", "bg-amber-50 text-amber-700"],
-      diterima: ["Diterima", "bg-emerald-50 text-emerald-700"],
-      ditolak: ["Gagal", "bg-rose-50 text-rose-700"],
+    const formatDate = (value) => {
+      if (!value) return "Menunggu pemeriksaan";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return "Menunggu pemeriksaan";
+      return new Intl.DateTimeFormat("id-ID", {
+        day: "numeric",
+        month: "numeric",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hourCycle: "h23",
+      }).format(date);
     };
-    container.innerHTML = records
-      .map((item) => {
-        const [label, style] = labels[item.status] || labels.pending;
-        const earned = Number(item.earned || 0);
-        const allEmails = Array.isArray(item.emails) ? item.emails : [];
-        const accepted = Array.isArray(item.accepted_emails) ? item.accepted_emails : [];
-        const rejected = Array.isArray(item.rejected_emails) ? item.rejected_emails : [];
-        const emailList = (values) =>
-          values
-            .map(
-              (email) =>
-                `<div class="break-all py-0.5">${String(email).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char])}</div>`,
-            )
-            .join("");
-        return `<article class="bg-white rounded-2xl p-4 border border-slate-100 card-soft-shadow text-left"><div class="flex items-center justify-between gap-3"><div><p class="font-mono text-xs font-bold text-slate-700">${item.id}</p><p class="text-[11px] text-slate-400 mt-1">${new Date(item.created_at).toLocaleString("id-ID")}</p></div><span class="${style} rounded-full px-2.5 py-1 text-[11px] font-extrabold">${label}</span></div><div class="mt-3 flex justify-between text-xs"><span class="text-slate-500">${allEmails.length} Gmail disetor</span><strong>${item.status === "diterima" ? `+${format(earned)}` : item.status === "ditolak" ? "Tidak dibayar" : "Diproses"}</strong></div>${item.status === "pending" ? `<div class="mt-3 rounded-lg bg-slate-50 p-2 text-[11px] text-slate-700"><b>Email yang kamu setorkan:</b><div class="mt-1 max-h-48 overflow-y-auto font-mono">${emailList(allEmails)}</div></div>` : ""}${accepted.length ? `<div class="mt-3 rounded-lg bg-emerald-50 p-2 text-[11px] text-emerald-700"><b>Diterima:</b><div class="mt-1 max-h-40 overflow-y-auto font-mono">${emailList(accepted)}</div></div>` : ""}${rejected.length ? `<div class="mt-2 rounded-lg bg-rose-50 p-2 text-[11px] text-rose-700"><b>Ditolak:</b><div class="mt-1 max-h-40 overflow-y-auto font-mono">${emailList(rejected)}</div></div>` : ""}${item.reason ? `<p class="text-[11px] text-rose-600 mt-2">Alasan: ${item.reason}</p>` : ""}</article>`;
+    container.innerHTML = filtered
+      .map((row) => {
+        const [label, badge, icon] = statusStyle[row.status];
+        const details = `<details class="mt-1 text-right"><summary class="inline-flex cursor-pointer list-none items-center gap-1 text-xs font-bold text-blue-600">Lihat proses <i class="fa-solid fa-chevron-right text-[9px]"></i></summary><div class="mt-2 rounded-xl bg-slate-50 p-2.5 text-left text-[11px] leading-relaxed text-slate-600"><div>ID Setoran: <span class="font-mono">${escapeHtml(row.depositId || "-")}</span></div><div>Jalur: ${escapeHtml(row.jalur || "- ")}</div>${row.reason ? `<div class="mt-1 text-rose-600">Alasan: ${escapeHtml(row.reason)}</div>` : ""}</div></details>`;
+        return `<article class="flex items-start justify-between gap-3 rounded-[22px] border border-blue-50 bg-white/95 p-3.5 shadow-[0_7px_22px_rgba(59,130,246,0.08)]"><div class="min-w-0 flex-1"><p class="break-all font-mono text-[12px] font-semibold leading-relaxed text-slate-800">${escapeHtml(row.email)}</p><p class="mt-1 text-[11px] leading-relaxed text-slate-500">Stor: ${escapeHtml(formatDate(row.createdAt))}</p><p class="text-[11px] leading-relaxed text-slate-500">Verifikasi: ${escapeHtml(formatDate(row.verifiedAt))}</p></div><div class="flex w-[104px] shrink-0 flex-col items-end"><span class="inline-flex items-center gap-1 rounded-full ${badge} px-2.5 py-1 text-[11px] font-extrabold"><i class="fa-solid ${icon}"></i>${label}</span>${details}</div></article>`;
       })
       .join("");
   };
@@ -344,6 +475,8 @@
       .join("");
   };
   window.renderRiwayat = renderHistory;
+  window.renderRiwayatFromDeposits = (deposits, filter = window.activeRiwayatFilter || "semua") =>
+    renderHistory(filter, deposits);
   async function syncAppData() {
     const { user } = await api("auth/me");
     if (!user) return null;
