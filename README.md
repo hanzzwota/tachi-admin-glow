@@ -24,7 +24,7 @@ Buatkan aplikasi Dashboard Admin berbasis Web (Single Page Application / Full-St
 
 - **Branding & Logo:** 
 
-  - Logo URL: https://kommodo.ai/i/qvuWWap5J4PBsrqtvYRZ (3D Emblem, Statis / Animasi Muter Dimatikan).
+  - Logo URL: https://nearby-plum-zrd7jt5l.edgeone.dev/ (3D Emblem, Statis / Animasi Muter Dimatikan).
 
   - Nama Brand: "tachi69gmail Admin Console".
 
