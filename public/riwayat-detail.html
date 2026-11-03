@@ -74,9 +74,9 @@
       timeline.innerHTML = steps.map((step, index) => {
         const done = approved || index < active;
         const current = !done && index === active;
-        const rejectedStep = rejected && index === 3;
+        const rejectedStep = rejected && index === 2;
         const cls = rejectedStep ? 'rejected' : done ? 'done' : current ? 'active' : 'pending';
-        const icon = done ? '✓' : rejectedStep ? '×' : '◷';
+        const icon = rejectedStep ? '×' : done ? '✓' : '◷';
         const line = index < steps.length - 1 ? '<span class="line"></span>' : '';
         return `<div class="step ${cls}"><div class="dot-wrap"><span class="dot">${icon}</span>${line}</div><div class="content"><h2>${step[0]}</h2><p class="${rejectedStep ? 'reason' : ''}">${safe(step[1])}</p></div></div>`;
       }).join('');
