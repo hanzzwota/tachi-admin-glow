@@ -8,6 +8,10 @@ export const Route = createFileRoute("/riwayat/$nomortrx")({
 function HistoryDetailPage() {
   const { nomortrx } = Route.useParams();
   return (
-    <StaticPageFrame view="riwayat-detail" query={`nomortrx=${encodeURIComponent(nomortrx)}`} />
+    <StaticPageFrame
+      view="riwayat-detail"
+      page="riwayat-detail.html"
+      query={`nomortrx=${encodeURIComponent(nomortrx)}`}
+    />
   );
 }
