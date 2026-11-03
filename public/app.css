@@ -389,3 +389,21 @@ body {
       body.dark-mode .nav-stor-button span {
         color: #94a3b8;
       }
+
+/* Lightweight wallet mark used by the dashboard balance card. */
+.saldo-wallet-mark {
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  color: #dbeafe;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: inset 0 1px 8px rgba(255, 255, 255, 0.08);
+}
+
+.saldo-wallet-mark i {
+  font-size: 1.1rem;
+}

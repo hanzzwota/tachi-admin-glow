@@ -96,18 +96,8 @@
                 <i class="fa-solid fa-wallet text-blue-200"></i>
                 <span>SALDO ANDA</span>
               </div>
-              <div
-                class="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner overflow-hidden"
-              >
-                <img
-                  src="https://files.catbox.moe/p4ceks.jpg"
-                  alt="tachi logo"
-                  class="w-full h-full object-cover animate-logo-spin"
-                  onerror="
-                    this.onerror = null;
-                    this.src = 'https://placehold.co/40x40/2563eb/ffffff?text=T';
-                  "
-                />
+              <div class="saldo-wallet-mark" aria-label="Dompet saldo">
+                <i class="fa-solid fa-wallet" aria-hidden="true"></i>
               </div>
             </div>
 
@@ -119,14 +109,14 @@
 
             <div class="flex items-center gap-3 mt-5">
               <button
-                onclick="navigateTo('saldo')"
+                onclick="showToast('info', 'Saldo tersedia di dashboard utama.')"
                 class="flex-1 bg-white text-blue-700 font-bold text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-md active:scale-95 transition duration-150"
               >
                 <i class="fa-solid fa-circle-arrow-down text-sm"></i>
                 <span id="btnTarikSaldoText">Isi Terlebih Dahulu</span>
               </button>
               <button
-                onclick="navigateTo('riwayat')"
+                onclick="showToast('info', 'Riwayat akan tersedia di dashboard utama.')"
                 class="flex-1 bg-blue-500/30 hover:bg-blue-500/40 border border-white/20 text-white font-bold text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 backdrop-blur-sm active:scale-95 transition duration-150"
               >
                 <i class="fa-solid fa-clock-rotate-left text-sm"></i>
@@ -201,27 +191,6 @@
             Menu Utama
           </h2>
           <div class="grid grid-cols-5 gap-2">
-            <button onclick="navigateTo('stor')" class="flex flex-col items-center gap-1.5 group">
-              <div
-                class="w-12 h-12 rounded-2xl icon-soft-box flex items-center justify-center text-white text-lg group-active:scale-95 transition-transform"
-              >
-                <i class="fa-solid fa-paper-plane"></i>
-              </div>
-              <span class="text-xs font-semibold text-slate-700">Stor</span>
-            </button>
-
-            <button
-              onclick="navigateTo('riwayat')"
-              class="flex flex-col items-center gap-1.5 group"
-            >
-              <div
-                class="w-12 h-12 rounded-2xl icon-soft-box flex items-center justify-center text-white text-lg group-active:scale-95 transition-transform"
-              >
-                <i class="fa-solid fa-clock-rotate-left"></i>
-              </div>
-              <span class="text-xs font-semibold text-slate-700">Riwayat</span>
-            </button>
-
             <button
               id="checkerFeatureButton"
               onclick="openChecker()"
@@ -235,15 +204,6 @@
               <span id="checkerFeatureLabel" class="text-xs font-semibold text-slate-700"
                 >Checker</span
               >
-            </button>
-
-            <button onclick="navigateTo('saldo')" class="flex flex-col items-center gap-1.5 group">
-              <div
-                class="w-12 h-12 rounded-2xl icon-soft-box flex items-center justify-center text-white text-lg group-active:scale-95 transition-transform"
-              >
-                <i class="fa-solid fa-wallet"></i>
-              </div>
-              <span class="text-xs font-semibold text-slate-700">Saldo</span>
             </button>
 
             <button onclick="openRulesToday()" class="flex flex-col items-center gap-1.5 group">

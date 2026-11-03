@@ -10,6 +10,7 @@ import {
   type ErrorComponentProps,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+import { Home } from "lucide-react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -72,13 +73,7 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
   );
 }
 
-const navItems = [
-  { to: "/dashboard", label: "Beranda", icon: "⌂" },
-  { to: "/riwayat", label: "Riwayat", icon: "◷" },
-  { to: "/setor", label: "Setor", icon: "↑" },
-  { to: "/saldo", label: "Saldo", icon: "◇" },
-  { to: "/profil", label: "Profil", icon: "○" },
-] as const;
+const navItems = [{ to: "/dashboard", label: "Beranda", Icon: Home }] as const;
 
 function AppNavigation() {
   const { pathname } = useLocation();
@@ -91,6 +86,7 @@ function AppNavigation() {
     <nav className="app-navigation" aria-label="Navigasi utama">
       {navItems.map((item) => {
         const active = activePath === item.to;
+        const Icon = item.Icon;
         return (
           <Link
             key={item.to}
@@ -98,9 +94,11 @@ function AppNavigation() {
             className={`app-navigation-item${active ? " is-active" : ""}`}
             aria-current={active ? "page" : undefined}
           >
-            <span className="app-navigation-icon" aria-hidden="true">
-              {item.icon}
-            </span>
+            <Icon
+              className="app-navigation-icon"
+              strokeWidth={active ? 2.8 : 2.2}
+              aria-hidden="true"
+            />
             <span>{item.label}</span>
           </Link>
         );

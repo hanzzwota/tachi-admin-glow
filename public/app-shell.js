@@ -1,16 +1,6 @@
-/* Compatibility navigation for the standalone page documents. */
+/* Compatibility navigation for the dashboard-only application. */
 (() => {
-  const routes = {
-    login: "/login",
-    register: "/register",
-    dashboard: "/dashboard",
-    stor: "/setor",
-    setor: "/setor",
-    saldo: "/saldo",
-    profil: "/profil",
-    riwayat: "/riwayat",
-    admin: "/admin",
-  };
+  const routes = { dashboard: "/dashboard", admin: "/admin" };
 
   function navigate(view) {
     const path = routes[view];
@@ -29,7 +19,5 @@
   }
 
   window.navigateTo = navigate;
-  // The persistent React shell owns the navigation bar. The mount point is
-  // intentionally removed so legacy pages do not render a second nav.
   document.getElementById("appMainNavMount")?.remove();
 })();

@@ -493,7 +493,7 @@
     input.value = "";
     showToast("success", `${emails.length} Gmail berhasil disetor dan menunggu validasi admin!`);
     syncAppData().catch((error) => console.error("Gagal memuat ulang data:", error));
-    setTimeout(() => window.navigateTo?.("riwayat"), 300);
+    setTimeout(() => window.navigateTo?.("dashboard"), 300);
   };
   window.copyCampaignPassword = async () => {
     const value = state.settings?.campaign_password || "";
@@ -633,26 +633,14 @@
     try {
       const { user } = await api("auth/me");
       const pathViews = {
-        "/login": "login",
-        "/pages/login.html": "login",
-        "/register": "register",
-        "/pages/register.html": "register",
         "/dashboard": "dashboard",
         "/pages/dashboard.html": "dashboard",
-        "/setor": "stor",
-        "/pages/setor.html": "stor",
-        "/saldo": "saldo",
-        "/pages/saldo.html": "saldo",
-        "/profil": "profil",
-        "/pages/profil.html": "profil",
-        "/riwayat": "riwayat",
-        "/pages/riwayat.html": "riwayat",
       };
       const requestedView =
         new URLSearchParams(location.search).get("view") || pathViews[location.pathname] || null;
       if (user) {
         applyIdentityToDom(user);
-        const availableViews = ["dashboard", "stor", "saldo", "profil", "riwayat"];
+        const availableViews = ["dashboard"];
         const initialView = availableViews.includes(requestedView) ? requestedView : "dashboard";
         window.navigateTo?.(initialView);
         await syncAppData();

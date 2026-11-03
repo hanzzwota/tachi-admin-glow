@@ -36,11 +36,11 @@ describe("standalone page navigation", () => {
     expect(assigned).toEqual([]);
   });
 
-  it("maps the legacy stor view to the standalone setor route", () => {
+  it("navigates to the protected admin route without a document reload", () => {
     const { navigateTo, targetWindow } = loadNavigation("https://app.test/dashboard");
 
-    expect(navigateTo("stor")).toBe(true);
-    expect(targetWindow.location.pathname).toBe("/setor");
+    expect(navigateTo("admin")).toBe(true);
+    expect(targetWindow.location.pathname).toBe("/admin");
   });
 
   it("ignores unknown views", () => {

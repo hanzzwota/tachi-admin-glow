@@ -178,10 +178,7 @@
 
       // View Navigation Handler
       function navigateTo(viewName) {
-        const routeByView = {
-          login: "/login", register: "/register", dashboard: "/dashboard",
-          stor: "/setor", setor: "/setor", saldo: "/saldo", profil: "/profil", riwayat: "/riwayat",
-        };
+        const routeByView = { dashboard: "/dashboard", admin: "/admin" };
         const route = routeByView[viewName];
         if (!route) return false;
         const target = window.top || window;
