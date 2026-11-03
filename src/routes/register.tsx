@@ -1,5 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { StaticPageFrame } from "../components/StaticPageFrame";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+
 export const Route = createFileRoute("/register")({
-  component: () => <StaticPageFrame view="register" />,
+  beforeLoad: () => {
+    throw redirect({ to: "/auth", search: { view: "register" }, replace: true });
+  },
 });

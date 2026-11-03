@@ -1,5 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { StaticPageFrame } from "../components/StaticPageFrame";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+
 export const Route = createFileRoute("/profil")({
-  component: () => <StaticPageFrame view="profil" />,
+  beforeLoad: () => {
+    throw redirect({ to: "/dashboard", replace: true });
+  },
 });

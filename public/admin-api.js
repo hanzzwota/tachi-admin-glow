@@ -38,16 +38,19 @@
   };
   const paymentMethods = ["DANA", "OVO", "GoPay", "ShopeePay", "BCA", "BRI", "Mandiri"];
   const FEE_STEP = 1000;
-  const FIXED_MIN_WITHDRAWAL = 15000;
+  const FIXED_MIN_WITHDRAWAL = 4000;
   const normalizeFee = (value) => {
     const amount = Number(value);
     if (!Number.isFinite(amount) || amount <= 0) return 0;
     return Math.round(amount / FEE_STEP) * FEE_STEP;
   };
   const minWithdrawalFor = (bank, settings) =>
-    Number(
-      settings?.withdrawal_minimums?.[bank] ??
-        (bank === "DANA" ? Number(settings?.min_withdrawal || 0) : FIXED_MIN_WITHDRAWAL),
+    Math.max(
+      FIXED_MIN_WITHDRAWAL,
+      Number(
+        settings?.withdrawal_minimums?.[bank] ??
+          (bank === "DANA" ? Number(settings?.min_withdrawal || 0) : FIXED_MIN_WITHDRAWAL),
+      ),
     );
   const paymentKey = (value) =>
     String(value)
@@ -88,7 +91,7 @@
   const normalize = (settings, deposits, users, withdrawals, paymentFeesOverride = null) => ({
     settings: {
       rate: Number(settings?.rate || 0),
-      minTarik: Number(settings?.min_withdrawal || 0),
+      minTarik: Math.max(FIXED_MIN_WITHDRAWAL, Number(settings?.min_withdrawal || 0)),
       paymentMode: settings?.payment_mode === "dana_only" ? "dana_only" : "all",
       fee: normalizeFee(settings?.fee),
       paymentFees: normalizePaymentFees(
@@ -636,7 +639,7 @@
     try {
       await api("auth/logout", { method: "POST" });
       showToast("success", "Logout berhasil. Mengalihkan ke halaman login.");
-      setTimeout(() => window.top.location.assign("/login"), 350);
+      setTimeout(() => window.top.location.assign("/auth"), 350);
     } catch (error) {
       console.error("Admin Logout Error:", error);
       showToast("error", `Logout admin gagal: ${errorText(error, "periksa koneksi lalu coba lagi.")}`);
@@ -646,7 +649,7 @@
     try {
       const { user } = await api("auth/me");
       if (!user || user.role !== "admin") {
-        window.top.location.replace("/login");
+        window.top.location.replace("/auth");
         return;
       }
       await refresh();

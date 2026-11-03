@@ -35,7 +35,7 @@ function canonicalPaymentFees(value: unknown, fallback: number) {
 }
 // Fee selalu kelipatan Rp1.000 (boleh 0 dan di bawah Rp10.000).
 const FEE_STEP = 1000;
-const FIXED_MIN_WITHDRAWAL = 15000;
+const FIXED_MIN_WITHDRAWAL = 4000;
 function normalizeFee(value: unknown) {
   const amount = Number(value);
   if (!Number.isFinite(amount) || amount <= 0) return 0;
@@ -45,9 +45,9 @@ function isValidFee(value: unknown) {
   const amount = Number(value ?? 0);
   return Number.isFinite(amount) && amount >= 0 && amount % FEE_STEP === 0;
 }
-// DANA mengikuti konfigurasi admin; metode lain wajib minimal Rp15.000.
+// Semua metode minimal Rp4.000; DANA dapat memakai batas admin yang lebih tinggi.
 function withdrawalMinimums(adminMin: unknown) {
-  const dana = Math.max(0, Math.floor(Number(adminMin ?? 0)) || 0);
+  const dana = Math.max(FIXED_MIN_WITHDRAWAL, Math.floor(Number(adminMin ?? 0)) || 0);
   return Object.fromEntries(
     paymentMethods.map((method) => [method, method === "DANA" ? dana : FIXED_MIN_WITHDRAWAL]),
   ) as Record<string, number>;
@@ -413,7 +413,10 @@ async function updateSettings(request: Request) {
     );
   const allowed = {
     rate: numberOrZero(payload.rate ?? current?.rate),
-    min_withdrawal: numberOrZero(payload.minWithdrawal ?? current?.min_withdrawal),
+    min_withdrawal: Math.max(
+      FIXED_MIN_WITHDRAWAL,
+      numberOrZero(payload.minWithdrawal ?? current?.min_withdrawal),
+    ),
     fee: normalizeFee(payload.fee ?? current?.fee),
     payment_fees: canonicalPaymentFees(
       payload.paymentFees ?? current?.payment_fees,
@@ -672,7 +675,9 @@ async function createWithdrawal(request: Request) {
       { error: `Minimal penarikan ${bank} Rp${minimum.toLocaleString("id-ID")}` },
       { status: 400 },
     );
-  if (amount + fee > balance) return json({ error: "Saldo tidak cukup" }, { status: 400 });
+  if (fee >= amount)
+    return json({ error: "Fee harus lebih kecil daripada nominal penarikan" }, { status: 400 });
+  if (amount > balance) return json({ error: "Saldo tidak cukup" }, { status: 400 });
   if (!user.wallet_number || !user.wallet_name)
     return json({ error: "Isi data rekening terlebih dahulu" }, { status: 400 });
   if (payload.confirmWallet !== true)
@@ -682,14 +687,14 @@ async function createWithdrawal(request: Request) {
     {
       method: "PATCH",
       headers: { Prefer: "return=representation" },
-      body: JSON.stringify({ balance: balance - amount - fee }),
+      body: JSON.stringify({ balance: balance - amount }),
     },
   );
   if (!updatedProfiles.length)
     return json({ error: "Saldo berubah, silakan muat ulang lalu coba lagi" }, { status: 409 });
   const restoreBalance = () =>
     supabaseFetch(
-      `profiles?id=eq.${encodeURIComponent(String(user.id))}&balance=eq.${encodeURIComponent(String(balance - amount - fee))}`,
+      `profiles?id=eq.${encodeURIComponent(String(user.id))}&balance=eq.${encodeURIComponent(String(balance - amount))}`,
       {
         method: "PATCH",
         headers: { Prefer: "return=minimal" },
@@ -705,6 +710,7 @@ async function createWithdrawal(request: Request) {
         user_id: user.id,
         amount,
         fee,
+        fee_deducted_from_amount: true,
         wallet_bank: bank,
         wallet_name: user.wallet_name,
         wallet_number: user.wallet_number,
@@ -728,6 +734,7 @@ async function createWithdrawal(request: Request) {
           user_id: user.id,
           amount,
           fee,
+          fee_deducted_from_amount: true,
           wallet_name: user.wallet_name,
           wallet_number: user.wallet_number,
           status: "pending",
@@ -766,7 +773,8 @@ async function processWithdrawal(request: Request, id: string, status: "selesai"
   const delta =
     status === "selesai"
       ? Number(withdrawal.amount ?? 0)
-      : Number(withdrawal.amount ?? 0) + Number(withdrawal.fee ?? 0);
+      : Number(withdrawal.amount ?? 0) +
+        (withdrawal.fee_deducted_from_amount === true ? 0 : Number(withdrawal.fee ?? 0));
   await supabaseFetch(`profiles?id=eq.${encodeURIComponent(String(withdrawal.user_id))}`, {
     method: "PATCH",
     headers: { Prefer: "return=minimal" },

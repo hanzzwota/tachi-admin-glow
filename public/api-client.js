@@ -47,16 +47,19 @@
   const format = (value) => `Rp${Number(value || 0).toLocaleString("id-ID")}`;
   const paymentMethods = ["DANA", "OVO", "GoPay", "ShopeePay", "BCA", "BRI", "Mandiri"];
   const FEE_STEP = 1000;
-  const FIXED_MIN_WITHDRAWAL = 15000;
+  const FIXED_MIN_WITHDRAWAL = 4000;
   const normalizeFee = (value) => {
     const amount = Number(value);
     if (!Number.isFinite(amount) || amount <= 0) return 0;
     return Math.round(amount / FEE_STEP) * FEE_STEP;
   };
   const minWithdrawalFor = (bank, settings) =>
-    Number(
-      settings?.withdrawal_minimums?.[bank] ??
-        (bank === "DANA" ? Number(settings?.min_withdrawal || 0) : FIXED_MIN_WITHDRAWAL),
+    Math.max(
+      FIXED_MIN_WITHDRAWAL,
+      Number(
+        settings?.withdrawal_minimums?.[bank] ??
+          (bank === "DANA" ? Number(settings?.min_withdrawal || 0) : FIXED_MIN_WITHDRAWAL),
+      ),
     );
   const paymentKey = (value) =>
     String(value)
@@ -79,7 +82,7 @@
     return Math.max(0, Number(entry?.[1] ?? fallback));
   };
   const minimumFor = (method, configured = 4000) =>
-    String(method || "DANA") === "DANA" ? Math.max(4000, configured) : Math.max(15000, configured);
+    Math.max(FIXED_MIN_WITHDRAWAL, Number(configured) || 0);
   const escapeHtml = (value) =>
     String(value ?? "").replace(
       /[&<>"']/g,
@@ -169,7 +172,7 @@
     const min = minWithdrawalFor(currentBank, settings);
     const minInfo = document.getElementById("withdrawMinInfo");
     if (minInfo)
-      minInfo.textContent = `Minimal penarikan ${currentBank} ${format(min)}. DANA mengikuti setelan admin, OVO/GoPay/ShopeePay/BCA/BRI/Mandiri minimal ${format(FIXED_MIN_WITHDRAWAL)}.`;
+      minInfo.textContent = `Minimal penarikan ${currentBank} ${format(min)}. Semua metode minimal Rp4.000; DANA mengikuti setelan admin jika lebih tinggi.`;
     const amount = document.getElementById("withdrawalAmountInput");
     if (amount) {
       amount.placeholder = `Minimal penarikan ${format(min)}`;
@@ -896,8 +899,12 @@
       showToast("warning", `⚠️ Minimal penarikan ${bank} adalah ${format(minimum)}.`);
       return;
     }
-    if (amount + fee > balance) {
-      showToast("warning", "⚠️ Saldo tidak cukup untuk nominal penarikan dan fee.");
+    if (fee >= amount) {
+      showToast("warning", "⚠️ Fee harus lebih kecil daripada nominal penarikan.");
+      return;
+    }
+    if (amount > balance) {
+      showToast("warning", "⚠️ Saldo tidak cukup untuk nominal penarikan.");
       return;
     }
     const modalBody = document.getElementById("modalBody");
@@ -905,7 +912,8 @@
     const modal = document.getElementById("appModal");
     if (!modalBody || !modalTitle || !modal) return;
     modalTitle.textContent = "Konfirmasi Tarik";
-    modalBody.innerHTML = `<div class="space-y-2 text-xs"><div class="flex justify-between"><span>Metode payment</span><b>${escapeHtml(bank)}</b></div><div class="flex justify-between"><span>Nomor payment</span><b>${escapeHtml(number)}</b></div><div class="flex justify-between"><span>Nama pemilik</span><b>${escapeHtml(wallet.name)}</b></div><div class="flex justify-between"><span>Nominal penarikan</span><b>${format(amount)}</b></div><div class="flex justify-between"><span>Fee payment</span><b>${format(fee)}</b></div><div class="flex justify-between border-t pt-2"><span>Total saldo terpotong</span><b>${format(amount + fee)}</b></div><div class="flex justify-between"><span>Saldo bersih diterima</span><b>${format(amount)}</b></div><div class="rounded-xl bg-slate-100 p-3 text-slate-600">Pastikan nomor payment sudah benar. Jika Nomor Salah/Tidak Sesuai Dengan Nomor Payment Anda Admin Tidak Berhak Bertanggung Jawab.</div><div class="flex gap-2 pt-2"><button type="button" class="flex-1 rounded-xl border border-slate-200 px-3 py-2 font-bold" onclick="closeModal()">Kembali/Edit Nomor</button><button type="button" class="flex-1 rounded-xl bg-blue-600 px-3 py-2 font-bold text-white" id="confirmWithdrawalButton">Konfirmasi Tarik</button></div></div>`;
+    const netAmount = amount - fee;
+    modalBody.innerHTML = `<div class="space-y-2 text-xs"><div class="flex justify-between"><span>Metode payment</span><b>${escapeHtml(bank)}</b></div><div class="flex justify-between"><span>Nomor payment</span><b>${escapeHtml(number)}</b></div><div class="flex justify-between"><span>Nama pemilik</span><b>${escapeHtml(wallet.name)}</b></div><div class="flex justify-between"><span>Nominal penarikan</span><b>${format(amount)}</b></div><div class="flex justify-between"><span>Fee payment</span><b>−${format(fee)}</b></div><div class="flex justify-between border-t pt-2"><span>Total saldo terpotong</span><b>${format(amount)}</b></div><div class="flex justify-between"><span>Saldo bersih diterima</span><b>${format(netAmount)}</b></div><div class="rounded-xl bg-slate-100 p-3 text-slate-600">Pastikan nomor payment sudah benar. Jika Nomor Salah/Tidak Sesuai Dengan Nomor Payment Anda Admin Tidak Berhak Bertanggung Jawab.</div><div class="flex gap-2 pt-2"><button type="button" class="flex-1 rounded-xl border border-slate-200 px-3 py-2 font-bold" onclick="closeModal()">Kembali/Edit Nomor</button><button type="button" class="flex-1 rounded-xl bg-blue-600 px-3 py-2 font-bold text-white" id="confirmWithdrawalButton">Konfirmasi Tarik</button></div></div>`;
     modal.classList.remove("hidden");
     document.getElementById("confirmWithdrawalButton")?.addEventListener("click", async () => {
       const button = document.getElementById("confirmWithdrawalButton");
@@ -932,13 +940,19 @@
     try {
       await api("auth/logout", { method: "POST" });
       showToast("success", "Logout berhasil. Mengalihkan ke halaman login.");
-      setTimeout(() => window.top.location.assign("/login"), 350);
+      setTimeout(() => window.top.location.assign("/auth"), 350);
     } catch (error) {
       console.error("Logout Error:", error);
       showToast("error", `Logout gagal: ${errorText(error, "periksa koneksi lalu coba lagi.")}`);
     }
   };
   window.addEventListener("DOMContentLoaded", async () => {
+    const loadingScreen = document.getElementById("appLoadingScreen");
+    const finishInitialLoad = () => {
+      loadingScreen?.classList.add("hidden");
+      if (window.parent !== window)
+        window.parent.postMessage({ type: "tachi-app-ready" }, window.location.origin);
+    };
     try {
       const { user } = await api("auth/me");
       const requestedView = new URLSearchParams(location.search).get("view");
@@ -948,6 +962,7 @@
         const initialView = availableViews.includes(requestedView) ? requestedView : "dashboard";
         window.navigateTo?.(initialView);
         await syncAppData();
+        finishInitialLoad();
         window.setInterval(() => {
           if (document.visibilityState === "visible") syncAppData().catch(() => {});
         }, 20000);
@@ -958,11 +973,15 @@
         window.addEventListener("focus", refreshWhenVisible);
         window.addEventListener("pageshow", refreshWhenVisible);
       } else if (!["login", "register"].includes(requestedView || "login")) {
-        window.top.location.replace("/login");
+        window.top.location.replace("/auth");
+        return;
+      } else {
+        finishInitialLoad();
       }
     } catch (error) {
       console.error("Gagal memuat sesi akun:", error);
       showToast("error", `Gagal memuat sesi akun: ${errorText(error, "server tidak merespons.")}`);
+      finishInitialLoad();
     }
   });
 })();

@@ -14,4 +14,29 @@ describe("App routing", () => {
 
     expect(matches.at(-1)?.routeId).not.toBe(rootRouteId);
   });
+
+  it("keeps dashboard pages on /dashboard and auth flows on /auth", async () => {
+    const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
+
+    await router.navigate({ to: "/dashboard" });
+    expect(router.state.location.pathname).toBe("/dashboard");
+
+    await router.navigate({ to: "/auth", search: { view: "register" } });
+    expect(router.state.location.pathname).toBe("/auth");
+    expect(router.state.location.search).toEqual({ view: "register" });
+  });
+
+  it("redirects legacy user page URLs to the primary routes", async () => {
+    const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
+
+    await router.navigate({ to: "/profil" });
+    expect(router.state.location.pathname).toBe("/dashboard");
+
+    await router.navigate({ to: "/setor" });
+    expect(router.state.location.pathname).toBe("/dashboard");
+
+    await router.navigate({ to: "/register" });
+    expect(router.state.location.pathname).toBe("/auth");
+    expect(router.state.location.search).toEqual({ view: "register" });
+  });
 });
