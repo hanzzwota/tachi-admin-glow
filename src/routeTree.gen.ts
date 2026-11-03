@@ -20,6 +20,7 @@ import { Route as RiwayatRouteImport } from './routes/riwayat'
 import { Route as SaldoRouteImport } from './routes/saldo'
 import { Route as SetorRouteImport } from './routes/setor'
 import { Route as ApiSplatRouteImport } from './routes/api/$'
+import { Route as RiwayatIndexRouteImport } from './routes/riwayat.index'
 import { Route as RiwayatNomortrxRouteImport } from './routes/riwayat.$nomortrx'
 
 const IndexRoute = IndexRouteImport.update({
@@ -77,6 +78,11 @@ const ApiSplatRoute = ApiSplatRouteImport.update({
   path: '/api/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RiwayatIndexRoute = RiwayatIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => RiwayatRoute,
+} as any)
 const RiwayatNomortrxRoute = RiwayatNomortrxRouteImport.update({
   id: '/$nomortrx',
   path: '/$nomortrx',
@@ -96,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/setor': typeof SetorRoute
   '/api/$': typeof ApiSplatRoute
   '/riwayat/$nomortrx': typeof RiwayatNomortrxRoute
+  '/riwayat/': typeof RiwayatIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -105,11 +112,11 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/profil': typeof ProfilRoute
   '/register': typeof RegisterRoute
-  '/riwayat': typeof RiwayatRouteWithChildren
   '/saldo': typeof SaldoRoute
   '/setor': typeof SetorRoute
   '/api/$': typeof ApiSplatRoute
   '/riwayat/$nomortrx': typeof RiwayatNomortrxRoute
+  '/riwayat': typeof RiwayatIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -125,6 +132,7 @@ export interface FileRoutesById {
   '/setor': typeof SetorRoute
   '/api/$': typeof ApiSplatRoute
   '/riwayat/$nomortrx': typeof RiwayatNomortrxRoute
+  '/riwayat/': typeof RiwayatIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -141,6 +149,7 @@ export interface FileRouteTypes {
     | '/setor'
     | '/api/$'
     | '/riwayat/$nomortrx'
+    | '/riwayat/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -150,11 +159,11 @@ export interface FileRouteTypes {
     | '/login'
     | '/profil'
     | '/register'
-    | '/riwayat'
     | '/saldo'
     | '/setor'
     | '/api/$'
     | '/riwayat/$nomortrx'
+    | '/riwayat'
   id:
     | '__root__'
     | '/'
@@ -169,6 +178,7 @@ export interface FileRouteTypes {
     | '/setor'
     | '/api/$'
     | '/riwayat/$nomortrx'
+    | '/riwayat/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -264,6 +274,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/riwayat/': {
+      id: '/riwayat/'
+      path: '/'
+      fullPath: '/riwayat/'
+      preLoaderRoute: typeof RiwayatIndexRouteImport
+      parentRoute: typeof RiwayatRoute
+    }
     '/riwayat/$nomortrx': {
       id: '/riwayat/$nomortrx'
       path: '/$nomortrx'
@@ -276,10 +293,12 @@ declare module '@tanstack/react-router' {
 
 interface RiwayatRouteChildren {
   RiwayatNomortrxRoute: typeof RiwayatNomortrxRoute
+  RiwayatIndexRoute: typeof RiwayatIndexRoute
 }
 
 const RiwayatRouteChildren: RiwayatRouteChildren = {
   RiwayatNomortrxRoute: RiwayatNomortrxRoute,
+  RiwayatIndexRoute: RiwayatIndexRoute,
 }
 
 const RiwayatRouteWithChildren =

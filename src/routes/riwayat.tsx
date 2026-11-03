@@ -1,6 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { StaticPageFrame } from "../components/StaticPageFrame";
+import { Outlet, createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/riwayat")({
-  component: () => <StaticPageFrame view="riwayat" />,
+  component: () => <Outlet />,
 });
