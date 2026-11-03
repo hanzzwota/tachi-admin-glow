@@ -166,6 +166,33 @@
         box-shadow: 0 8px 20px rgba(37, 99, 235, 0.45);
       }
 
+      .stock-count-option {
+        border-color: #dbe3ee;
+        background: #f8fafc;
+        color: #475569;
+        transition: all 0.18s ease;
+      }
+      .stock-count-option:hover {
+        border-color: #93c5fd;
+        background: #eff6ff;
+      }
+      .stock-count-option-active {
+        border-color: #1e3a5f;
+        background: #102847;
+        color: #fff;
+        box-shadow: 0 5px 12px rgba(15, 36, 64, 0.18);
+      }
+      body.dark-mode .stock-count-option {
+        border-color: #475569;
+        background: #172033;
+        color: #cbd5e1;
+      }
+      body.dark-mode .stock-count-option-active {
+        border-color: #60a5fa;
+        background: #1e3a5f;
+        color: #fff;
+      }
+
       /* Input highlight styling */
       .custom-input {
         background-color: #f8fafc;
@@ -1127,28 +1154,47 @@
           </p>
         </div>
 
-        <!-- Generate Gmail Trigger Option -->
-        <div
-          onclick="generateStockGmail()"
-          class="bg-white rounded-2xl p-3.5 card-soft-shadow border border-slate-100 flex items-center justify-between cursor-pointer active:scale-98 transition"
-        >
+        <!-- Generated Gmail stays separate from the deposit textarea until the user copies it. -->
+        <section class="bg-white rounded-2xl p-4 card-soft-shadow border border-slate-100 flex flex-col gap-3">
           <div class="flex items-center gap-3">
-            <div
-              class="w-10 h-10 rounded-xl icon-soft-box flex items-center justify-center text-white text-base"
-            >
+            <div class="w-10 h-10 rounded-xl icon-soft-box flex items-center justify-center text-white text-base shrink-0">
               <i class="fa-solid fa-wand-magic-sparkles"></i>
             </div>
             <div>
-              <h3 class="text-xs font-extrabold text-slate-800">Generate Gmail</h3>
-              <p class="text-[11px] text-slate-500 font-medium">Ambil nama email dari stok admin</p>
+              <h3 class="text-sm font-extrabold text-slate-800">Generate Gmail</h3>
+              <p class="text-[11px] text-slate-500 font-medium">Hasil muncul di panel sendiri, tidak masuk otomatis ke kolom setor.</p>
             </div>
           </div>
-          <div
-            class="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-xs"
-          >
-            <i class="fa-solid fa-chevron-right"></i>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-2">Target jumlah akun</label>
+            <div class="grid grid-cols-5 gap-2">
+              <button type="button" data-stock-count="1" onclick="selectStockGenerateCount(1, this)" class="stock-count-option stock-count-option-active rounded-xl border px-2 py-2 text-xs font-bold">1</button>
+              <button type="button" data-stock-count="5" onclick="selectStockGenerateCount(5, this)" class="stock-count-option rounded-xl border px-2 py-2 text-xs font-bold">5</button>
+              <button type="button" data-stock-count="10" onclick="selectStockGenerateCount(10, this)" class="stock-count-option rounded-xl border px-2 py-2 text-xs font-bold">10</button>
+              <button type="button" data-stock-count="20" onclick="selectStockGenerateCount(20, this)" class="stock-count-option rounded-xl border px-2 py-2 text-xs font-bold">20</button>
+              <button type="button" data-stock-count="50" onclick="selectStockGenerateCount(50, this)" class="stock-count-option rounded-xl border px-2 py-2 text-xs font-bold">50</button>
+            </div>
+            <label for="customStockGenerateCount" class="block text-[11px] font-semibold text-slate-500 mt-3 mb-1.5">Atau isi jumlah sendiri</label>
+            <input id="customStockGenerateCount" type="number" min="1" step="1" inputmode="numeric" oninput="updateStockGenerateCustom(this.value)" placeholder="Contoh: 7" class="w-full custom-input rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none" />
+            <p class="text-[10px] text-slate-500 mt-2">Maksimal 5 akun per batch. Target di atas 5 dibuat bertahap lewat tombol Generate Lagi.</p>
           </div>
-        </div>
+          <p id="stockGenerateProgress" aria-live="polite" class="text-xs font-semibold text-slate-500">Pilih jumlah, lalu generate Gmail.</p>
+          <button id="generateStockGmailButton" type="button" onclick="generateStockGmail()" class="btn-glossy w-full text-white font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-2 active:scale-98 transition-transform">
+            <i class="fa-solid fa-wand-magic-sparkles text-xs"></i><span>Generate Gmail</span>
+          </button>
+        </section>
+
+        <section id="generatedGmailPanel" style="display: none" class="bg-white rounded-2xl p-4 card-soft-shadow border border-slate-100 flex-col gap-3">
+          <div class="flex items-center justify-between gap-2">
+            <h3 class="text-sm font-extrabold text-slate-800">Generated Gmail</h3>
+            <p class="text-[10px] text-slate-500 text-right">Total: <b id="generatedGmailTotal" class="text-slate-700">0</b> · Belum disetor: <b id="generatedGmailUndeposited" class="text-slate-700">0</b></p>
+          </div>
+          <div id="generatedGmailList" class="max-h-64 overflow-y-auto flex flex-col gap-2 pr-1" role="list" aria-label="Daftar Gmail hasil generate"></div>
+          <p class="text-[11px] leading-relaxed text-slate-500">Ketuk Gmail untuk menyalin satu per satu, atau gunakan tombol untuk menyalin beberapa sekaligus. Hasil generate tidak disetor sampai kamu menempelkannya ke kolom setor.</p>
+          <button type="button" onclick="copyAllGeneratedStockGmails()" class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 text-xs font-bold text-slate-700 flex items-center justify-center gap-2"><i class="fa-regular fa-copy"></i><span>Salin Semua Gmail</span></button>
+          <button type="button" onclick="copyUndepositedStockGmails()" class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 text-xs font-bold text-slate-700 flex items-center justify-center gap-2"><i class="fa-regular fa-copy"></i><span>Salin Gmail Belum Disetor</span></button>
+          <button id="generateStockGmailAgainButton" type="button" onclick="generateStockGmail()" class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 text-xs font-bold text-slate-800 flex items-center justify-center gap-2"><i class="fa-solid fa-wand-magic-sparkles"></i><span>Generate Lagi</span></button>
+        </section>
 
         <!-- Textarea Storan Box -->
         <div

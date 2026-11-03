@@ -474,18 +474,26 @@ async function dailyDepositStats(settings: Record<string, unknown> | null) {
 
 async function claimGmailStock(request: Request) {
   await requireUser(request);
+  const payload = await body(request);
+  const count = Number(payload.count ?? 1);
+  if (!Number.isSafeInteger(count) || count < 1 || count > 5)
+    return json({ error: "Jumlah Gmail per batch harus 1-5 akun" }, { status: 400 });
+
   const settings = await getSettings();
   if (!settings?.auto_stock_enabled)
     return json({ error: "Generate Gmail sedang dimatikan admin" }, { status: 423 });
-  const stock = Array.isArray(settings.gmail_stock) ? settings.gmail_stock : [];
-  const item = stock.shift();
-  if (!item) return json({ error: "Stok Gmail sedang kosong" }, { status: 409 });
-  await supabaseFetch("app_settings?id=eq.1", {
-    method: "PATCH",
-    headers: { Prefer: "return=minimal" },
-    body: JSON.stringify({ gmail_stock: stock }),
-  });
-  return json({ gmail: item });
+
+  const gmails: string[] = [];
+  for (let index = 0; index < count; index += 1) {
+    const gmail = await supabaseFetch<string | null>("rpc/claim_gmail_stock", {
+      method: "POST",
+      body: "{}",
+    });
+    if (!gmail) break;
+    gmails.push(gmail);
+  }
+  if (!gmails.length) return json({ error: "Stok Gmail sedang kosong" }, { status: 409 });
+  return json({ gmail: gmails[0], gmails, count: gmails.length });
 }
 
 async function updateWallet(request: Request) {
