@@ -519,6 +519,54 @@
     showToast("success", "Setoran berhasil ditolak dan alasan tersimpan.");
     await refreshAfterAction();
   };
+  const bulkIds = (id) => [...new Set(String(document.getElementById(id)?.value || "").split(/[\s,]+/).map((value) => value.trim()).filter(Boolean))];
+  const setBulkStatus = (message, tone = "text-violet-800") => {
+    const status = document.getElementById("bulkActionStatus");
+    if (!status) return;
+    status.textContent = message;
+    status.className = `mt-2 text-xs font-bold ${tone}`;
+  };
+  const runBulk = async (ids, action) => {
+    let success = 0;
+    let failed = 0;
+    for (const id of ids) {
+      try {
+        await api(`admin/deposits/${encodeURIComponent(id)}/${action.path}`, {
+          method: "POST",
+          body: JSON.stringify(action.body || {}),
+        });
+        success += 1;
+      } catch (error) {
+        failed += 1;
+        console.warn(`Bulk ${action.path} gagal untuk ${id}:`, error);
+      }
+      setBulkStatus(`Memproses ${success + failed}/${ids.length} transaksi…`);
+    }
+    await refreshAfterAction();
+    return { success, failed };
+  };
+  window.bulkApproveDeposits = async () => {
+    const ids = bulkIds("bulkApproveIds");
+    if (!ids.length) return showToast("warning", "⚠️ Masukkan minimal satu nomor transaksi untuk Bulk Setuju.");
+    if (!window.confirm(`Setujui ${ids.length} transaksi pending? Saldo akan ditambahkan untuk transaksi yang berhasil.`)) return;
+    setBulkStatus(`Memproses 0/${ids.length} transaksi…`);
+    const result = await runBulk(ids, { path: "approve" });
+    setBulkStatus(`Selesai: ${result.success} berhasil, ${result.failed} gagal.`, result.failed ? "text-amber-800" : "text-green-700");
+    showToast(result.failed ? "warning" : "success", `Bulk setuju selesai: ${result.success} berhasil, ${result.failed} gagal.`);
+  };
+  window.bulkRejectDeposits = async () => {
+    const ids = bulkIds("bulkRejectIds");
+    if (!ids.length) return showToast("warning", "⚠️ Masukkan minimal satu nomor transaksi untuk Bulk Tolak.");
+    const type = document.getElementById("bulkRejectReasonType")?.value || "Lainnya";
+    const detail = document.getElementById("bulkRejectReason")?.value.trim() || "";
+    if (type === "Lainnya" && !detail) return showToast("warning", "⚠️ Tulis alasan penolakan sendiri.");
+    const reason = type === "Lainnya" ? detail : detail ? `${type}: ${detail}` : type;
+    if (!window.confirm(`Tolak ${ids.length} transaksi dengan alasan "${reason}"?`)) return;
+    setBulkStatus(`Memproses 0/${ids.length} transaksi…`);
+    const result = await runBulk(ids, { path: "reject", body: { reason } });
+    setBulkStatus(`Selesai: ${result.success} berhasil, ${result.failed} gagal.`, result.failed ? "text-amber-800" : "text-green-700");
+    showToast(result.failed ? "warning" : "success", `Bulk tolak selesai: ${result.success} berhasil, ${result.failed} gagal.`);
+  };
   window.accWd = async (id) => {
     try {
       await api(`admin/withdrawals/${id}/approve`, { method: "POST" });
