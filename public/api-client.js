@@ -377,7 +377,7 @@
       const active = button.dataset.riwayatStatus === filter;
       button.className = active
         ? "riwayat-tab-btn rounded-xl bg-blue-600 px-3 py-2 text-xs font-extrabold text-white shadow-sm"
-        : "riwayat-tab-btn rounded-xl px-3 py-2 text-xs font-bold text-slate-600";
+        : "riwayat-tab-btn rounded-xl px-3 py-2 text-xs font-bold text-slate-200";
     });
     const jalurSelect = document.getElementById("riwayatJalurFilter");
     const selectedJalur = jalurSelect?.value || "semua";
@@ -395,7 +395,7 @@
       const active = button.dataset.riwayatRange === range;
       button.className = active
         ? "riwayat-range-btn rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white"
-        : "riwayat-range-btn rounded-xl px-3 py-2 text-xs font-medium text-slate-600";
+        : "riwayat-range-btn rounded-xl px-3 py-2 text-xs font-medium text-slate-200";
     });
     const search = (document.getElementById("riwayatSearch")?.value || "").trim().toLowerCase();
     const dateFrom = document.getElementById("riwayatDateFrom")?.value || "";
@@ -433,7 +433,7 @@
     if (heading) heading.textContent = `${statusLabels[filter] || "Semua"} (${filtered.length})`;
     if (!filtered.length) {
       const hasHistory = rows.length > 0;
-      container.innerHTML = `<div class="rounded-2xl border border-blue-100/80 bg-blue-100/80 px-4 py-10 text-center"><span class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-lg text-blue-500"><i class="fa-regular fa-folder-open"></i></span><p class="mt-3 text-sm font-extrabold text-slate-700">${hasHistory ? "Tidak ada Gmail yang cocok" : "Belum ada riwayat Gmail"}</p><p class="mt-1 text-xs text-slate-500">${hasHistory ? "Coba ubah kata kunci atau filter yang dipilih." : "Gmail yang kamu setor akan muncul di sini."}</p></div>`;
+      container.innerHTML = `<div class="riwayat-empty rounded-2xl border border-blue-100/80 bg-blue-100/80 px-4 py-10 text-center"><span class="riwayat-empty-icon mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-lg text-blue-500"><i class="fa-regular fa-folder-open"></i></span><p class="riwayat-empty-title mt-3 text-sm font-extrabold text-slate-100">${hasHistory ? "Tidak ada Gmail yang cocok" : "Belum ada riwayat Gmail"}</p><p class="riwayat-empty-description mt-1 text-xs text-slate-300">${hasHistory ? "Coba ubah kata kunci atau filter yang dipilih." : "Gmail yang kamu setor akan muncul di sini."}</p></div>`;
       return;
     }
     const formatDate = (value) => {
@@ -453,8 +453,8 @@
     container.innerHTML = filtered
       .map((row) => {
         const [label, badge, icon] = statusStyle[row.status];
-        const details = `<details class="mt-1 text-right"><summary class="inline-flex cursor-pointer list-none items-center gap-1 text-xs font-bold text-blue-600">Lihat proses <i class="fa-solid fa-chevron-right text-[9px]"></i></summary><div class="mt-2 rounded-xl bg-blue-200/70 p-2.5 text-left text-[11px] leading-relaxed text-slate-600"><div>ID Setoran: <span class="font-mono">${escapeHtml(row.depositId || "-")}</span></div><div>Jalur: ${escapeHtml(row.jalur || "- ")}</div>${row.reason ? `<div class="mt-1 text-rose-600">Alasan: ${escapeHtml(row.reason)}</div>` : ""}</div></details>`;
-        return `<article class="flex items-start justify-between gap-3 rounded-[22px] border border-blue-100/80 bg-blue-100/80 p-3.5 shadow-[0_7px_22px_rgba(59,130,246,0.08)]"><div class="min-w-0 flex-1"><p class="break-all font-mono text-[12px] font-semibold leading-relaxed text-slate-800">${escapeHtml(row.email)}</p><p class="mt-1 text-[11px] leading-relaxed text-slate-500">Stor: ${escapeHtml(formatDate(row.createdAt))}</p><p class="text-[11px] leading-relaxed text-slate-500">Verifikasi: ${escapeHtml(formatDate(row.verifiedAt))}</p></div><div class="flex w-[104px] shrink-0 flex-col items-end"><span class="inline-flex items-center gap-1 rounded-full ${badge} px-2.5 py-1 text-[11px] font-extrabold"><i class="fa-solid ${icon}"></i>${label}</span>${details}</div></article>`;
+        const details = `<details class="mt-1 text-right"><summary class="riwayat-summary inline-flex cursor-pointer list-none items-center gap-1 text-xs font-bold text-sky-300">Lihat proses <i class="fa-solid fa-chevron-right text-[9px]"></i></summary><div class="riwayat-detail-panel mt-2 rounded-xl bg-blue-200/70 p-2.5 text-left text-[11px] leading-relaxed text-slate-200"><div>ID Setoran: <span class="font-mono">${escapeHtml(row.depositId || "-")}</span></div><div>Jalur: ${escapeHtml(row.jalur || "- ")}</div>${row.reason ? `<div class="mt-1 text-rose-600">Alasan: ${escapeHtml(row.reason)}</div>` : ""}</div></details>`;
+        return `<article class="riwayat-card flex items-start justify-between gap-3 rounded-[22px] border border-blue-100/80 bg-blue-100/80 p-3.5 shadow-[0_7px_22px_rgba(59,130,246,0.08)]"><div class="min-w-0 flex-1"><p class="riwayat-email break-all font-mono text-[12px] font-semibold leading-relaxed text-slate-100">${escapeHtml(row.email)}</p><p class="riwayat-meta mt-1 text-[11px] leading-relaxed text-slate-300">Stor: ${escapeHtml(formatDate(row.createdAt))}</p><p class="riwayat-meta text-[11px] leading-relaxed text-slate-300">Verifikasi: ${escapeHtml(formatDate(row.verifiedAt))}</p></div><div class="flex w-[104px] shrink-0 flex-col items-end"><span class="inline-flex items-center gap-1 rounded-full ${badge} px-2.5 py-1 text-[11px] font-extrabold"><i class="fa-solid ${icon}"></i>${label}</span>${details}</div></article>`;
       })
       .join("");
   };

@@ -452,6 +452,46 @@
       body.dark-mode .nav-stor-button span {
         color: #94a3b8;
       }
+      #view-riwayat main {
+        background: transparent !important;
+        border-color: transparent !important;
+        box-shadow: none !important;
+      }
+      #view-riwayat .riwayat-surface,
+      #view-riwayat .riwayat-card,
+      #view-riwayat .riwayat-empty {
+        background: linear-gradient(135deg, #071a32, #102847) !important;
+        border-color: rgba(148, 163, 184, 0.28) !important;
+        color: #e2e8f0 !important;
+      }
+      #view-riwayat .riwayat-surface::placeholder {
+        color: #cbd5e1 !important;
+        opacity: 1;
+      }
+      #view-riwayat .riwayat-surface option {
+        background: #071a32;
+        color: #e2e8f0;
+      }
+      #view-riwayat .riwayat-empty-icon {
+        background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+        color: #ffffff !important;
+      }
+      #view-riwayat .riwayat-card .riwayat-email,
+      #view-riwayat .riwayat-empty .riwayat-empty-title {
+        color: #f8fafc !important;
+      }
+      #view-riwayat .riwayat-card .riwayat-meta,
+      #view-riwayat .riwayat-empty .riwayat-empty-description {
+        color: #cbd5e1 !important;
+      }
+      #view-riwayat .riwayat-detail-panel {
+        background: linear-gradient(135deg, #102847, #0b1f3b) !important;
+        border: 1px solid rgba(148, 163, 184, 0.22);
+        color: #e2e8f0 !important;
+      }
+      #view-riwayat .riwayat-summary {
+        color: #a5f3fc !important;
+      }
     </style>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7166254458926131"
       crossorigin="anonymous"></script>
@@ -1707,50 +1747,50 @@
       <div id="view-riwayat" class="hidden flex-col gap-0 pb-28 w-full min-h-[80vh]">
         <main class="mt-3 w-screen max-w-none rounded-[28px] border border-blue-200/80 bg-sky-100/80 p-4 shadow-[0_12px_36px_rgba(59,130,246,0.10)] sm:p-6" style="margin-left: calc(50% - 50vw);">
           <label class="relative block">
-            <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-            <input id="riwayatSearch" type="search" oninput="renderRiwayat()" placeholder="Cari Gmail..." class="w-full rounded-2xl border border-blue-100 bg-sky-100/90 py-3 pl-11 pr-4 text-sm text-slate-700 shadow-sm outline-none placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
+            <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"></i>
+            <input id="riwayatSearch" type="search" oninput="renderRiwayat()" placeholder="Cari Gmail..." class="riwayat-surface w-full rounded-2xl border border-blue-100 bg-sky-100/90 py-3 pl-11 pr-4 text-sm text-slate-100 shadow-sm outline-none placeholder:text-slate-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
           </label>
 
-          <div class="mt-3 overflow-x-auto rounded-2xl border border-blue-100 bg-sky-100/90 p-1 no-scrollbar">
+          <div class="riwayat-surface mt-3 overflow-x-auto rounded-2xl border border-blue-100 bg-sky-100/90 p-1 no-scrollbar">
             <div class="flex min-w-max items-center gap-1">
               <button data-riwayat-status="semua" onclick="filterRiwayat('semua', this)" class="riwayat-tab-btn rounded-xl bg-blue-600 px-3 py-2 text-xs font-extrabold text-white shadow-sm">Semua <span id="riwayatCountSemua"></span></button>
-              <button data-riwayat-status="pending" onclick="filterRiwayat('pending', this)" class="riwayat-tab-btn rounded-xl px-3 py-2 text-xs font-bold text-slate-600">Pending <span id="riwayatCountPending"></span></button>
-              <button data-riwayat-status="dicek" onclick="filterRiwayat('dicek', this)" class="riwayat-tab-btn rounded-xl px-3 py-2 text-xs font-bold text-slate-600">Di Cek <span id="riwayatCountDicek"></span></button>
-              <button data-riwayat-status="diterima" onclick="filterRiwayat('diterima', this)" class="riwayat-tab-btn rounded-xl px-3 py-2 text-xs font-bold text-slate-600">Diterima <span id="riwayatCountDiterima"></span></button>
-              <button data-riwayat-status="ditolak" onclick="filterRiwayat('ditolak', this)" class="riwayat-tab-btn rounded-xl px-3 py-2 text-xs font-bold text-slate-600">Ditolak <span id="riwayatCountDitolak"></span></button>
+              <button data-riwayat-status="pending" onclick="filterRiwayat('pending', this)" class="riwayat-tab-btn rounded-xl px-3 py-2 text-xs font-bold text-slate-200">Pending <span id="riwayatCountPending"></span></button>
+              <button data-riwayat-status="dicek" onclick="filterRiwayat('dicek', this)" class="riwayat-tab-btn rounded-xl px-3 py-2 text-xs font-bold text-slate-200">Di Cek <span id="riwayatCountDicek"></span></button>
+              <button data-riwayat-status="diterima" onclick="filterRiwayat('diterima', this)" class="riwayat-tab-btn rounded-xl px-3 py-2 text-xs font-bold text-slate-200">Diterima <span id="riwayatCountDiterima"></span></button>
+              <button data-riwayat-status="ditolak" onclick="filterRiwayat('ditolak', this)" class="riwayat-tab-btn rounded-xl px-3 py-2 text-xs font-bold text-slate-200">Ditolak <span id="riwayatCountDitolak"></span></button>
             </div>
           </div>
 
           <div class="mt-2 grid grid-cols-[minmax(7rem,0.9fr)_minmax(0,1.2fr)] gap-2">
             <label class="relative">
               <span class="sr-only">Filter jalur</span>
-              <select id="riwayatJalurFilter" onchange="renderRiwayat()" class="w-full appearance-none rounded-2xl border border-blue-100 bg-sky-100/90 px-3.5 py-3 pr-9 text-xs font-medium text-slate-700 outline-none focus:border-blue-400">
+              <select id="riwayatJalurFilter" onchange="renderRiwayat()" class="riwayat-surface w-full appearance-none rounded-2xl border border-blue-100 bg-sky-100/90 px-3.5 py-3 pr-9 text-xs font-medium text-slate-100 outline-none focus:border-blue-400">
                 <option value="semua">Semua Jalur</option>
               </select>
-              <i class="fa-solid fa-chevron-down pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-500"></i>
+              <i class="fa-solid fa-chevron-down pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-300"></i>
             </label>
-            <div class="flex overflow-x-auto rounded-2xl border border-blue-100 bg-sky-100/90 p-1 no-scrollbar">
+            <div class="riwayat-surface flex overflow-x-auto rounded-2xl border border-blue-100 bg-sky-100/90 p-1 no-scrollbar">
               <button data-riwayat-range="semua" onclick="filterRiwayatRange('semua', this)" class="riwayat-range-btn shrink-0 rounded-xl bg-blue-600 px-2.5 py-2 text-xs font-bold text-white">Semua</button>
-              <button data-riwayat-range="hari" onclick="filterRiwayatRange('hari', this)" class="riwayat-range-btn shrink-0 rounded-xl px-2.5 py-2 text-xs font-medium text-slate-600">Hari ini</button>
-              <button data-riwayat-range="7hari" onclick="filterRiwayatRange('7hari', this)" class="riwayat-range-btn shrink-0 rounded-xl px-2.5 py-2 text-xs font-medium text-slate-600">7 Hari</button>
-              <button data-riwayat-range="30hari" onclick="filterRiwayatRange('30hari', this)" class="riwayat-range-btn shrink-0 rounded-xl px-2.5 py-2 text-xs font-medium text-slate-600">30 Hari</button>
+              <button data-riwayat-range="hari" onclick="filterRiwayatRange('hari', this)" class="riwayat-range-btn shrink-0 rounded-xl px-2.5 py-2 text-xs font-medium text-slate-200">Hari ini</button>
+              <button data-riwayat-range="7hari" onclick="filterRiwayatRange('7hari', this)" class="riwayat-range-btn shrink-0 rounded-xl px-2.5 py-2 text-xs font-medium text-slate-200">7 Hari</button>
+              <button data-riwayat-range="30hari" onclick="filterRiwayatRange('30hari', this)" class="riwayat-range-btn shrink-0 rounded-xl px-2.5 py-2 text-xs font-medium text-slate-200">30 Hari</button>
             </div>
           </div>
 
-          <details class="mt-2 rounded-2xl border border-blue-100 bg-sky-100/90">
-            <summary class="flex cursor-pointer list-none items-center gap-2 px-3.5 py-3 text-xs font-medium text-slate-600">
-              <i class="fa-regular fa-calendar text-slate-500"></i><span>Filter Tanggal</span><i class="fa-solid fa-chevron-down ml-auto text-[10px]"></i>
+          <details class="riwayat-surface mt-2 rounded-2xl border border-blue-100 bg-sky-100/90">
+            <summary class="flex cursor-pointer list-none items-center gap-2 px-3.5 py-3 text-xs font-medium text-slate-200">
+              <i class="fa-regular fa-calendar text-slate-300"></i><span>Filter Tanggal</span><i class="fa-solid fa-chevron-down ml-auto text-[10px]"></i>
             </summary>
             <div class="grid grid-cols-1 gap-2 border-t border-blue-50 p-3 sm:grid-cols-2">
-              <label class="text-[11px] font-semibold text-slate-500">Dari tanggal<input id="riwayatDateFrom" type="date" onchange="renderRiwayat()" class="mt-1 w-full rounded-xl border border-slate-200 bg-sky-100 px-3 py-2 text-xs text-slate-700" /></label>
-              <label class="text-[11px] font-semibold text-slate-500">Sampai tanggal<input id="riwayatDateTo" type="date" onchange="renderRiwayat()" class="mt-1 w-full rounded-xl border border-slate-200 bg-sky-100 px-3 py-2 text-xs text-slate-700" /></label>
-              <button type="button" onclick="clearRiwayatDateFilter()" class="text-left text-[11px] font-bold text-blue-600 sm:col-span-2">Hapus filter tanggal</button>
+              <label class="text-[11px] font-semibold text-slate-300">Dari tanggal<input id="riwayatDateFrom" type="date" onchange="renderRiwayat()" class="riwayat-surface mt-1 w-full rounded-xl border border-slate-200 bg-sky-100 px-3 py-2 text-xs text-slate-100" /></label>
+              <label class="text-[11px] font-semibold text-slate-300">Sampai tanggal<input id="riwayatDateTo" type="date" onchange="renderRiwayat()" class="riwayat-surface mt-1 w-full rounded-xl border border-slate-200 bg-sky-100 px-3 py-2 text-xs text-slate-100" /></label>
+              <button type="button" onclick="clearRiwayatDateFilter()" class="text-left text-[11px] font-bold text-sky-300 sm:col-span-2">Hapus filter tanggal</button>
             </div>
           </details>
 
-          <h2 id="riwayatResultHeading" class="mb-2 mt-4 text-xs font-extrabold text-slate-600">Semua Gmail</h2>
+          <h2 id="riwayatResultHeading" class="mb-2 mt-4 text-xs font-extrabold text-slate-200">Semua Gmail</h2>
           <div id="riwayatListContainer" class="space-y-3">
-            <div class="rounded-2xl border border-blue-50 bg-sky-100/90 p-6 text-center text-sm font-semibold text-slate-500">Memuat riwayat Gmail...</div>
+            <div class="riwayat-surface rounded-2xl border border-blue-50 bg-sky-100/90 p-6 text-center text-sm font-semibold text-slate-300">Memuat riwayat Gmail...</div>
           </div>
         </main>
       </div>
