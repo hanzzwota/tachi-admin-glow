@@ -473,7 +473,7 @@ async function dailyDepositStats(settings: Record<string, unknown> | null) {
 }
 
 async function claimGmailStock(request: Request) {
-  await requireUser(request);
+  const user = await requireUser(request);
   const payload = await body(request);
   const count = Number(payload.count ?? 1);
   if (!Number.isSafeInteger(count) || count < 1 || count > 5)
@@ -483,17 +483,78 @@ async function claimGmailStock(request: Request) {
   if (!settings?.auto_stock_enabled)
     return json({ error: "Generate Gmail sedang dimatikan admin" }, { status: 423 });
 
-  const gmails: string[] = [];
-  for (let index = 0; index < count; index += 1) {
-    const gmail = await supabaseFetch<string | null>("rpc/claim_gmail_stock", {
-      method: "POST",
-      body: "{}",
-    });
-    if (!gmail) break;
-    gmails.push(gmail);
-  }
+  const claimed = await supabaseFetch<{ gmail: string }[]>("rpc/claim_gmail_stock_batch", {
+    method: "POST",
+    body: JSON.stringify({ p_user_id: user.id, p_count: count }),
+  });
+  const gmails = Array.isArray(claimed) ? claimed.map((item) => item.gmail).filter(Boolean) : [];
   if (!gmails.length) return json({ error: "Stok Gmail sedang kosong" }, { status: 409 });
   return json({ gmail: gmails[0], gmails, count: gmails.length });
+}
+
+async function generatedGmailList(request: Request) {
+  const user = await requireUser(request);
+  const userId = encodeURIComponent(String(user.id));
+  const [claims, deposits] = await Promise.all([
+    supabaseFetch<Record<string, unknown>[]>(
+      `generated_gmail_claims?select=id,gmail,normalized_gmail,created_at&user_id=eq.${userId}&archived_at=is.null&order=created_at.desc&limit=1000`,
+    ),
+    supabaseFetch<Record<string, unknown>[]>(
+      `deposits?select=id,emails,status,accepted_emails,rejected_emails,created_at&user_id=eq.${userId}&order=created_at.desc&limit=1000`,
+    ),
+  ]);
+
+  const statusByEmail = new Map<string, { status: string; deposit_id: string }>();
+  for (const deposit of deposits) {
+    const emails = Array.isArray(deposit.emails) ? deposit.emails.map(text) : [];
+    const accepted = new Set(
+      Array.isArray(deposit.accepted_emails)
+        ? deposit.accepted_emails.map((email) => text(email).toLowerCase())
+        : [],
+    );
+    const rejected = new Set(
+      Array.isArray(deposit.rejected_emails)
+        ? deposit.rejected_emails.map((email) => text(email).toLowerCase())
+        : [],
+    );
+    for (const email of emails) {
+      const normalized = email.toLowerCase();
+      if (!normalized || statusByEmail.has(normalized)) continue;
+      let status = "diproses";
+      if (accepted.has(normalized) || (deposit.status === "diterima" && !rejected.has(normalized)))
+        status = "berhasil";
+      else if (rejected.has(normalized) || deposit.status === "ditolak") status = "ditolak";
+      statusByEmail.set(normalized, { status, deposit_id: String(deposit.id) });
+    }
+  }
+
+  return json({
+    gmails: claims.map((claim) => {
+      const status = statusByEmail.get(String(claim.normalized_gmail).toLowerCase());
+      return {
+        id: claim.id,
+        gmail: claim.gmail,
+        created_at: claim.created_at,
+        status: status?.status ?? "belum_disetor",
+        deposit_id: status?.deposit_id ?? null,
+      };
+    }),
+  });
+}
+
+async function archiveGeneratedGmail(request: Request, id: string) {
+  const user = await requireUser(request);
+  const filter = `id=eq.${encodeURIComponent(id)}&user_id=eq.${encodeURIComponent(String(user.id))}&archived_at=is.null`;
+  const rows = await supabaseFetch<Record<string, unknown>[]>(
+    `generated_gmail_claims?select=id&${filter}&limit=1`,
+  );
+  if (!rows.length) return json({ error: "Gmail tidak ditemukan" }, { status: 404 });
+  await supabaseFetch(`generated_gmail_claims?${filter}`, {
+    method: "PATCH",
+    headers: { Prefer: "return=minimal" },
+    body: JSON.stringify({ archived_at: new Date().toISOString() }),
+  });
+  return json({ ok: true });
 }
 
 async function updateWallet(request: Request) {
@@ -739,6 +800,9 @@ async function handler(request: Request, path: string) {
     return deleteUser(request, path.split("/")[2]);
   if (request.method === "PATCH" && path === "admin/settings") return updateSettings(request);
   if (request.method === "POST" && path === "stock/claim") return claimGmailStock(request);
+  if (request.method === "GET" && path === "stock/generated") return generatedGmailList(request);
+  if (request.method === "DELETE" && path.startsWith("stock/generated/"))
+    return archiveGeneratedGmail(request, path.split("/")[2] ?? "");
   if (request.method === "PATCH" && path === "wallet") return updateWallet(request);
   if (request.method === "GET" && path === "withdrawals") return userWithdrawals(request);
   if (request.method === "POST" && path === "withdrawals") return createWithdrawal(request);

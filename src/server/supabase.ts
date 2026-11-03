@@ -178,6 +178,10 @@ export function errorResponse(error: unknown) {
   // Validation raised by the withdrawal trigger is a user-facing 400, not a server error.
   const minimum = message.match(/"message"\s*:\s*"(Minimal penarikan[^"]*)"/);
   if (minimum) return json({ error: minimum[1] }, { status: 400 });
+  const duplicateGmail = message.match(
+    /"message"\s*:\s*"(Gmail ini sudah diklaim oleh akun lain)"/,
+  );
+  if (duplicateGmail) return json({ error: duplicateGmail[1] }, { status: 409 });
   // Never leak raw database errors to the browser.
   const safe = message.startsWith("Supabase ") ? "Terjadi kesalahan pada database server" : message;
   return json({ error: safe }, { status: 500 });

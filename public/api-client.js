@@ -331,11 +331,13 @@
       wallet,
     };
     applyUserDom();
-    const [settingsResult, depositsResult, withdrawalsResult] = await Promise.allSettled([
-      api("settings"),
-      api("deposits"),
-      api("withdrawals"),
-    ]);
+    const [settingsResult, depositsResult, withdrawalsResult, generatedGmailsResult] =
+      await Promise.allSettled([
+        api("settings"),
+        api("deposits"),
+        api("withdrawals"),
+        api("stock/generated"),
+      ]);
     if (settingsResult.status === "fulfilled") {
       const settings = settingsResult.value.settings || {};
       state.settings = {
@@ -360,6 +362,11 @@
       renderWithdrawals();
     } else {
       console.warn("Gagal memuat riwayat penarikan:", withdrawalsResult.reason);
+    }
+    if (generatedGmailsResult.status === "fulfilled") {
+      replaceGeneratedStockGmails(generatedGmailsResult.value.gmails);
+    } else {
+      console.warn("Gagal memuat Gmail hasil generate:", generatedGmailsResult.reason);
     }
     applyUserDom();
     window.updateSlide?.();
@@ -491,11 +498,9 @@
       showToast("error", `Setoran Gmail gagal dikirim: ${errorText(error, "coba lagi nanti.")}`);
       return;
     }
-    const deposited = new Set(emails);
-    generatedStockGmails.forEach((item) => {
-      if (deposited.has(item.gmail.toLowerCase())) item.submitted = true;
-    });
-    renderGeneratedStockGmails();
+    await refreshGeneratedStockGmails().catch((error) =>
+      console.error("Gagal memperbarui status Gmail hasil generate:", error),
+    );
     input.value = "";
     showToast("success", `${emails.length} Gmail berhasil disetor dan menunggu validasi admin!`);
     syncAppData().catch((error) => console.error("Gagal memuat ulang data:", error));
@@ -561,26 +566,69 @@
     const list = document.getElementById("generatedGmailList");
     const total = document.getElementById("generatedGmailTotal");
     const pending = document.getElementById("generatedGmailUndeposited");
-    const undeposited = generatedStockGmails.filter((item) => !item.submitted).length;
+    const undeposited = generatedStockGmails.filter(
+      (item) => item.status === "belum_disetor",
+    ).length;
     if (panel) panel.style.display = generatedStockGmails.length > 0 ? "flex" : "none";
     if (total) total.textContent = String(generatedStockGmails.length);
     if (pending) pending.textContent = String(undeposited);
+    const statusPresentation = {
+      belum_disetor: {
+        label: "Belum disetor",
+        classes: "border-slate-200 bg-white text-slate-600",
+      },
+      diproses: {
+        label: "Diproses",
+        classes: "border-amber-200 bg-amber-50 text-amber-700",
+      },
+      berhasil: {
+        label: "Berhasil",
+        classes: "border-emerald-200 bg-emerald-50 text-emerald-700",
+      },
+      ditolak: {
+        label: "Ditolak",
+        classes: "border-rose-200 bg-rose-50 text-rose-700",
+      },
+    };
     if (list) {
       list.innerHTML = generatedStockGmails
-        .map(
-          (item, index) => `
+        .map((item, index) => {
+          const status = statusPresentation[item.status] || statusPresentation.belum_disetor;
+          return `
             <div class="flex items-center gap-2 rounded-xl bg-slate-50 border border-slate-100 px-2.5 py-2" role="listitem">
               <button type="button" onclick="copyGeneratedStockGmail(${index})" class="min-w-0 flex-1 flex items-center gap-2 text-left" aria-label="Salin ${escapeHtml(item.gmail)}">
                 <i class="fa-regular fa-copy text-slate-500 shrink-0"></i>
                 <span class="truncate font-mono text-xs text-slate-700">${escapeHtml(item.gmail)}</span>
               </button>
-              <span class="shrink-0 rounded-full border px-2 py-1 text-[10px] font-bold ${item.submitted ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-white text-slate-600"}">${item.submitted ? "Sudah disetor" : "Belum disetor"}</span>
+              <span class="shrink-0 rounded-full border px-2 py-1 text-[10px] font-bold ${status.classes}">${status.label}</span>
               <button type="button" onclick="removeGeneratedStockGmail(${index})" class="h-8 w-8 shrink-0 rounded-lg text-slate-500 hover:bg-rose-50 hover:text-rose-600" aria-label="Hapus ${escapeHtml(item.gmail)} dari daftar"><i class="fa-regular fa-trash-can"></i></button>
-            </div>`,
-        )
+            </div>`;
+        })
         .join("");
     }
     syncStockGeneratorControls();
+  };
+  const replaceGeneratedStockGmails = (rows) => {
+    const items = Array.isArray(rows)
+      ? rows
+          .filter((item) => item && item.id && item.gmail)
+          .map((item) => ({
+            id: String(item.id),
+            gmail: String(item.gmail),
+            created_at: item.created_at,
+            deposit_id: item.deposit_id || null,
+            status: ["belum_disetor", "diproses", "berhasil", "ditolak"].includes(item.status)
+              ? item.status
+              : "belum_disetor",
+          }))
+      : [];
+    generatedStockGmails.splice(0, generatedStockGmails.length, ...items);
+    renderGeneratedStockGmails();
+  };
+  const refreshGeneratedStockGmails = async () => {
+    const result = await api("stock/generated");
+    replaceGeneratedStockGmails(result.gmails);
+    return generatedStockGmails;
   };
   const copyGeneratedText = async (value) => {
     if (navigator.clipboard && window.isSecureContext) {
@@ -636,11 +684,16 @@
       showToast("error", "Gagal menyalin Gmail. Silakan salin secara manual.");
     }
   };
-  window.removeGeneratedStockGmail = (index) => {
-    if (!generatedStockGmails[index]) return;
-    generatedStockGmails.splice(index, 1);
-    renderGeneratedStockGmails();
-    showToast("success", "Gmail dihapus dari daftar tampilan; stok tidak dikembalikan.");
+  window.removeGeneratedStockGmail = async (index) => {
+    const item = generatedStockGmails[index];
+    if (!item) return;
+    try {
+      await api(`stock/generated/${encodeURIComponent(item.id)}`, { method: "DELETE" });
+      await refreshGeneratedStockGmails();
+      showToast("success", "Gmail diarsipkan dari daftar. Akun tidak dikembalikan ke stok.");
+    } catch (error) {
+      showToast("error", `Gagal mengarsipkan Gmail: ${errorText(error, "coba lagi nanti.")}`);
+    }
   };
   window.copyAllGeneratedStockGmails = async () => {
     const value = generatedStockGmails.map((item) => item.gmail).join("\n");
@@ -653,7 +706,7 @@
     }
   };
   window.copyUndepositedStockGmails = async () => {
-    const items = generatedStockGmails.filter((item) => !item.submitted);
+    const items = generatedStockGmails.filter((item) => item.status === "belum_disetor");
     const value = items.map((item) => item.gmail).join("\n");
     if (!value) return showToast("warning", "Tidak ada Gmail yang belum disetor.");
     try {
@@ -689,17 +742,8 @@
           ? [result.gmail]
           : [];
       if (!gmails.length) throw new Error("Server tidak mengirim daftar Gmail.");
-      gmails.forEach((gmail) => {
-        const normalized = String(gmail).trim().toLowerCase();
-        if (
-          normalized &&
-          !generatedStockGmails.some((item) => item.gmail.toLowerCase() === normalized)
-        ) {
-          generatedStockGmails.push({ gmail: String(gmail).trim(), submitted: false });
-        }
-      });
       stockGenerateCompleted += gmails.length;
-      renderGeneratedStockGmails();
+      await refreshGeneratedStockGmails();
       showToast(
         "success",
         `${gmails.length} Gmail berhasil dibuat di panel Generated Gmail (batch maksimal 5).${stockGenerateCompleted < stockGenerateTarget ? " Tekan Generate Lagi untuk melanjutkan target." : ""}`,
