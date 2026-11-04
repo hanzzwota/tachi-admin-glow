@@ -846,6 +846,21 @@
       );
       return;
     }
+    if (state.settings?.auto_stock_enabled === true) {
+      const generatedSet = new Set(
+        generatedStockGmails.map((item) => String(item.gmail || "").trim().toLowerCase()),
+      );
+      const notGenerated = emails.filter((email) => !generatedSet.has(email));
+      if (notGenerated.length) {
+        const shown = notGenerated.slice(0, 5).join(", ");
+        const remaining = notGenerated.length > 5 ? `, dan ${notGenerated.length - 5} lainnya` : "";
+        showToast(
+          "warning",
+          `Setoran otomatis ditolak dan tidak masuk Riwayat. Gmail wajib sesuai hasil Generated Gmail. Gmail tidak sesuai: ${shown}${remaining}`,
+        );
+        return;
+      }
+    }
     depositSubmissionBusy = true;
     applyUserDom();
     try {
@@ -935,7 +950,7 @@
         : "Generate Sedang Off Tunggu Admin Mengembalikan On Lagi";
       generateModeNotice.className = generatorEnabled
         ? "rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-center text-[11px] font-extrabold leading-relaxed text-amber-800"
-        : "rounded-xl border border-slate-300 bg-slate-100 px-3 py-2.5 text-center text-[11px] font-extrabold leading-relaxed text-slate-700";
+        : "rounded-xl border border-[#1e3a8a] bg-[#0b1f4d] px-3 py-2.5 text-center text-[11px] font-extrabold leading-relaxed text-white";
     }
     document.querySelectorAll("[data-stock-count]").forEach((option) => {
       option.disabled = stockGenerateBusy;
