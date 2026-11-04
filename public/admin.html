@@ -1158,8 +1158,21 @@
               .join("")
           : '<p class="text-xs text-slate-500">Belum ada Gmail stok yang dibagikan.</p>';
       }
+      // Draf alasan penutupan disimpan terpisah agar tidak hilang saat tampilan di-render ulang (polling 15 detik).
+      let storeClosedReasonDraft = null;
+      window.clearStoreClosedReasonDraft = () => {
+        storeClosedReasonDraft = null;
+      };
+      document.addEventListener("input", (event) => {
+        if (event.target?.id === "storeClosedReasonInput") storeClosedReasonDraft = event.target.value;
+      });
       function renderSettings() {
         const s = db.settings;
+        const oldReasonInput = document.getElementById("storeClosedReasonInput");
+        const reasonFocused = oldReasonInput && document.activeElement === oldReasonInput;
+        const reasonSelection = reasonFocused
+          ? [oldReasonInput.selectionStart, oldReasonInput.selectionEnd]
+          : null;
         const t = (k, l, d) =>
           `<div class="flex items-center justify-between p-3 rounded-xl bg-white border border-blue-50"><div><div class="font-semibold text-sm">${l}</div><div class="text-xs ${s[k] ? "text-green-600" : "text-red-500"} font-bold">${s[k] ? "● BUKA" : "● TUTUP"} <span class="text-slate-400 font-normal">— ${d}</span></div></div><div class="tgl ${s[k] ? "on" : ""}" onclick="toggleFeature('${k}','${l}')"></div></div>`;
         const storeClosedReasonEditor = !s.storOpen
@@ -1173,6 +1186,14 @@
           t("autoStockEnabled", "Generate Gmail", "Wajib Generate Gmail sebelum setor") +
           t("pwOpen", "Jalur PW", "Pilihan password wajib di halaman setor") +
           t("captchaOpen", "Jalur CAPTCHA", "Pilihan CAPTCHA di halaman setor");
+        const newReasonInput = document.getElementById("storeClosedReasonInput");
+        if (newReasonInput && storeClosedReasonDraft !== null) {
+          newReasonInput.value = storeClosedReasonDraft;
+          if (reasonFocused) {
+            newReasonInput.focus();
+            newReasonInput.setSelectionRange(reasonSelection[0], reasonSelection[1]);
+          }
+        }
         if (document.activeElement?.closest("form")) return;
         setSupportToggle("supportWhatsappToggle", s.supportChannels?.whatsappEnabled !== false);
         setSupportToggle("supportTelegramToggle", s.supportChannels?.telegramEnabled !== false);
