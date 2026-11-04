@@ -285,26 +285,28 @@ async function createDeposit(request: Request) {
     return json({ error: "Konfigurasi harga jalur belum valid" }, { status: 503 });
   if (emails.length > Number(settings.batch_limit))
     return json({ error: `Maksimal ${settings.batch_limit} Gmail per transaksi` }, { status: 400 });
-  const generatedClaims = await supabaseFetch<Record<string, unknown>[]>(
-    `generated_gmail_claims?select=gmail,normalized_gmail&user_id=eq.${encodeURIComponent(String(user.id))}&archived_at=is.null&limit=1000`,
-  );
-  const generatedSet = new Set(
-    generatedClaims
-      .map((claim) => text(claim.normalized_gmail || claim.gmail).toLowerCase())
-      .filter(Boolean),
-  );
-  const notGenerated = emails.filter((email) => !generatedSet.has(email.toLowerCase()));
-  if (notGenerated.length) {
-    const shown = notGenerated.slice(0, 5).join(", ");
-    const remaining = notGenerated.length > 5 ? `, dan ${notGenerated.length - 5} lainnya` : "";
-    return json(
-      {
-        warning: true,
-        rejected: true,
-        error: `Setoran tidak dikirim dan tidak masuk Riwayat. Gmail wajib sesuai daftar Generated Gmail pada UI. Gmail tidak sesuai: ${shown}${remaining}`,
-      },
-      { status: 422 },
+  if (settings.auto_stock_enabled === true) {
+    const generatedClaims = await supabaseFetch<Record<string, unknown>[]>(
+      `generated_gmail_claims?select=gmail,normalized_gmail&user_id=eq.${encodeURIComponent(String(user.id))}&archived_at=is.null&limit=1000`,
     );
+    const generatedSet = new Set(
+      generatedClaims
+        .map((claim) => text(claim.normalized_gmail || claim.gmail).toLowerCase())
+        .filter(Boolean),
+    );
+    const notGenerated = emails.filter((email) => !generatedSet.has(email.toLowerCase()));
+    if (notGenerated.length) {
+      const shown = notGenerated.slice(0, 5).join(", ");
+      const remaining = notGenerated.length > 5 ? `, dan ${notGenerated.length - 5} lainnya` : "";
+      return json(
+        {
+          warning: true,
+          rejected: true,
+          error: `Setoran tidak dikirim dan tidak masuk Riwayat. Gmail wajib sesuai daftar Generated Gmail pada UI. Gmail tidak sesuai: ${shown}${remaining}`,
+        },
+        { status: 422 },
+      );
+    }
   }
   const duplicateRows = await supabaseFetch<Record<string, unknown>[]>(
     "rpc/find_duplicate_deposit_gmails",

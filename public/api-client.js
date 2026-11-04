@@ -862,9 +862,25 @@
   const syncStockGeneratorControls = () => {
     const mainButton = document.getElementById("generateStockGmailButton");
     const againButton = document.getElementById("generateStockGmailAgainButton");
+    const generatorSection = document.getElementById("stockGeneratorSection");
     const progress = document.getElementById("stockGenerateProgress");
     const customInput = document.getElementById("customStockGenerateCount");
     const generatedPanel = document.getElementById("generatedGmailPanel");
+    const generatorEnabled = state.settings?.auto_stock_enabled === true;
+    if (generatorSection) generatorSection.classList.toggle("hidden", !generatorEnabled);
+    document.querySelectorAll("[data-generate-only]").forEach((element) => {
+      element.classList.toggle("hidden", !generatorEnabled);
+    });
+    const depositLabel = document.getElementById("depositGmailLabel");
+    if (depositLabel)
+      depositLabel.textContent = generatorEnabled
+        ? "Tempel Gmail dari Generated Gmail (satu per baris)"
+        : "Daftar Gmail (satu per baris)";
+    const depositHint = document.getElementById("depositGmailHint");
+    if (depositHint)
+      depositHint.textContent = generatorEnabled
+        ? "Wajib gunakan Gmail yang tampil di panel Generated Gmail."
+        : "Generate mati: kamu dapat setor Gmail apa saja dengan Password Wajib.";
     document.querySelectorAll("[data-stock-count]").forEach((option) => {
       option.disabled = stockGenerateBusy;
     });
@@ -888,7 +904,7 @@
         );
     }
     if (generatedPanel)
-      generatedPanel.style.display = generatedStockGmails.length > 0 ? "flex" : "none";
+      generatedPanel.style.display = generatorEnabled && generatedStockGmails.length > 0 ? "flex" : "none";
     if (progress) {
       if (stockGenerateBusy) {
         progress.textContent = "Mengambil maksimal 5 akun untuk batch ini…";
@@ -909,7 +925,11 @@
     const undeposited = generatedStockGmails.filter(
       (item) => item.status === "belum_disetor",
     ).length;
-    if (panel) panel.style.display = generatedStockGmails.length > 0 ? "flex" : "none";
+    if (panel)
+      panel.style.display =
+        state.settings?.auto_stock_enabled === true && generatedStockGmails.length > 0
+          ? "flex"
+          : "none";
     if (total) total.textContent = String(generatedStockGmails.length);
     if (pending) pending.textContent = String(undeposited);
     const statusPresentation = {
