@@ -224,6 +224,7 @@ async function userDepositDetail(request: Request, id: string) {
     deposit: rows[0],
     settings: {
       campaign_password: settings?.campaign_password ?? "",
+      pw_text: settings?.pw_text ?? "PW",
       pw_enabled: settings?.pw_enabled !== false,
     },
   });
@@ -267,7 +268,12 @@ async function createDeposit(request: Request) {
       },
       { status: 423 },
     );
-  if (settings.pw_enabled !== false && text(payload.campaignPassword) !== String(settings.campaign_password))
+  const jalur = text(payload.jalur).toUpperCase() === "CAPTCHA" ? "CAPTCHA" : "PW";
+  if (jalur === "PW" && settings.pw_enabled === false)
+    return json({ error: "Jalur PW sedang dinonaktifkan admin" }, { status: 423 });
+  if (jalur === "CAPTCHA" && settings.captcha_enabled !== true)
+    return json({ error: "Jalur CAPTCHA sedang dinonaktifkan admin" }, { status: 423 });
+  if (jalur === "PW" && text(payload.campaignPassword) !== String(settings.campaign_password))
     return json({ error: "Password wajib salah" }, { status: 403 });
   if (emails.length > Number(settings.batch_limit))
     return json({ error: `Maksimal ${settings.batch_limit} Gmail per transaksi` }, { status: 400 });
@@ -313,7 +319,7 @@ async function createDeposit(request: Request) {
       transaction_number: `TRX-${new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date()).replaceAll("-", "")}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
       emails,
       status: "pending",
-      jalur: "PW",
+      jalur,
       rate: Number(settings.rate ?? 4500),
       submitted_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -378,6 +384,7 @@ async function updateSettings(request: Request) {
       normalizeFee(payload.fee ?? current?.fee),
     ),
     campaign_password: text(payload.campaignPassword ?? current?.campaign_password),
+    pw_text: text(payload.pwText ?? current?.pw_text) || "PW",
     pw_enabled: booleanValue(payload.pwEnabled, current?.pw_enabled !== false),
     captcha_enabled: booleanValue(payload.captchaEnabled, current?.captcha_enabled === true),
     captcha_text: text(payload.captchaText ?? current?.captcha_text) || "CAPTCHA",

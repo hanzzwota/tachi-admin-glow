@@ -90,6 +90,7 @@
         ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character],
     );
   const state = { user: null, settings: null, deposits: [], withdrawals: [] };
+  let selectedDepositRoute = "PW";
   const generatedStockGmails = [];
   let selectedStockGenerateCount = 1;
   let stockGenerateTarget = 0;
@@ -158,6 +159,10 @@
     });
     const campaign = document.getElementById("requiredPasswordText");
     if (campaign) campaign.textContent = settings.campaign_password;
+    const pwLabel = document.getElementById("pwRouteLabel");
+    if (pwLabel) pwLabel.textContent = settings.pw_text || "PW";
+    const pwPassword = document.getElementById("pwRoutePassword");
+    if (pwPassword) pwPassword.textContent = `${settings.pw_text || "PW"}: ${settings.campaign_password || "-"}`;
     const rateText = format(settings.rate);
     ["pwRouteRate", "captchaRouteRate"].forEach((id) => {
       const element = document.getElementById(id);
@@ -165,10 +170,24 @@
     });
     const pwCard = document.getElementById("pwRouteCard");
     const captchaCard = document.getElementById("captchaRouteCard");
-    if (pwCard) pwCard.classList.toggle("hidden", settings.pw_enabled === false);
-    if (captchaCard) captchaCard.classList.toggle("hidden", settings.captcha_enabled !== true);
-    const passwordCard = document.getElementById("requiredPasswordText")?.closest("div.bg-white");
-    if (passwordCard) passwordCard.classList.toggle("hidden", settings.pw_enabled === false);
+    if (settings.pw_enabled === false && settings.captcha_enabled === true) selectedDepositRoute = "CAPTCHA";
+    if (settings.captcha_enabled !== true && settings.pw_enabled !== false) selectedDepositRoute = "PW";
+    if (pwCard) {
+      pwCard.disabled = settings.pw_enabled === false;
+      pwCard.classList.toggle("opacity-50", settings.pw_enabled === false);
+      pwCard.classList.toggle("grayscale", settings.pw_enabled === false);
+      pwCard.classList.toggle("cursor-not-allowed", settings.pw_enabled === false);
+      pwCard.classList.toggle("border-blue-500", selectedDepositRoute === "PW" && settings.pw_enabled !== false);
+      pwCard.classList.toggle("border-slate-200", selectedDepositRoute !== "PW" || settings.pw_enabled === false);
+    }
+    if (captchaCard) {
+      captchaCard.disabled = settings.captcha_enabled !== true;
+      captchaCard.classList.toggle("opacity-50", settings.captcha_enabled !== true);
+      captchaCard.classList.toggle("grayscale", settings.captcha_enabled !== true);
+      captchaCard.classList.toggle("cursor-not-allowed", settings.captcha_enabled !== true);
+      captchaCard.classList.toggle("border-blue-500", selectedDepositRoute === "CAPTCHA" && settings.captcha_enabled === true);
+      captchaCard.classList.toggle("border-emerald-200", selectedDepositRoute !== "CAPTCHA" || settings.captcha_enabled !== true);
+    }
     const captchaText = document.getElementById("captchaRouteText");
     if (captchaText) captchaText.textContent = settings.captcha_text || "CAPTCHA";
     const danaOnly = isDanaOnly();
@@ -694,6 +713,17 @@
       if (submitButton) submitButton.disabled = false;
     }
   };
+  window.selectDepositRoute = (route) => {
+    const enabled = route === "PW"
+      ? state.settings?.pw_enabled !== false
+      : state.settings?.captcha_enabled === true;
+    if (!enabled) {
+      showToast("warning", `⚠️ Jalur ${route} sedang dinonaktifkan admin.`);
+      return;
+    }
+    selectedDepositRoute = route;
+    applyUserDom();
+  };
   window.openChecker = () => {
     if (state.settings?.checker_open === false) {
       showToast("warning", "⚠️ Email Checker sedang ditutup admin. Silakan coba lagi nanti.");
@@ -751,7 +781,11 @@
     try {
       await api("deposits", {
         method: "POST",
-        body: JSON.stringify({ emails, campaignPassword: state.settings?.campaign_password }),
+        body: JSON.stringify({
+          emails,
+          jalur: selectedDepositRoute,
+          campaignPassword: selectedDepositRoute === "PW" ? state.settings?.campaign_password : "",
+        }),
       });
     } catch (error) {
       const duplicateConflict =

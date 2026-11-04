@@ -481,6 +481,9 @@
               >Password Wajib<input id="cPass" class="inp mt-1" maxlength="50"
             /></label>
             <label class="block text-xs font-semibold text-slate-500"
+              >Tulisan Jalur PW<input id="cPwLabel" class="inp mt-1 font-black text-slate-900" maxlength="80" placeholder="PW"
+            /></label>
+            <label class="block text-xs font-semibold text-slate-500"
               >Tulisan CAPTCHA<input id="cCaptcha" class="inp mt-1 font-black text-slate-900" maxlength="80" placeholder="CAPTCHA"
             /></label>
             <label class="block text-xs font-semibold text-slate-500"
@@ -1148,6 +1151,7 @@
         cPaymentMode.value = s.paymentMode || "all";
         cFee.value = s.fee;
         cPass.value = s.campaignPass;
+        cPwLabel.value = s.pwLabel || "PW";
         cCaptcha.value = s.captchaText || "CAPTCHA";
         cLimit.value = s.limit;
         cDaily.value = s.dailyMax;

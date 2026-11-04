@@ -1169,17 +1169,6 @@
           <p class="mt-1 text-xs font-semibold">Dilarang menyetorkan langsung dari generate tanpa mendaftarkannya. Pelanggaran dapat diblokir!</p>
         </div>
 
-        <div class="grid gap-3 sm:grid-cols-2">
-          <div id="pwRouteCard" class="rounded-2xl border-2 border-blue-500 bg-blue-50 p-4 shadow-sm">
-            <div class="flex items-center gap-3"><span class="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-white"><i class="fa-solid fa-paper-plane"></i></span><div><p class="text-sm font-black text-slate-800">PW</p><p class="text-[11px] font-medium text-slate-500">Untuk Gmail dengan status Good</p></div></div>
-            <p class="mt-3 text-xs font-extrabold text-slate-700">Harga: <span id="pwRouteRate">Rp0</span></p>
-          </div>
-          <div id="captchaRouteCard" class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 opacity-60 shadow-sm">
-            <div class="flex items-center gap-3"><span class="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-400 text-white"><i class="fa-solid fa-shield-halved"></i></span><div><p id="captchaRouteText" class="text-sm font-black text-slate-800">CAPTCHA</p><p class="text-[11px] font-medium text-slate-500">Untuk Gmail dengan status Good</p></div></div>
-            <p class="mt-3 text-xs font-extrabold text-slate-700">Harga: <span id="captchaRouteRate">Rp0</span></p>
-          </div>
-        </div>
-
         <!-- Rules Banner Box -->
         <div
           class="bg-white rounded-2xl p-4 card-soft-shadow border border-slate-100 flex items-start justify-between gap-3"
@@ -1204,38 +1193,6 @@
               </button>
             </div>
           </div>
-        </div>
-
-        <!-- Mandatory Password Card -->
-        <div
-          class="bg-white rounded-2xl p-4 card-soft-shadow border border-slate-100 flex flex-col gap-2"
-        >
-          <div class="flex items-center gap-2.5">
-            <div
-              class="w-8 h-8 rounded-xl icon-soft-box flex items-center justify-center text-white text-sm shrink-0"
-            >
-              <i class="fa-solid fa-key"></i>
-            </div>
-            <h3 class="text-xs font-extrabold text-slate-800">
-              Password Wajib untuk Gmail yang disetor
-            </h3>
-          </div>
-
-          <div class="custom-input rounded-xl px-3.5 py-2 flex items-center justify-between mt-1">
-            <span id="requiredPasswordText" class="text-xs font-black text-slate-900 tracking-wider"
-              >-</span
-            >
-            <button
-              onclick="copyCampaignPassword()"
-              class="btn-glossy px-2.5 py-1 text-white rounded-lg text-xs font-bold flex items-center gap-1 active:scale-95 transition"
-            >
-              <i class="fa-regular fa-copy"></i>
-              <span>Salin</span>
-            </button>
-          </div>
-          <p class="text-[11px] text-orange-600 font-medium mt-0.5">
-            Gmail dengan password berbeda akan ditolak.
-          </p>
         </div>
 
         <!-- Generated Gmail stays separate from the deposit textarea until the user copies it. -->
@@ -1285,6 +1242,18 @@
         <div
           class="bg-white rounded-2xl p-4 card-soft-shadow border border-slate-100 flex flex-col gap-3"
         >
+          <div class="grid gap-3 sm:grid-cols-2">
+            <button type="button" id="pwRouteCard" onclick="selectDepositRoute('PW')" class="route-card w-full rounded-2xl border-2 border-blue-500 bg-blue-50 p-4 text-left shadow-sm transition active:scale-[.99]">
+              <span class="flex items-center gap-3"><span class="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-white"><i class="fa-solid fa-paper-plane"></i></span><span><span id="pwRouteLabel" class="block text-sm font-black text-slate-800">PW</span><span class="block text-[11px] font-medium text-slate-500">Untuk Gmail dengan status Good</span></span></span>
+              <span class="mt-3 block text-xs font-extrabold text-slate-700">Harga: <span id="pwRouteRate">Rp0</span></span>
+              <span id="pwRoutePassword" class="mt-1 block text-xs font-black text-slate-900">PW: -</span>
+            </button>
+            <button type="button" id="captchaRouteCard" onclick="selectDepositRoute('CAPTCHA')" class="route-card w-full rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-left shadow-sm transition active:scale-[.99]">
+              <span class="flex items-center gap-3"><span class="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-400 text-white"><i class="fa-solid fa-shield-halved"></i></span><span><span id="captchaRouteText" class="block text-sm font-black text-slate-800">CAPTCHA</span><span class="block text-[11px] font-medium text-slate-500">Untuk Gmail dengan status Good</span></span></span>
+              <span class="mt-3 block text-xs font-extrabold text-slate-700">Harga: <span id="captchaRouteRate">Rp0</span></span>
+              <span id="captchaRouteDisabled" class="mt-1 block text-[11px] font-bold text-rose-400">Sedang dinonaktifkan Admin</span>
+            </button>
+          </div>
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
               <div
