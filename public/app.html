@@ -1263,6 +1263,7 @@
           </div>
           <div id="generatedGmailList" class="max-h-64 overflow-y-auto flex flex-col gap-2 pr-1" role="list" aria-label="Daftar Gmail hasil generate"></div>
           <p class="text-[11px] leading-relaxed text-slate-500">Ketuk Gmail untuk menyalin satu per satu, atau gunakan tombol untuk menyalin beberapa sekaligus. Hasil generate tidak disetor sampai kamu menempelkannya ke kolom setor.</p>
+          <p class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-bold leading-relaxed text-amber-800">Wajib setor Gmail yang tercantum di panel <b>Generated Gmail</b>. Gmail di luar daftar akan otomatis ditolak dan alasannya tampil di Riwayat.</p>
           <button type="button" onclick="copyAllGeneratedStockGmails()" class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 text-xs font-bold text-slate-700 flex items-center justify-center gap-2"><i class="fa-regular fa-copy"></i><span>Salin Semua Gmail</span></button>
           <button type="button" onclick="copyUndepositedStockGmails()" class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 text-xs font-bold text-slate-700 flex items-center justify-center gap-2"><i class="fa-regular fa-copy"></i><span>Salin Gmail Belum Disetor</span></button>
           <button id="generateStockGmailAgainButton" type="button" onclick="generateStockGmail()" class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 text-xs font-bold text-slate-800 flex items-center justify-center gap-2"><i class="fa-solid fa-wand-magic-sparkles"></i><span>Generate Lagi</span></button>
@@ -1314,7 +1315,7 @@
 
           <div>
             <label class="block text-[11px] font-semibold text-slate-500 mb-1.5"
-              >Tempel daftar Gmail (satu per baris)</label
+              >Tempel Gmail dari Generated Gmail (satu per baris)</label
             >
             <textarea
               id="gmailListInput"

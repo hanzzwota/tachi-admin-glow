@@ -213,7 +213,9 @@ async function userDeposits(request: Request, admin = false) {
 async function userDepositDetail(request: Request, id: string) {
   const user = await requireUser(request);
   const userFilter = `user_id=eq.${encodeURIComponent(String(user.id))}&limit=1`;
-  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    id,
+  );
   const query = isUuid
     ? `deposits?select=*&id=eq.${encodeURIComponent(id)}&${userFilter}`
     : `deposits?select=*&transaction_number=eq.${encodeURIComponent(id)}&${userFilter}`;
@@ -283,6 +285,39 @@ async function createDeposit(request: Request) {
     return json({ error: "Konfigurasi harga jalur belum valid" }, { status: 503 });
   if (emails.length > Number(settings.batch_limit))
     return json({ error: `Maksimal ${settings.batch_limit} Gmail per transaksi` }, { status: 400 });
+  const generatedClaims = await supabaseFetch<Record<string, unknown>[]>(
+    `generated_gmail_claims?select=gmail,normalized_gmail&user_id=eq.${encodeURIComponent(String(user.id))}&archived_at=is.null&limit=1000`,
+  );
+  const generatedSet = new Set(
+    generatedClaims
+      .map((claim) => text(claim.normalized_gmail || claim.gmail).toLowerCase())
+      .filter(Boolean),
+  );
+  const notGenerated = emails.filter((email) => !generatedSet.has(email.toLowerCase()));
+  if (notGenerated.length) {
+    const shown = notGenerated.slice(0, 5).join(", ");
+    const remaining = notGenerated.length > 5 ? `, dan ${notGenerated.length - 5} lainnya` : "";
+    const reason = `Otomatis ditolak: Gmail wajib sesuai daftar Generated Gmail pada UI. Gmail tidak sesuai: ${shown}${remaining}`;
+    const rejectedRows = await supabaseFetch<Record<string, unknown>[]>("deposits", {
+      method: "POST",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify({
+        user_id: user.id,
+        transaction_number: `TRX-${new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date()).replaceAll("-", "")}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
+        emails,
+        status: "ditolak",
+        rejected_emails: emails,
+        reason,
+        jalur,
+        rate,
+        submitted_at: new Date().toISOString(),
+        rejected_at: new Date().toISOString(),
+        verified_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }),
+    });
+    return json({ error: reason, rejected: true, deposit: rejectedRows[0] }, { status: 422 });
+  }
   const duplicateRows = await supabaseFetch<Record<string, unknown>[]>(
     "rpc/find_duplicate_deposit_gmails",
     {
@@ -336,12 +371,24 @@ async function createDeposit(request: Request) {
 
 async function approveDeposit(request: Request, id: string) {
   const admin = await requireAdmin(request);
+  const payload = await body(request);
+  const acceptedEmails = Array.isArray(payload.acceptedEmails)
+    ? payload.acceptedEmails.map(text).filter(Boolean)
+    : null;
   const result = await supabaseFetch<{ ok: boolean; earned: number; error_code: string | null }[]>(
     "rpc/approve_deposit_atomic",
-    { method: "POST", body: JSON.stringify({ p_deposit_id: id, p_admin_id: admin.id }) },
+    {
+      method: "POST",
+      body: JSON.stringify({
+        p_deposit_id: id,
+        p_admin_id: admin.id,
+        p_accepted_emails: acceptedEmails,
+      }),
+    },
   );
   const outcome = result[0];
-  if (!outcome?.ok) return json({ error: "Setoran tidak ditemukan atau sudah diproses" }, { status: 409 });
+  if (!outcome?.ok)
+    return json({ error: "Setoran tidak ditemukan atau sudah diproses" }, { status: 409 });
   return json({ ok: true, earned: Number(outcome.earned ?? 0) });
 }
 
@@ -350,11 +397,23 @@ async function rejectDeposit(request: Request, id: string) {
   const payload = await body(request);
   const reason = text(payload.reason);
   if (!reason) return json({ error: "Alasan penolakan wajib diisi" }, { status: 400 });
+  const rejectedEmails = Array.isArray(payload.rejectedEmails)
+    ? payload.rejectedEmails.map(text).filter(Boolean)
+    : null;
   const result = await supabaseFetch<{ ok: boolean; error_code: string | null }[]>(
     "rpc/reject_deposit_atomic",
-    { method: "POST", body: JSON.stringify({ p_deposit_id: id, p_admin_id: admin.id, p_reason: reason }) },
+    {
+      method: "POST",
+      body: JSON.stringify({
+        p_deposit_id: id,
+        p_admin_id: admin.id,
+        p_reason: reason,
+        p_rejected_emails: rejectedEmails,
+      }),
+    },
   );
-  if (!result[0]?.ok) return json({ error: "Setoran tidak ditemukan atau sudah diproses" }, { status: 409 });
+  if (!result[0]?.ok)
+    return json({ error: "Setoran tidak ditemukan atau sudah diproses" }, { status: 409 });
   return json({ ok: true });
 }
 

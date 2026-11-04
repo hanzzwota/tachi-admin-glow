@@ -816,12 +816,22 @@
         /sudah pernah dikirim|tidak dapat dikirim ulang|sudah diklaim|terduplikasi|yang sama tidak boleh dikirim/i.test(
           error.message || "",
         );
+      const generatedMismatch =
+        error.status === 422 && /Generated Gmail|otomatis ditolak|tidak sesuai/i.test(error.message || "");
       showToast(
-        duplicateConflict ? "warning" : "error",
-        duplicateConflict
+        duplicateConflict || generatedMismatch ? "warning" : "error",
+        duplicateConflict || generatedMismatch
           ? error.message
           : `Setoran Gmail gagal dikirim: ${errorText(error, "coba lagi nanti.")}`,
       );
+      if (generatedMismatch) {
+        await refreshGeneratedStockGmails().catch((refreshError) =>
+          console.error("Gagal memperbarui status Generated Gmail:", refreshError),
+        );
+        await syncAppData().catch((refreshError) =>
+          console.error("Gagal memuat riwayat auto-tolak:", refreshError),
+        );
+      }
       return;
     } finally {
       depositSubmissionBusy = false;

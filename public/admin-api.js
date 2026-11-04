@@ -505,11 +505,13 @@
     const confirmButton = document.getElementById("depositActionConfirmButton");
     if (confirmButton?.disabled) return;
     try {
-      const reason = document.getElementById("rCustom")?.value.trim() || "";
-      if (!reason) {
-        showToast("warning", "⚠️ Alasan penolakan wajib diisi!");
+      const type = document.getElementById("rType")?.value || "Lainnya";
+      const detail = document.getElementById("rCustom")?.value.trim() || "";
+      if (type === "Lainnya" && !detail) {
+        showToast("warning", "⚠️ Tulis alasan penolakan sendiri!");
         return;
       }
+      const reason = type === "Lainnya" ? detail : detail ? `${type}: ${detail}` : type;
       const rejectedEmails = [
         ...document.querySelectorAll("input[name='rejectedEmail']:checked"),
       ].map((input) => input.value);
