@@ -585,6 +585,16 @@ async function updateSettings(request: Request) {
         message.includes("PGRST204") ||
         (message.includes("400") && message.includes(optionalSetting[0]));
       if (
+        optionalColumnMissing &&
+        optionalSetting[0] === "information_cards" &&
+        Array.isArray(optionalSetting[1]) &&
+        optionalSetting[1].length
+      ) {
+        throw new Error(
+          "Konfigurasi info belum tersimpan karena migration information_cards belum diterapkan di database.",
+        );
+      }
+      if (
         !optionalColumnMissing ||
         (optionalSetting[0] === "store_closed_reason" && optionalSetting[1])
       )
