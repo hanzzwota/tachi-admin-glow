@@ -43,6 +43,26 @@
         margin-bottom: 1rem;
         text-align: center;
       }
+      #appModal.information-modal #informationModalIcon {
+        display: flex;
+        width: 3.5rem;
+        height: 3.5rem;
+        margin: 0 auto 0.8rem;
+        align-items: center;
+        justify-content: center;
+        border-radius: 1.25rem;
+        background: rgba(99, 102, 241, 0.16);
+        color: #a5b4fc;
+        font-size: 1.35rem;
+        box-shadow: inset 0 0 0 1px rgba(129, 140, 248, 0.18);
+      }
+      #appModal.information-modal #informationModalSubtitle {
+        display: block;
+        margin-top: 0.4rem;
+        color: #a1a1aa;
+        font-size: 0.72rem;
+        line-height: 1.5;
+      }
       #appModal.information-modal #modalTitle { color: #f8fafc; font-size: 1.2rem; }
       #appModal.information-modal #informationModalClose {
         position: absolute;
@@ -52,6 +72,23 @@
         color: #cbd5e1;
       }
       #appModal.information-modal #modalBody { color: #cbd5e1; }
+      #appModal.information-modal .information-content-card {
+        max-height: 12rem;
+        overflow-y: auto;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 1rem;
+        background: #18191c;
+        padding: 1rem;
+        scrollbar-width: thin;
+      }
+      #appModal.information-modal .information-content-card::-webkit-scrollbar { width: 5px; }
+      #appModal.information-modal .information-content-card::-webkit-scrollbar-thumb { background: #52525b; border-radius: 999px; }
+      #appModal.information-modal #informationExpandButton {
+        margin-top: 0.75rem;
+        color: #a5b4fc;
+        font-size: 0.75rem;
+        font-weight: 800;
+      }
       #appModal.information-modal #informationModalFooter {
         border: 1px solid rgba(255, 255, 255, 0.1);
         background: #202124;
@@ -1869,7 +1906,9 @@
     >
       <div id="informationModalPanel" class="w-full max-w-md overflow-hidden rounded-xl border border-white/70 bg-white/95 shadow-[0_24px_80px_rgba(15,23,42,0.3)] transition-all">
         <div id="informationModalHeader" class="flex justify-between items-center mb-3">
+          <div id="informationModalIcon" class="hidden"><i class="fa-solid fa-sparkles"></i></div>
           <h3 id="modalTitle" class="font-extrabold text-base text-slate-800">Modal Title</h3>
+          <p id="informationModalSubtitle" class="hidden">Pembaruan dan informasi terbaru dari admin.</p>
           <button
             id="informationModalClose"
             onclick="closeModal()"
@@ -2004,6 +2043,8 @@
       }
 
       let lastInformationShown = "";
+      let informationExpanded = false;
+      const INFORMATION_PREVIEW_LENGTH = 220;
       function informationCardsFromSettings(settings) {
         const rawCards = Array.isArray(settings?.information_cards)
           ? settings.information_cards
@@ -2030,25 +2071,42 @@
             ? [{ category: "Pengumuman", title: "Info Terbaru", info: settings.announcement.trim() }]
             : [];
         const signature = JSON.stringify(cards);
-        if (!cards.length || signature === lastInformationShown) return;
+        if (!cards.length) {
+          lastInformationShown = "";
+          if (!document.getElementById("appModal")?.classList.contains("hidden")) closeModal();
+          return;
+        }
+        if (signature === lastInformationShown) return;
         lastInformationShown = signature;
-        const icons = ["fa-bolt", "fa-circle-info", "fa-bullhorn", "fa-shield-halved", "fa-star"];
-        const body = `<div class="space-y-3">
-          <div class="flex flex-col items-center text-center">
-            <span class="flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-xl text-white shadow-lg shadow-blue-950/40"><i class="fa-solid fa-sparkles"></i></span>
-            <p class="mt-3 text-xs leading-relaxed text-slate-400">Pembaruan dan informasi terbaru dari admin.</p>
-          </div>
-          <div class="space-y-2">${cards
-            .map(
-              (card, index) => `<article class="rounded-xl border border-white/10 bg-[#18191c] p-3.5"><div class="flex items-start gap-2.5"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-slate-300"><i class="fa-solid ${icons[index % icons.length]}"></i></span><div class="min-w-0"><span class="inline-flex rounded-md bg-white/10 px-2 py-1 text-[9px] font-bold uppercase tracking-wide text-slate-400">${escapeSupport(card.category || "Info")}</span><h4 class="mt-1 text-sm font-bold text-slate-100">${escapeSupport(card.title)}</h4><p class="mt-1 whitespace-pre-line text-xs leading-relaxed text-slate-300">${escapeSupport(card.info)}</p></div></div></article>`,
-            )
-            .join("")}</div>
-        </div>`;
-        document.getElementById("modalTitle").innerText = "Informasi";
-        document.getElementById("modalBody").innerHTML = body;
+        informationExpanded = false;
+        renderLatestInformationCard(cards[0]);
         document.getElementById("appModal").classList.add("information-modal");
         document.getElementById("appModal").classList.remove("hidden");
       }
+      function renderLatestInformationCard(card) {
+        const isLong = card.info.length > INFORMATION_PREVIEW_LENGTH;
+        const content = informationExpanded || !isLong
+          ? card.info
+          : `${card.info.slice(0, INFORMATION_PREVIEW_LENGTH).trim()}…`;
+        const icon = document.getElementById("informationModalIcon");
+        const subtitle = document.getElementById("informationModalSubtitle");
+        const body = document.getElementById("modalBody");
+        if (icon) icon.classList.remove("hidden");
+        if (subtitle) {
+          subtitle.textContent = "Pembaruan dan informasi terbaru dari admin.";
+          subtitle.classList.remove("hidden");
+        }
+        document.getElementById("modalTitle").innerText = card.title;
+        body.innerHTML = `<article class="information-content-card"><div class="mb-2"><span class="inline-flex rounded-md bg-white/10 px-2 py-1 text-[9px] font-bold uppercase tracking-wide text-slate-400">${escapeSupport(card.category || "Info")}</span></div><p class="whitespace-pre-line text-xs leading-7 text-slate-300">${escapeSupport(content)}</p></article>${isLong ? `<button id="informationExpandButton" type="button" onclick="toggleInformationExpanded()">${informationExpanded ? "Ringkas" : "Lihat Selengkapnya"}</button>` : ""}`;
+      }
+      window.toggleInformationExpanded = () => {
+        const settings = window.tachiApiState?.settings || {};
+        const cards = informationCardsFromSettings(settings);
+        const latest = cards[0] || (settings.announcement?.trim() ? { category: "Pengumuman", title: "Info Terbaru", info: settings.announcement.trim() } : null);
+        if (!latest) return;
+        informationExpanded = !informationExpanded;
+        renderLatestInformationCard(latest);
+      };
       window.maybeShowInformationOverlay = maybeShowInformationOverlay;
 
       function nextSlide() {
@@ -2396,6 +2454,8 @@
       // Dynamic Modal handlers
       function openModal(title, body) {
         document.getElementById("appModal").classList.remove("information-modal");
+        document.getElementById("informationModalIcon")?.classList.add("hidden");
+        document.getElementById("informationModalSubtitle")?.classList.add("hidden");
         document.getElementById("modalTitle").innerText = title;
         document.getElementById("modalBody").innerText = body;
         document.getElementById("appModal").classList.remove("hidden");
@@ -2403,6 +2463,9 @@
 
       function closeModal() {
         document.getElementById("appModal").classList.remove("information-modal");
+        document.getElementById("informationModalIcon")?.classList.add("hidden");
+        document.getElementById("informationModalSubtitle")?.classList.add("hidden");
+        informationExpanded = false;
         document.getElementById("appModal").classList.add("hidden");
       }
 
