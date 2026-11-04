@@ -414,9 +414,14 @@
             <h3 class="font-bold">
               <i class="fa fa-gear text-blue-600 mr-2"></i>Parameter Konfigurasi
             </h3>
-            <label class="block text-xs font-semibold text-slate-500"
-              >Rate Setoran per Gmail (Rp)<input id="cRate" type="number" min="0" class="inp mt-1"
-            /></label>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <label class="block text-xs font-semibold text-slate-500"
+                >Harga PW per Gmail (Rp)<input id="cPwRate" type="number" min="0" step="1" required class="inp mt-1"
+              /></label>
+              <label class="block text-xs font-semibold text-slate-500"
+                >Harga CAPTCHA per Gmail (Rp)<input id="cCaptchaRate" type="number" min="0" step="1" required class="inp mt-1"
+              /></label>
+            </div>
             <label class="block text-xs font-semibold text-slate-500"
               >Minimal Tarik DANA (Rp) — OVO/GoPay/ShopeePay/BCA/BRI/Mandiri tetap min
               Rp15.000<input id="cMin" type="number" min="0" class="inp mt-1"
@@ -803,9 +808,15 @@
             },
           )
           .reduce((total, s) => total + finite(s.accepted), 0);
-        const rate = finite(db.settings.rate);
         const hasilGmail = db.setoran
-          .reduce((total, s) => total + (finite(s.earned) || finite(s.accepted) * rate), 0);
+          .reduce((total, s) => {
+            const fallbackRate = s.jalur === "CAPTCHA" ? db.settings.captchaRate : db.settings.pwRate;
+            const transactionRate = Number(s.rate);
+            const rate = Number.isSafeInteger(transactionRate) && transactionRate >= 0
+              ? transactionRate
+              : fallbackRate;
+            return total + (finite(s.earned) || finite(s.accepted) * rate);
+          }, 0);
         const harusDibayar = db.withdrawals
           .filter((w) => w.status === "pending")
           .reduce((total, w) => total + finite(w.amount) + finite(w.fee), 0);
@@ -960,9 +971,14 @@
       }
       function accModal(id) {
         const s = db.setoran.find((x) => x.id === id);
+        const fallbackRate = s.jalur === "CAPTCHA" ? db.settings.captchaRate : db.settings.pwRate;
+        const transactionRate = Number(s.rate);
+        const rate = Number.isSafeInteger(transactionRate) && transactionRate >= 0
+          ? transactionRate
+          : fallbackRate;
         openModal(
           "Pilih Gmail yang Diterima " + id,
-          `<p class="text-sm mb-2">Centang Gmail yang ingin diterima. Gmail lain tetap pending dan tidak otomatis ditolak. Rate: <b>${rp(db.settings.rate)}</b></p><div class="max-h-64 overflow-y-auto space-y-2">${s.emails.map((email) => `<label class="flex items-center gap-2 rounded-xl border border-blue-50 bg-white p-2 text-xs"><input type="checkbox" name="acceptedEmail" value="${esc(email)}" ${s.accepted_emails?.includes(email) ? "checked" : ""}><span class="font-mono">${esc(email)}</span></label>`).join("")}</div>
+          `<p class="text-sm mb-2">Centang Gmail yang ingin diterima. Gmail lain tetap pending dan tidak otomatis ditolak. Rate: <b>${rp(rate)}</b></p><div class="max-h-64 overflow-y-auto space-y-2">${s.emails.map((email) => `<label class="flex items-center gap-2 rounded-xl border border-blue-50 bg-white p-2 text-xs"><input type="checkbox" name="acceptedEmail" value="${esc(email)}" ${s.accepted_emails?.includes(email) ? "checked" : ""}><span class="font-mono">${esc(email)}</span></label>`).join("")}</div>
   <p class="text-sm mt-2">Saldo dihitung dari Gmail yang dicentang.</p>
   <button id="depositActionConfirmButton" data-idle-label="Konfirmasi ACC" onclick="doAcc('${id}')" class="w-full py-3 rounded-xl mt-4 font-bold bg-green-500 text-white">Konfirmasi ACC</button>`,
         );
@@ -1146,7 +1162,8 @@
         if (document.activeElement?.closest("form")) return;
         setSupportToggle("supportWhatsappToggle", s.supportChannels?.whatsappEnabled !== false);
         setSupportToggle("supportTelegramToggle", s.supportChannels?.telegramEnabled !== false);
-        cRate.value = s.rate;
+        cPwRate.value = s.pwRate;
+        cCaptchaRate.value = s.captchaRate;
         cMin.value = s.minTarik;
         cPaymentMode.value = s.paymentMode || "all";
         cFee.value = s.fee;
@@ -1191,7 +1208,9 @@
         if (!(lim >= 1 && lim <= 50)) return showToast("warning", "⚠️ Limit per transaksi harus 1–50.");
         if (!cPass.value.trim()) return showToast("warning", "⚠️ Password wajib harus diisi!");
         Object.assign(db.settings, {
-          rate: Math.max(0, +cRate.value),
+          pwRate: Math.max(0, +cPwRate.value),
+          captchaRate: Math.max(0, +cCaptchaRate.value),
+          rate: Math.max(0, +cPwRate.value),
           minTarik: Math.max(0, +cMin.value),
           fee: Math.max(0, Math.round(+cFee.value / 1000) * 1000),
           campaignPass: cPass.value.trim(),

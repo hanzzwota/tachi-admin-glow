@@ -193,17 +193,27 @@
         color: #fff;
       }
       .route-tab {
-        border: 1px solid #dbe3ee;
-        background: #fff;
+        box-sizing: border-box;
+        min-height: 122px;
+        border: 2px solid rgba(148, 163, 184, 0.28);
+        background: #1e293b;
+        color: #e2e8f0;
       }
       .route-tab.route-selected {
-        border: 2px solid #172033;
-        background: linear-gradient(135deg, #090b10, #172033);
+        border-color: #38bdf8;
+        background: #1e293b;
         color: #fff;
-        box-shadow: 0 8px 18px -10px rgba(15, 23, 42, 0.75);
+        box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.3), 0 0 14px rgba(56, 189, 248, 0.22);
       }
       .route-tab.route-selected .route-copy {
         color: #fff;
+      }
+      .route-tab .route-copy {
+        color: #cbd5e1;
+      }
+      .route-price-panel {
+        background: #171f32;
+        color: #cbd5e1;
       }
       .route-tab.route-selected .route-icon {
         background: rgba(255, 255, 255, 0.18);
@@ -1271,7 +1281,8 @@
                   <span class="route-copy mt-0.5 block text-[10px] leading-tight text-slate-500">Untuk Gmail dengan status Good</span>
                 </span>
               </span>
-              <span class="route-copy mt-2 block text-[11px] font-medium text-slate-700">Harga: <span id="pwRouteRate">0</span></span>
+              <span class="route-price-panel mt-2 block rounded-xl px-2.5 py-2 text-[11px] font-medium">Harga: <span id="pwRouteRate">0</span></span>
+              <span id="pwRouteDisabledText" class="invisible mt-1 min-h-[13px] text-[9px] leading-tight text-rose-300">Sedang dinonaktifkan Admin</span>
             </button>
             <button type="button" id="captchaRouteCard" aria-pressed="false" onclick="selectDepositRoute('CAPTCHA')" class="route-tab route-unselected min-w-0 rounded-2xl p-3 text-left transition active:scale-[.99]">
               <span class="flex items-center gap-2.5">
@@ -1281,8 +1292,8 @@
                   <span class="route-copy mt-0.5 block text-[10px] leading-tight text-slate-500">Untuk Gmail dengan status Good</span>
                 </span>
               </span>
-              <span class="route-copy mt-2 block text-[11px] font-medium text-slate-700">Harga: <span id="captchaRouteRate">0</span></span>
-              <span id="captchaRouteDisabledText" class="mt-1 hidden text-[9px] leading-tight text-rose-500">Sedang dinonaktifkan Admin</span>
+              <span class="route-price-panel mt-2 block rounded-xl px-2.5 py-2 text-[11px] font-medium">Harga: <span id="captchaRouteRate">0</span></span>
+              <span id="captchaRouteDisabledText" class="invisible mt-1 min-h-[13px] text-[9px] leading-tight text-rose-300">Sedang dinonaktifkan Admin</span>
             </button>
           </div>
           <div class="flex items-center justify-between">

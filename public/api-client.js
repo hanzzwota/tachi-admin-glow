@@ -45,6 +45,12 @@
     }
   };
   const format = (value) => `Rp${Number(value || 0).toLocaleString("id-ID")}`;
+  const depositRateFor = (deposit) => {
+    const route = String(deposit?.jalur || "PW").trim().toUpperCase();
+    const configuredRate =
+      route === "CAPTCHA" ? state.settings?.captcha_rate : state.settings?.pw_rate;
+    return Number(deposit?.rate ?? configuredRate ?? state.settings?.rate ?? 4500);
+  };
   const paymentMethods = ["DANA", "OVO", "GoPay", "ShopeePay", "BCA", "BRI", "Mandiri"];
   const FEE_STEP = 1000;
   const FIXED_MIN_WITHDRAWAL = 4000;
@@ -91,6 +97,7 @@
     );
   const state = { user: null, settings: null, deposits: [], withdrawals: [] };
   let selectedDepositRoute = "PW";
+  let depositSubmissionBusy = false;
   const generatedStockGmails = [];
   let selectedStockGenerateCount = 1;
   let stockGenerateTarget = 0;
@@ -153,9 +160,16 @@
         if (element) element.textContent = format(user.balance);
       },
     );
+    if (settings.pw_enabled === false && settings.captcha_enabled === true)
+      selectedDepositRoute = "CAPTCHA";
+    if (settings.captcha_enabled !== true && settings.pw_enabled !== false)
+      selectedDepositRoute = "PW";
+    const pwRate = Number(settings.pw_rate ?? settings.rate ?? 0);
+    const captchaRate = Number(settings.captcha_rate ?? settings.rate ?? 0);
     ["gmailRateTop", "gmailRateSaldo"].forEach((id) => {
       const element = document.getElementById(id);
-      if (element) element.textContent = `${format(settings.rate)} / Gmail`;
+      if (element)
+        element.textContent = `${format(selectedDepositRoute === "CAPTCHA" ? captchaRate : pwRate)} / Gmail`;
     });
     const campaign = document.getElementById("requiredPasswordText");
     if (campaign) campaign.textContent = settings.campaign_password;
@@ -163,32 +177,31 @@
     if (pwLabel) pwLabel.textContent = settings.pw_text || "PW";
     const pwPassword = document.getElementById("pwRoutePassword");
     if (pwPassword) pwPassword.textContent = `${settings.pw_text || "PW"}: ${settings.campaign_password || "-"}`;
-    const rateText = format(settings.rate);
-    ["pwRouteRate", "captchaRouteRate"].forEach((id) => {
-      const element = document.getElementById(id);
-      if (element) element.textContent = rateText;
-    });
+    const pwRouteRate = document.getElementById("pwRouteRate");
+    if (pwRouteRate) pwRouteRate.textContent = format(pwRate);
+    const captchaRouteRate = document.getElementById("captchaRouteRate");
+    if (captchaRouteRate) captchaRouteRate.textContent = format(captchaRate);
     const pwCard = document.getElementById("pwRouteCard");
     const captchaCard = document.getElementById("captchaRouteCard");
-    if (settings.pw_enabled === false && settings.captcha_enabled === true) selectedDepositRoute = "CAPTCHA";
-    if (settings.captcha_enabled !== true && settings.pw_enabled !== false) selectedDepositRoute = "PW";
     if (pwCard) {
       pwCard.setAttribute("aria-pressed", String(selectedDepositRoute === "PW"));
-      pwCard.disabled = settings.pw_enabled === false;
+      pwCard.disabled = settings.pw_enabled === false || depositSubmissionBusy;
       pwCard.classList.toggle("route-selected", selectedDepositRoute === "PW" && settings.pw_enabled !== false);
       pwCard.classList.toggle("route-unselected", selectedDepositRoute !== "PW" || settings.pw_enabled === false);
       pwCard.classList.toggle("opacity-60", settings.pw_enabled === false);
       pwCard.classList.toggle("cursor-not-allowed", settings.pw_enabled === false);
+      const disabledText = document.getElementById("pwRouteDisabledText");
+      if (disabledText) disabledText.classList.toggle("invisible", settings.pw_enabled !== false);
     }
     if (captchaCard) {
       captchaCard.setAttribute("aria-pressed", String(selectedDepositRoute === "CAPTCHA"));
-      captchaCard.disabled = settings.captcha_enabled !== true;
+      captchaCard.disabled = settings.captcha_enabled !== true || depositSubmissionBusy;
       captchaCard.classList.toggle("route-selected", selectedDepositRoute === "CAPTCHA" && settings.captcha_enabled === true);
       captchaCard.classList.toggle("route-unselected", selectedDepositRoute !== "CAPTCHA" || settings.captcha_enabled !== true);
       captchaCard.classList.toggle("opacity-60", settings.captcha_enabled !== true);
       captchaCard.classList.toggle("cursor-not-allowed", settings.captcha_enabled !== true);
       const disabledText = document.getElementById("captchaRouteDisabledText");
-      if (disabledText) disabledText.classList.toggle("hidden", settings.captcha_enabled === true);
+      if (disabledText) disabledText.classList.toggle("invisible", settings.captcha_enabled === true);
       const captchaIcon = captchaCard.querySelector(".route-icon");
       if (captchaIcon) captchaIcon.classList.toggle("opacity-60", settings.captcha_enabled !== true);
     }
@@ -366,7 +379,7 @@
       }[depositStatus];
       const checkingDeposit = ["dicek", "diperiksa", "diproses", "processing", "checking", "checked"].includes(depositStatus);
       const jalur = String(deposit.jalur || deposit.channel || deposit.source || deposit.path || "PW").trim();
-      const rate = Number(deposit.rate ?? state.settings?.rate ?? 4500);
+      const rate = depositRateFor(deposit);
       const verifiedAt = deposit.verified_at || deposit.verifiedAt || deposit.reviewed_at || deposit.updated_at || null;
       return emails.map((email) => {
         const key = String(email).trim().toLowerCase();
@@ -512,7 +525,7 @@
     const status = String(deposit.status || "pending").toLowerCase();
     const rejected = status === "ditolak";
     const approved = status === "diterima";
-    const rate = Number(deposit.rate ?? state.settings?.rate ?? 4500);
+    const rate = depositRateFor(deposit);
     const formatDate = (value) => {
       if (!value) return "Menunggu pemeriksaan";
       const date = new Date(value);
@@ -718,9 +731,12 @@
     }
   };
   window.selectDepositRoute = (route) => {
-    const enabled = route === "PW"
-      ? state.settings?.pw_enabled !== false
-      : state.settings?.captcha_enabled === true;
+    if (depositSubmissionBusy) return;
+    if (route !== "PW" && route !== "CAPTCHA") return;
+    const enabled =
+      route === "PW"
+        ? state.settings?.pw_enabled !== false
+        : state.settings?.captcha_enabled === true;
     if (!enabled) {
       showToast("warning", `⚠️ Jalur ${route} sedang dinonaktifkan admin.`);
       return;
@@ -739,6 +755,7 @@
     );
   };
   window.submitGmailStoran = async () => {
+    if (depositSubmissionBusy) return;
     const input = document.getElementById("gmailListInput");
     const emails =
       input?.value
@@ -782,6 +799,8 @@
       );
       return;
     }
+    depositSubmissionBusy = true;
+    applyUserDom();
     try {
       await api("deposits", {
         method: "POST",
@@ -804,6 +823,9 @@
           : `Setoran Gmail gagal dikirim: ${errorText(error, "coba lagi nanti.")}`,
       );
       return;
+    } finally {
+      depositSubmissionBusy = false;
+      applyUserDom();
     }
     await refreshGeneratedStockGmails().catch((error) =>
       console.error("Gagal memperbarui status Gmail hasil generate:", error),

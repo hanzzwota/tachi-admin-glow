@@ -241,6 +241,9 @@ async function adminUsers(request: Request) {
 async function createDeposit(request: Request) {
   const user = await requireUser(request);
   const payload = await body(request);
+  const requestedRoute = text(payload.jalur).trim().toUpperCase();
+  if (requestedRoute !== "PW" && requestedRoute !== "CAPTCHA")
+    return json({ error: "Jalur setoran tidak valid" }, { status: 400 });
   const emails = Array.isArray(payload.emails) ? payload.emails.map(text).filter(Boolean) : [];
   if (!emails.length || emails.some((email) => !/^[a-z0-9._%+-]{1,64}@gmail\.com$/i.test(email)))
     return json({ error: "Daftar Gmail tidak valid" }, { status: 400 });
@@ -268,13 +271,16 @@ async function createDeposit(request: Request) {
       },
       { status: 423 },
     );
-  const jalur = text(payload.jalur).toUpperCase() === "CAPTCHA" ? "CAPTCHA" : "PW";
+  const jalur = requestedRoute;
   if (jalur === "PW" && settings.pw_enabled === false)
     return json({ error: "Jalur PW sedang dinonaktifkan admin" }, { status: 423 });
   if (jalur === "CAPTCHA" && settings.captcha_enabled !== true)
     return json({ error: "Jalur CAPTCHA sedang dinonaktifkan admin" }, { status: 423 });
   if (jalur === "PW" && text(payload.campaignPassword) !== String(settings.campaign_password))
     return json({ error: "Password wajib salah" }, { status: 403 });
+  const rate = Number(jalur === "PW" ? settings["pw_rate"] : settings["captcha_rate"]);
+  if (!Number.isSafeInteger(rate) || rate < 0)
+    return json({ error: "Konfigurasi harga jalur belum valid" }, { status: 503 });
   if (emails.length > Number(settings.batch_limit))
     return json({ error: `Maksimal ${settings.batch_limit} Gmail per transaksi` }, { status: 400 });
   const duplicateRows = await supabaseFetch<Record<string, unknown>[]>(
@@ -320,7 +326,7 @@ async function createDeposit(request: Request) {
       emails,
       status: "pending",
       jalur,
-      rate: Number(settings.rate ?? 4500),
+      rate,
       submitted_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }),
@@ -362,6 +368,18 @@ async function updateSettings(request: Request) {
     return Number.isFinite(parsed) ? parsed : 0;
   };
   const incomingFee = payload.fee ?? current?.fee ?? 0;
+  const legacyRate = payload["rate"];
+  const parseRate = (value: unknown) => {
+    if (typeof value === "string" && !value.trim()) return Number.NaN;
+    if (typeof value !== "number" && typeof value !== "string") return Number.NaN;
+    return Number(value);
+  };
+  const pwRate = parseRate(
+    payload["pwRate"] ?? legacyRate ?? current?.["pw_rate"] ?? current?.["rate"] ?? 4500,
+  );
+  const captchaRate = parseRate(
+    payload["captchaRate"] ?? legacyRate ?? current?.["captcha_rate"] ?? current?.["rate"] ?? 4500,
+  );
   const incomingPaymentFees = payload.paymentFees ?? current?.payment_fees ?? {};
   const rawFees =
     incomingPaymentFees && typeof incomingPaymentFees === "object"
@@ -372,8 +390,20 @@ async function updateSettings(request: Request) {
       { error: "Fee harus kelipatan Rp1.000 (contoh: 0, 1.000, 2.000)" },
       { status: 400 },
     );
+  if (
+    !Number.isSafeInteger(pwRate) ||
+    pwRate < 0 ||
+    !Number.isSafeInteger(captchaRate) ||
+    captchaRate < 0
+  )
+    return json(
+      { error: "Harga PW dan CAPTCHA harus bilangan bulat non-negatif yang valid." },
+      { status: 400 },
+    );
   const allowed = {
-    rate: numberOrZero(payload.rate ?? current?.rate),
+    rate: pwRate,
+    pw_rate: pwRate,
+    captcha_rate: captchaRate,
     min_withdrawal: Math.max(
       FIXED_MIN_WITHDRAWAL,
       numberOrZero(payload.minWithdrawal ?? current?.min_withdrawal),

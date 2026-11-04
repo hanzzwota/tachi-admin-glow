@@ -44,3 +44,7 @@ ADMIN_PASSWORD=<password admin minimal 6 karakter>
 - `POST /api/stock/claim`
 
 Semua session memakai cookie `HttpOnly; SameSite=None; Secure`, dan semua data akun, saldo, setoran, withdrawal, konfigurasi, serta stok Gmail dibaca/ditulis melalui server dan Supabase. Browser storage bukan sumber data aplikasi.
+
+## Harga per jalur setoran
+
+Sebelum merilis versi aplikasi yang memakai harga per mode, terapkan migrasi `supabase/migrations/20261104100000_pw_captcha_rates.sql` ke database Supabase melalui prosedur rilis yang berwenang. Migrasi menambah `app_settings.pw_rate` dan `app_settings.captcha_rate`, masing-masing diinisialisasi dari nilai `rate` yang lama. Dashboard admin menjadi sumber konfigurasi; endpoint setoran memilih harga di server dan menyimpan snapshot pada setiap transaksi.

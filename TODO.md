@@ -1,0 +1,7 @@
+# TODO
+
+- [x] **Harga PW dan CAPTCHA memiliki satu sumber admin/database.** Admin dapat mengatur harga PW dan CAPTCHA secara terpisah; harga disimpan pada konfigurasi `app_settings`; dashboard user menampilkan nilai tersimpan setelah refresh dan navigasi; harga lama dipakai sebagai nilai awal kompatibilitas.
+- [x] **Server memvalidasi mode dan harga ketika setoran dibuat.** Hanya mode PW dan CAPTCHA yang valid diterima; mode yang dimatikan ditolak juga untuk permintaan API langsung; server memilih harga dari konfigurasi yang cocok tanpa mempercayai harga dari browser; harga yang dipakai disimpan pada transaksi sebagai snapshot.
+- [x] **Form konfigurasi admin menyimpan dan memvalidasi perubahan harga.** Kedua nilai harga harus bilangan bulat non-negatif yang valid; pesan keberhasilan atau kegagalan berasal dari hasil server.
+- [x] **Pilihan PW/CAPTCHA memiliki tampilan responsif dan status aktif yang jelas.** Kedua kartu seragam, memakai palet navy yang diminta dengan outline aktif biru 2px dan glow halus; hanya satu pilihan aktif; status pilihan mengikuti mode transaksi; pilihan tidak berubah saat pengiriman berlangsung.
+- [x] **Pemeriksaan lokal dan migrasi backend selesai.** Tes unit yang tersedia lulus (3/3), production build lulus, dan sintaks JavaScript/inline HTML lulus. Migrasi `pw_captcha_rates` telah diterapkan dan diverifikasi pada proyek Supabase `ryuu`; kode aplikasi belum di-deploy.

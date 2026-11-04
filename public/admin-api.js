@@ -95,6 +95,8 @@
   const normalize = (settings, deposits, users, withdrawals, assignedGmails = [], paymentFeesOverride = null) => ({
     settings: {
       rate: Number(settings?.rate || 0),
+      pwRate: Number(settings?.pw_rate ?? settings?.rate ?? 0),
+      captchaRate: Number(settings?.captcha_rate ?? settings?.rate ?? 0),
       minTarik: Math.max(FIXED_MIN_WITHDRAWAL, Number(settings?.min_withdrawal || 0)),
       paymentMode: settings?.payment_mode === "dana_only" ? "dana_only" : "all",
       fee: normalizeFee(settings?.fee),
@@ -346,7 +348,9 @@
     });
   };
   const settingsPayload = (overrides = {}) => ({
-    rate: db.settings.rate,
+    rate: db.settings.pwRate,
+    pwRate: db.settings.pwRate,
+    captchaRate: db.settings.captchaRate,
     minWithdrawal: db.settings.minTarik,
     paymentMode: db.settings.paymentMode,
     fee: db.settings.fee,
@@ -642,8 +646,21 @@
   window.saveSettings = async (event) => {
     event.preventDefault();
     const limit = parseInt(cLimit.value, 10);
+    const pwRate = Number(cPwRate.value);
+    const captchaRate = Number(cCaptchaRate.value);
     if (!(limit >= 1 && limit <= 50)) {
       showToast("warning", "⚠️ Limit akun per transaksi harus 1–50.");
+      return;
+    }
+    if (
+      !String(cPwRate.value).trim() ||
+      !String(cCaptchaRate.value).trim() ||
+      !Number.isSafeInteger(pwRate) ||
+      pwRate < 0 ||
+      !Number.isSafeInteger(captchaRate) ||
+      captchaRate < 0
+    ) {
+      showToast("warning", "Harga PW dan CAPTCHA harus bilangan bulat nol atau lebih.");
       return;
     }
     if (!cPass.value.trim()) {
@@ -671,7 +688,9 @@
         method: "PATCH",
         body: JSON.stringify(
           settingsPayload({
-            rate: cRate.value,
+            rate: pwRate,
+            pwRate,
+            captchaRate,
             minWithdrawal: cMin.value,
             paymentMode: cPaymentMode.value,
             fee: cFee.value,
