@@ -30,6 +30,34 @@
         min-height: 100vh;
       }
 
+      #appModal.information-modal #informationModalPanel {
+        max-width: 410px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: #111215;
+        color: #f8fafc;
+        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+      }
+      #appModal.information-modal #informationModalHeader {
+        position: relative;
+        display: block;
+        margin-bottom: 1rem;
+        text-align: center;
+      }
+      #appModal.information-modal #modalTitle { color: #f8fafc; font-size: 1.2rem; }
+      #appModal.information-modal #informationModalClose {
+        position: absolute;
+        top: -0.25rem;
+        right: -0.25rem;
+        background: transparent;
+        color: #cbd5e1;
+      }
+      #appModal.information-modal #modalBody { color: #cbd5e1; }
+      #appModal.information-modal #informationModalFooter {
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: #202124;
+        color: #f8fafc;
+      }
+
       /* Ambient background mesh gradient */
       .bg-mesh {
         background: radial-gradient(circle at 50% 0%, #dbeafe 0%, #eff6ff 50%, #e0f2fe 100%);
@@ -1839,10 +1867,11 @@
       id="appModal"
       class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/65 p-4 backdrop-blur-md"
     >
-      <div class="w-full max-w-md overflow-hidden rounded-[28px] border border-white/70 bg-white/95 shadow-[0_24px_80px_rgba(15,23,42,0.3)] transition-all">
-        <div class="flex justify-between items-center mb-3">
+      <div id="informationModalPanel" class="w-full max-w-md overflow-hidden rounded-[28px] border border-white/70 bg-white/95 shadow-[0_24px_80px_rgba(15,23,42,0.3)] transition-all">
+        <div id="informationModalHeader" class="flex justify-between items-center mb-3">
           <h3 id="modalTitle" class="font-extrabold text-base text-slate-800">Modal Title</h3>
           <button
+            id="informationModalClose"
             onclick="closeModal()"
             class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-xs"
           >
@@ -1853,6 +1882,7 @@
           Modal description text goes here...
         </div>
         <button
+          id="informationModalFooter"
           onclick="closeModal()"
           class="w-full bg-blue-600 text-white font-bold py-2.5 rounded-xl text-xs active:scale-95 transition"
         >
@@ -1993,17 +2023,19 @@
         lastInformationShown = signature;
         const icons = ["fa-bolt", "fa-circle-info", "fa-bullhorn", "fa-shield-halved", "fa-star"];
         const body = `<div class="space-y-3">
-          <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <div class="flex items-center gap-2"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600"><i class="fa-solid fa-circle-info"></i></span><p class="text-xs font-semibold leading-relaxed text-slate-600">Informasi terbaru untuk kamu.</p></div>
+          <div class="flex flex-col items-center text-center">
+            <span class="flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-xl text-white shadow-lg shadow-blue-950/40"><i class="fa-solid fa-sparkles"></i></span>
+            <p class="mt-3 text-xs leading-relaxed text-slate-400">Pembaruan dan informasi terbaru dari admin.</p>
           </div>
           <div class="space-y-2">${cards
             .map(
-              (card, index) => `<article class="rounded-xl border border-slate-200 bg-white p-3"><div class="flex items-start gap-2.5"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600"><i class="fa-solid ${icons[index % icons.length]}"></i></span><div class="min-w-0"><span class="inline-flex rounded-md bg-slate-100 px-2 py-1 text-[9px] font-bold uppercase tracking-wide text-slate-500">${escapeSupport(card.category || "Info")}</span><h4 class="mt-1 text-sm font-bold text-slate-800">${escapeSupport(card.title)}</h4><p class="mt-1 whitespace-pre-line text-xs leading-relaxed text-slate-600">${escapeSupport(card.info)}</p></div></div></article>`,
+              (card, index) => `<article class="rounded-xl border border-white/10 bg-[#18191c] p-3.5"><div class="flex items-start gap-2.5"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-slate-300"><i class="fa-solid ${icons[index % icons.length]}"></i></span><div class="min-w-0"><span class="inline-flex rounded-md bg-white/10 px-2 py-1 text-[9px] font-bold uppercase tracking-wide text-slate-400">${escapeSupport(card.category || "Info")}</span><h4 class="mt-1 text-sm font-bold text-slate-100">${escapeSupport(card.title)}</h4><p class="mt-1 whitespace-pre-line text-xs leading-relaxed text-slate-300">${escapeSupport(card.info)}</p></div></div></article>`,
             )
             .join("")}</div>
         </div>`;
         document.getElementById("modalTitle").innerText = "Informasi";
         document.getElementById("modalBody").innerHTML = body;
+        document.getElementById("appModal").classList.add("information-modal");
         document.getElementById("appModal").classList.remove("hidden");
       }
       window.maybeShowInformationOverlay = maybeShowInformationOverlay;
@@ -2352,12 +2384,14 @@
 
       // Dynamic Modal handlers
       function openModal(title, body) {
+        document.getElementById("appModal").classList.remove("information-modal");
         document.getElementById("modalTitle").innerText = title;
         document.getElementById("modalBody").innerText = body;
         document.getElementById("appModal").classList.remove("hidden");
       }
 
       function closeModal() {
+        document.getElementById("appModal").classList.remove("information-modal");
         document.getElementById("appModal").classList.add("hidden");
       }
 
