@@ -50,17 +50,17 @@
         margin: 0 auto 0.8rem;
         align-items: center;
         justify-content: center;
-        border-radius: 1.25rem;
-        background: rgba(99, 102, 241, 0.16);
-        color: #a5b4fc;
+        border-radius: 9999px;
+        background: #3b82f6;
+        color: #dbeafe;
         font-size: 1.35rem;
-        box-shadow: inset 0 0 0 1px rgba(129, 140, 248, 0.18);
+        box-shadow: 0 10px 22px rgba(37, 99, 235, 0.35);
       }
       #appModal.information-modal #informationModalSubtitle {
         display: block;
         margin-top: 0.4rem;
         color: #a1a1aa;
-        font-size: 0.72rem;
+        font-size: 0.78rem;
         line-height: 1.5;
       }
       #appModal.information-modal #modalTitle { color: #f8fafc; font-size: 1.2rem; }
@@ -1908,7 +1908,7 @@
         <div id="informationModalHeader" class="flex justify-between items-center mb-3">
           <div id="informationModalIcon" class="hidden"><i class="fa-solid fa-sparkles"></i></div>
           <h3 id="modalTitle" class="font-extrabold text-base text-slate-800">Modal Title</h3>
-          <p id="informationModalSubtitle" class="hidden">Pembaruan dan informasi terbaru dari admin.</p>
+          <p id="informationModalSubtitle" class="hidden">Pembaruan & fitur terbaru dari tim Setorgmail.</p>
           <button
             id="informationModalClose"
             onclick="closeModal()"
@@ -1925,7 +1925,7 @@
           onclick="closeModal()"
           class="w-full bg-blue-600 text-white font-bold py-2.5 rounded-xl text-xs active:scale-95 transition"
         >
-          Tutup
+          <i class="fa-solid fa-xmark mr-1" aria-hidden="true"></i>Tutup
         </button>
       </div>
     </div>
@@ -2097,7 +2097,7 @@
           subtitle.classList.remove("hidden");
         }
         document.getElementById("modalTitle").innerText = card.title;
-        body.innerHTML = `<article class="information-content-card"><div class="mb-2"><span class="inline-flex rounded-md bg-white/10 px-2 py-1 text-[9px] font-bold uppercase tracking-wide text-slate-400">${escapeSupport(card.category || "Info")}</span></div><p class="whitespace-pre-line text-xs leading-7 text-slate-300">${escapeSupport(content)}</p></article>${isLong ? `<button id="informationExpandButton" type="button" onclick="toggleInformationExpanded()">${informationExpanded ? "Ringkas" : "Lihat Selengkapnya"}</button>` : ""}`;
+        body.innerHTML = `<article class="information-content-card"><p class="whitespace-pre-line text-sm leading-7 text-slate-200">${escapeSupport(content)}</p></article>${isLong ? `<button id="informationExpandButton" type="button" onclick="toggleInformationExpanded()">${informationExpanded ? "Ringkas" : "Lihat Selengkapnya"}</button>` : ""}`;
       }
       window.toggleInformationExpanded = () => {
         const settings = window.tachiApiState?.settings || {};
