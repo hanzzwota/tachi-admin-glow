@@ -47,4 +47,4 @@ Semua session memakai cookie `HttpOnly; SameSite=None; Secure`, dan semua data a
 
 ## Harga per jalur setoran
 
-Sebelum merilis versi aplikasi yang memakai harga per mode, terapkan migrasi `supabase/migrations/20261104031522_pw_captcha_rates.sql` ke database Supabase melalui prosedur rilis yang berwenang. Migrasi menambah `app_settings.pw_rate` dan `app_settings.captcha_rate`, masing-masing diinisialisasi dari nilai `rate` yang lama. Dashboard admin menjadi sumber konfigurasi; endpoint setoran memilih harga di server dan menyimpan snapshot pada setiap transaksi.
+Sebelum merilis versi aplikasi yang memakai harga per mode, terapkan migrasi `supabase/migrations/20261104100000_pw_captcha_rates.sql` ke database Supabase melalui prosedur rilis yang berwenang. Migrasi menambah `app_settings.pw_rate` dan `app_settings.captcha_rate`, masing-masing diinisialisasi dari nilai `rate` yang lama. Dashboard admin menjadi sumber konfigurasi; endpoint setoran memilih harga di server dan menyimpan snapshot pada setiap transaksi.
