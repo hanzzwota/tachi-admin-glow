@@ -150,6 +150,47 @@
     const profileUsername = document.getElementById("profileUsername");
     if (profileUsername) profileUsername.textContent = `Username: @${user.username || ""}`;
   };
+  const dashboardDepositCounts = (deposits) => {
+    const emailSet = (value) =>
+      new Set((Array.isArray(value) ? value : []).map((email) => String(email).trim().toLowerCase()));
+    let accepted = 0;
+    let pending = 0;
+    deposits.forEach((deposit) => {
+      const emails = Array.isArray(deposit.emails) ? deposit.emails : [];
+      const acceptedEmails = emailSet(deposit.accepted_emails);
+      const rejectedEmails = emailSet(deposit.rejected_emails);
+      const checkingEmails = emailSet([
+        ...(Array.isArray(deposit.checked_emails) ? deposit.checked_emails : []),
+        ...(Array.isArray(deposit.checking_emails) ? deposit.checking_emails : []),
+        ...(Array.isArray(deposit.processing_emails) ? deposit.processing_emails : []),
+      ]);
+      const depositStatus = String(deposit.status || "pending").toLowerCase();
+      const wholeDepositAccepted = ["diterima", "accepted"].includes(depositStatus);
+      const wholeDepositRejected = ["ditolak", "rejected"].includes(depositStatus);
+      const hasIndividualDecisions = acceptedEmails.size > 0 || rejectedEmails.size > 0;
+      const checkingDeposit = [
+        "dicek",
+        "diperiksa",
+        "diproses",
+        "processing",
+        "checking",
+        "checked",
+      ].includes(depositStatus);
+
+      emails.forEach((email) => {
+        const key = String(email).trim().toLowerCase();
+        if (acceptedEmails.has(key) || (!hasIndividualDecisions && wholeDepositAccepted)) {
+          accepted += 1;
+        } else if (
+          !rejectedEmails.has(key) &&
+          (checkingEmails.has(key) || checkingDeposit || (!hasIndividualDecisions && !wholeDepositRejected))
+        ) {
+          pending += 1;
+        }
+      });
+    });
+    return { accepted, pending };
+  };
   const applyUserDom = () => {
     const { user, settings } = state;
     applyIdentityToDom(user);
@@ -160,6 +201,11 @@
         if (element) element.textContent = format(user.balance);
       },
     );
+    const dashboardCounts = dashboardDepositCounts(state.deposits);
+    const acceptedCount = document.getElementById("dashboardAcceptedCount");
+    const pendingCount = document.getElementById("dashboardPendingCount");
+    if (acceptedCount) acceptedCount.textContent = String(dashboardCounts.accepted);
+    if (pendingCount) pendingCount.textContent = String(dashboardCounts.pending);
     if (settings.pw_enabled === false && settings.captcha_enabled === true)
       selectedDepositRoute = "CAPTCHA";
     if (settings.captcha_enabled !== true && settings.pw_enabled !== false)
