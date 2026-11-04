@@ -825,6 +825,7 @@
           : `Setoran Gmail gagal dikirim: ${errorText(error, "coba lagi nanti.")}`,
       );
       if (generatedMismatch) {
+        showGeneratedGmailError(error.message);
         await refreshGeneratedStockGmails().catch((refreshError) =>
           console.error("Gagal memperbarui status Generated Gmail:", refreshError),
         );

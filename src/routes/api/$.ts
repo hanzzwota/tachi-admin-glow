@@ -297,26 +297,14 @@ async function createDeposit(request: Request) {
   if (notGenerated.length) {
     const shown = notGenerated.slice(0, 5).join(", ");
     const remaining = notGenerated.length > 5 ? `, dan ${notGenerated.length - 5} lainnya` : "";
-    const reason = `Otomatis ditolak: Gmail wajib sesuai daftar Generated Gmail pada UI. Gmail tidak sesuai: ${shown}${remaining}`;
-    const rejectedRows = await supabaseFetch<Record<string, unknown>[]>("deposits", {
-      method: "POST",
-      headers: { Prefer: "return=representation" },
-      body: JSON.stringify({
-        user_id: user.id,
-        transaction_number: `TRX-${new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date()).replaceAll("-", "")}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
-        emails,
-        status: "ditolak",
-        rejected_emails: emails,
-        reason,
-        jalur,
-        rate,
-        submitted_at: new Date().toISOString(),
-        rejected_at: new Date().toISOString(),
-        verified_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }),
-    });
-    return json({ error: reason, rejected: true, deposit: rejectedRows[0] }, { status: 422 });
+    return json(
+      {
+        warning: true,
+        rejected: true,
+        error: `Setoran tidak dikirim dan tidak masuk Riwayat. Gmail wajib sesuai daftar Generated Gmail pada UI. Gmail tidak sesuai: ${shown}${remaining}`,
+      },
+      { status: 422 },
+    );
   }
   const duplicateRows = await supabaseFetch<Record<string, unknown>[]>(
     "rpc/find_duplicate_deposit_gmails",
