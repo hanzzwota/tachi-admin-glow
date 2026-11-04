@@ -175,28 +175,22 @@
     if (pwCard) {
       pwCard.setAttribute("aria-pressed", String(selectedDepositRoute === "PW"));
       pwCard.disabled = settings.pw_enabled === false;
-      pwCard.classList.toggle("opacity-50", settings.pw_enabled === false);
-      pwCard.classList.toggle("grayscale", settings.pw_enabled === false);
+      pwCard.classList.toggle("route-selected", selectedDepositRoute === "PW" && settings.pw_enabled !== false);
+      pwCard.classList.toggle("route-unselected", selectedDepositRoute !== "PW" || settings.pw_enabled === false);
+      pwCard.classList.toggle("opacity-60", settings.pw_enabled === false);
       pwCard.classList.toggle("cursor-not-allowed", settings.pw_enabled === false);
-      pwCard.classList.toggle("bg-gradient-to-r", selectedDepositRoute === "PW" && settings.pw_enabled !== false);
-      pwCard.classList.toggle("from-blue-600", selectedDepositRoute === "PW" && settings.pw_enabled !== false);
-      pwCard.classList.toggle("to-indigo-600", selectedDepositRoute === "PW" && settings.pw_enabled !== false);
-      pwCard.classList.toggle("text-white", selectedDepositRoute === "PW" && settings.pw_enabled !== false);
-      pwCard.classList.toggle("bg-white", selectedDepositRoute !== "PW" || settings.pw_enabled === false);
-      pwCard.classList.toggle("text-slate-600", selectedDepositRoute !== "PW" || settings.pw_enabled === false);
     }
     if (captchaCard) {
       captchaCard.setAttribute("aria-pressed", String(selectedDepositRoute === "CAPTCHA"));
       captchaCard.disabled = settings.captcha_enabled !== true;
-      captchaCard.classList.toggle("opacity-50", settings.captcha_enabled !== true);
-      captchaCard.classList.toggle("grayscale", settings.captcha_enabled !== true);
+      captchaCard.classList.toggle("route-selected", selectedDepositRoute === "CAPTCHA" && settings.captcha_enabled === true);
+      captchaCard.classList.toggle("route-unselected", selectedDepositRoute !== "CAPTCHA" || settings.captcha_enabled !== true);
+      captchaCard.classList.toggle("opacity-60", settings.captcha_enabled !== true);
       captchaCard.classList.toggle("cursor-not-allowed", settings.captcha_enabled !== true);
-      captchaCard.classList.toggle("bg-gradient-to-r", selectedDepositRoute === "CAPTCHA" && settings.captcha_enabled === true);
-      captchaCard.classList.toggle("from-blue-600", selectedDepositRoute === "CAPTCHA" && settings.captcha_enabled === true);
-      captchaCard.classList.toggle("to-indigo-600", selectedDepositRoute === "CAPTCHA" && settings.captcha_enabled === true);
-      captchaCard.classList.toggle("text-white", selectedDepositRoute === "CAPTCHA" && settings.captcha_enabled === true);
-      captchaCard.classList.toggle("bg-white", selectedDepositRoute !== "CAPTCHA" || settings.captcha_enabled !== true);
-      captchaCard.classList.toggle("text-slate-600", selectedDepositRoute !== "CAPTCHA" || settings.captcha_enabled !== true);
+      const disabledText = document.getElementById("captchaRouteDisabledText");
+      if (disabledText) disabledText.classList.toggle("hidden", settings.captcha_enabled === true);
+      const captchaIcon = captchaCard.querySelector(".route-icon");
+      if (captchaIcon) captchaIcon.classList.toggle("opacity-60", settings.captcha_enabled !== true);
     }
     const captchaText = document.getElementById("captchaRouteText");
     if (captchaText) captchaText.textContent = settings.captcha_text || "CAPTCHA";

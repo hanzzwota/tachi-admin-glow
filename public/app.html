@@ -192,6 +192,17 @@
         background: #1e3a5f;
         color: #fff;
       }
+      .route-tab {
+        border: 1px solid #dbe3ee;
+        background: #fff;
+      }
+      .route-tab.route-selected {
+        border: 2px solid #0284c7;
+        background: #eff6ff;
+      }
+      .route-tab:disabled {
+        cursor: not-allowed;
+      }
 
       /* Input highlight styling */
       .custom-input {
@@ -1242,12 +1253,27 @@
         <div
           class="bg-white rounded-2xl p-4 card-soft-shadow border border-slate-100 flex flex-col gap-3"
         >
-          <div role="group" aria-label="Pilih jalur Gmail" class="flex w-full items-stretch gap-1 rounded-2xl border border-blue-100 bg-slate-50 p-1">
-            <button type="button" id="pwRouteCard" aria-pressed="true" onclick="selectDepositRoute('PW')" class="route-tab flex min-h-11 min-w-0 flex-1 items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-2 py-2.5 text-center text-xs font-black leading-tight text-white shadow-[0_6px_16px_-6px_rgba(37,99,235,0.6)] transition hover:brightness-105 active:scale-[.99]">
-              <span id="pwRoutePassword" class="break-words">PW: -</span>
+          <div role="group" aria-label="Pilih jalur Gmail" class="grid w-full grid-cols-2 gap-3">
+            <button type="button" id="pwRouteCard" aria-pressed="true" onclick="selectDepositRoute('PW')" class="route-tab route-selected min-w-0 rounded-2xl p-3 text-left transition active:scale-[.99]">
+              <span class="flex items-center gap-2.5">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white"><i class="fa-solid fa-paper-plane text-xs"></i></span>
+                <span class="min-w-0">
+                  <span id="pwRoutePassword" class="block break-words text-xs font-semibold leading-tight text-slate-800">PW: -</span>
+                  <span class="mt-0.5 block text-[10px] leading-tight text-slate-500">Untuk Gmail dengan status Good</span>
+                </span>
+              </span>
+              <span class="mt-2 block text-[11px] font-medium text-slate-700">Harga: <span id="pwRouteRate">0</span></span>
             </button>
-            <button type="button" id="captchaRouteCard" aria-pressed="false" onclick="selectDepositRoute('CAPTCHA')" class="route-tab flex min-h-11 min-w-0 flex-1 items-center justify-center rounded-xl border border-blue-100 bg-white px-2 py-2.5 text-center text-xs font-black leading-tight text-slate-600 shadow-sm transition hover:border-blue-300 hover:text-blue-700 active:scale-[.99]">
-              <span id="captchaRouteText" class="break-words">CAPTCHA</span>
+            <button type="button" id="captchaRouteCard" aria-pressed="false" onclick="selectDepositRoute('CAPTCHA')" class="route-tab route-unselected min-w-0 rounded-2xl p-3 text-left transition active:scale-[.99]">
+              <span class="flex items-center gap-2.5">
+                <span class="route-icon flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white"><i class="fa-solid fa-shield-halved text-xs"></i></span>
+                <span class="min-w-0">
+                  <span id="captchaRouteText" class="block break-words text-xs font-semibold leading-tight text-slate-800">CAPTCHA</span>
+                  <span class="mt-0.5 block text-[10px] leading-tight text-slate-500">Untuk Gmail dengan status Good</span>
+                </span>
+              </span>
+              <span class="mt-2 block text-[11px] font-medium text-slate-700">Harga: <span id="captchaRouteRate">0</span></span>
+              <span id="captchaRouteDisabledText" class="mt-1 hidden text-[9px] leading-tight text-rose-500">Sedang dinonaktifkan Admin</span>
             </button>
           </div>
           <div class="flex items-center justify-between">
