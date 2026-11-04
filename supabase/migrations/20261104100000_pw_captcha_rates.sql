@@ -1,12 +1,32 @@
-alter table public.app_settings
-  add column if not exists pw_rate bigint not null default 4500,
-  add column if not exists captcha_rate bigint not null default 4500;
+do $$
+declare
+  had_pw_rate boolean;
+  had_captcha_rate boolean;
+begin
+  select exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'app_settings'
+      and column_name = 'pw_rate'
+  ) into had_pw_rate;
+  select exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'app_settings'
+      and column_name = 'captcha_rate'
+  ) into had_captcha_rate;
 
-update public.app_settings
-set
-  pw_rate = greatest(coalesce(rate, 4500), 0),
-  captcha_rate = greatest(coalesce(rate, 4500), 0)
-where id = 1;
+  alter table public.app_settings
+    add column if not exists pw_rate bigint not null default 4500,
+    add column if not exists captcha_rate bigint not null default 4500;
+
+  update public.app_settings
+  set
+    pw_rate = case when not had_pw_rate then greatest(coalesce(rate, 4500), 0) else pw_rate end,
+    captcha_rate = case when not had_captcha_rate then greatest(coalesce(rate, 4500), 0) else captcha_rate end
+  where id = 1 and (not had_pw_rate or not had_captcha_rate);
+end
+$$;
 
 do $$
 begin
