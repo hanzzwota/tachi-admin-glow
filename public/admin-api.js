@@ -115,6 +115,15 @@
       dailyMax: Number(settings?.daily_limit || 0),
       limit: Number(settings?.batch_limit || 0),
       announcement: settings?.announcement || "",
+      informationCards: Array.isArray(settings?.information_cards)
+        ? settings.information_cards
+            .filter((item) => item && item.title && item.info)
+            .map((item) => ({
+              title: String(item.title),
+              info: String(item.info),
+              category: String(item.category || "Info"),
+            }))
+        : [],
       storeClosedReason: settings?.store_closed_reason || "",
       rulesText:
         settings?.rules_text ||
@@ -367,6 +376,7 @@
     dailyLimit: db.settings.dailyMax,
     batchLimit: db.settings.limit,
     announcement: db.settings.announcement,
+    informationCards: db.settings.informationCards,
     rulesText: db.settings.rulesText,
     supportChannels: db.settings.supportChannels,
     autoStockEnabled: db.settings.autoStockEnabled,
@@ -705,6 +715,7 @@
             dailyLimit: cDaily.value,
             batchLimit: cLimit.value,
             announcement: cAnn.value,
+            informationCards: readInformationCards(),
             rulesText: cRules.value,
             supportChannels: readSupportChannels(),
             autoStockEnabled: db.settings.autoStockEnabled === true,

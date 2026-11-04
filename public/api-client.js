@@ -348,8 +348,9 @@
       storeBanner.className = storeClosed
         ? "rounded-2xl border border-rose-200 bg-rose-50 p-3.5 flex items-center gap-3 text-xs font-bold text-rose-700"
         : "hidden rounded-2xl border p-3.5 flex items-center gap-3 text-xs font-bold";
+      const storeReason = String(settings.store_closed_reason || "").trim();
       storeBanner.innerHTML = storeClosed
-        ? '<i class="fa-solid fa-lock text-rose-500"></i><span>Setoran sedang ditutup admin. Silakan coba lagi nanti.</span>'
+        ? `<i class="fa-solid fa-lock text-rose-500"></i><span>Setoran sedang ditutup admin. Silakan coba lagi nanti.${storeReason ? ` ${escapeHtml(storeReason)}` : ""}</span>`
         : "";
     }
     if (storeButton) {
@@ -840,7 +841,7 @@
       showToast(
         "warning",
         reason
-          ? `Setoran ditutup oleh admin. Alasan: ${reason}`
+          ? `Setoran sedang ditutup admin. Silakan coba lagi nanti. ${reason}`
           : "⚠️ Setoran Gmail sedang ditutup oleh admin.",
       );
       return;
@@ -913,9 +914,9 @@
     const customInput = document.getElementById("customStockGenerateCount");
     const generatedPanel = document.getElementById("generatedGmailPanel");
     const generatorEnabled = state.settings?.auto_stock_enabled === true;
-    if (generatorSection) generatorSection.classList.toggle("hidden", !generatorEnabled);
+    if (generatorSection) generatorSection.classList.remove("hidden");
     document.querySelectorAll("[data-generate-only]").forEach((element) => {
-      element.classList.toggle("hidden", !generatorEnabled);
+      element.classList.remove("hidden");
     });
     const depositLabel = document.getElementById("depositGmailLabel");
     if (depositLabel)
@@ -942,7 +943,7 @@
     if (customInput) customInput.disabled = stockGenerateBusy;
     if (mainButton) {
       mainButton.style.display = generatedStockGmails.length > 0 ? "none" : "flex";
-      mainButton.disabled = stockGenerateBusy;
+      mainButton.disabled = stockGenerateBusy || !generatorEnabled;
       mainButton
         .querySelector("span")
         ?.replaceChildren(
@@ -951,7 +952,7 @@
     }
     if (againButton) {
       againButton.style.display = generatedStockGmails.length > 0 ? "flex" : "none";
-      againButton.disabled = stockGenerateBusy;
+      againButton.disabled = stockGenerateBusy || !generatorEnabled;
       againButton
         .querySelector("span")
         ?.replaceChildren(
@@ -959,7 +960,7 @@
         );
     }
     if (generatedPanel)
-      generatedPanel.style.display = generatorEnabled && generatedStockGmails.length > 0 ? "flex" : "none";
+      generatedPanel.style.display = generatedStockGmails.length > 0 ? "flex" : "none";
     if (progress) {
       if (stockGenerateBusy) {
         progress.textContent = "Mengambil maksimal 5 akun untuk batch ini…";
@@ -1133,6 +1134,10 @@
   };
   window.generateStockGmail = async () => {
     if (stockGenerateBusy) return;
+    if (state.settings?.auto_stock_enabled !== true) {
+      showToast("warning", "Generate Gmail sedang ditutup admin. Silakan coba lagi nanti.");
+      return;
+    }
     const customValue = document.getElementById("customStockGenerateCount")?.value.trim();
     const requested = customValue ? Number(customValue) : selectedStockGenerateCount;
     if (!Number.isSafeInteger(requested) || requested < 1) {

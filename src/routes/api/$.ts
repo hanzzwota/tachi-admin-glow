@@ -268,7 +268,7 @@ async function createDeposit(request: Request) {
     return json(
       {
         error: text(settings?.store_closed_reason)
-          ? `Setoran ditutup oleh admin. Alasan: ${text(settings.store_closed_reason)}`
+          ? `Setoran sedang ditutup admin. Silakan coba lagi nanti. ${text(settings.store_closed_reason)}`
           : "Setoran sedang ditutup oleh admin",
       },
       { status: 423 },
@@ -514,6 +514,22 @@ async function updateSettings(request: Request) {
     daily_limit: numberOrZero(payload.dailyLimit ?? current?.daily_limit),
     batch_limit: numberOrZero(payload.batchLimit ?? current?.batch_limit),
     announcement: text(payload.announcement ?? current?.announcement),
+    information_cards: Array.isArray(payload.informationCards)
+      ? payload.informationCards
+          .filter((item) => item && typeof item === "object")
+          .map((item) => {
+            const card = item as Record<string, unknown>;
+            return {
+              title: text(card.title).slice(0, 80),
+              info: text(card.info).slice(0, 1000),
+              category: text(card.category).slice(0, 40) || "Info",
+            };
+          })
+          .filter((item) => item.title && item.info)
+          .slice(0, 12)
+      : Array.isArray(current?.information_cards)
+        ? current.information_cards
+        : [],
     rules_text: text(payload.rulesText ?? current?.rules_text),
     payment_mode: paymentModes.includes(payload.paymentMode as (typeof paymentModes)[number])
       ? payload.paymentMode
@@ -542,6 +558,7 @@ async function updateSettings(request: Request) {
   };
   const {
     payment_fees: paymentFees,
+    information_cards: informationCards,
     rules_text: rulesText,
     support_channels: supportChannels,
     payment_mode: paymentMode,
@@ -550,6 +567,7 @@ async function updateSettings(request: Request) {
   await patchSettings(coreSettings);
   for (const optionalSetting of [
     ["payment_fees", paymentFees],
+    ["information_cards", informationCards],
     ["rules_text", rulesText],
     ["support_channels", supportChannels],
     ["payment_mode", paymentMode],
@@ -557,6 +575,7 @@ async function updateSettings(request: Request) {
       "store_closed_reason",
       text(payload.storeClosedReason ?? current?.store_closed_reason).slice(0, 300),
     ],
+    ["information_cards", allowed.information_cards],
   ] as const) {
     try {
       await patchSettings({ [optionalSetting[0]]: optionalSetting[1] });
