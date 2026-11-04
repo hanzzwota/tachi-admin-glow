@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
   clearSessionCookie,
   createSession,
+  DatabaseUnavailableError,
   errorResponse,
   getCurrentUser,
   getSettings,
@@ -239,6 +240,23 @@ async function adminUsers(request: Request) {
   );
   return json({ users });
 }
+async function adminGeneratedGmailRows() {
+  try {
+    return await supabaseFetch<Record<string, unknown>[]>(
+      "generated_gmail_claims?select=id,gmail,normalized_gmail,user_id,created_at,archived_at,profiles(username,display_name)&order=created_at.desc&limit=5000",
+    );
+  } catch (error) {
+    if (error instanceof DatabaseUnavailableError) throw error;
+    const message = error instanceof Error ? error.message : String(error);
+    if (/generated_gmail_claims|PGRST200|PGRST204|relation .* does not exist/i.test(message)) {
+      console.warn(
+        "[adminBootstrap] generated_gmail_claims belum tersedia; memakai daftar kosong.",
+      );
+      return [];
+    }
+    throw error;
+  }
+}
 async function adminBootstrap(request: Request) {
   const admin = await requireAdmin(request);
   const [deposits, users, settings, withdrawals, gmails] = await Promise.all([
@@ -252,9 +270,7 @@ async function adminBootstrap(request: Request) {
     supabaseFetch<Record<string, unknown>[]>(
       "withdrawals?select=*,profiles(username,display_name)&order=created_at.desc&limit=500",
     ),
-    supabaseFetch<Record<string, unknown>[]>(
-      "generated_gmail_claims?select=id,gmail,normalized_gmail,user_id,created_at,archived_at,profiles(username,display_name)&order=created_at.desc&limit=5000",
-    ),
+    adminGeneratedGmailRows(),
   ]);
   const daily = await dailyDepositStats(settings);
   return json({
