@@ -18,7 +18,9 @@
     }
     const data = await response.json().catch(() => ({}));
     if (!response.ok || data.error) {
-      const error = new Error(data.error || data.message || `Permintaan gagal (HTTP ${response.status})`);
+      const error = new Error(
+        data.error || data.message || `Permintaan gagal (HTTP ${response.status})`,
+      );
       error.status = response.status;
       error.data = data;
       throw error;
@@ -33,7 +35,10 @@
       await refresh();
     } catch (error) {
       console.error("Gagal memuat ulang data admin:", error);
-      showToast("warning", "⚠️ Perubahan tersimpan, tetapi tabel belum ter-update. Muat ulang halaman.");
+      showToast(
+        "warning",
+        "⚠️ Perubahan tersimpan, tetapi tabel belum ter-update. Muat ulang halaman.",
+      );
     }
   };
   const paymentMethods = ["DANA", "OVO", "GoPay", "ShopeePay", "BCA", "BRI", "Mandiri"];
@@ -92,7 +97,14 @@
       enabled: document.getElementById(`supportAdmin${index}Enabled`)?.dataset.enabled !== "false",
     })),
   });
-  const normalize = (settings, deposits, users, withdrawals, assignedGmails = [], paymentFeesOverride = null) => ({
+  const normalize = (
+    settings,
+    deposits,
+    users,
+    withdrawals,
+    assignedGmails = [],
+    paymentFeesOverride = null,
+  ) => ({
     settings: {
       rate: Number(settings?.rate || 0),
       pwRate: Number(settings?.pw_rate ?? settings?.rate ?? 0),
@@ -313,14 +325,15 @@
   const refresh = async (paymentFeesOverride = null) => {
     if (refreshInFlight) return refreshInFlight;
     refreshInFlight = (async () => {
-      const [{ deposits }, { users }, { settings }, { withdrawals }, { gmails }] = await Promise.all([
-        api("admin/deposits"),
-        api("admin/users"),
-        api("settings"),
-        api("admin/withdrawals"),
-        api("admin/stock/assigned"),
-      ]);
-      db = normalize(settings, deposits, users, withdrawals, gmails, paymentFeesOverride);
+      const data = await api("admin/bootstrap");
+      db = normalize(
+        data.settings || {},
+        data.deposits || [],
+        data.users || [],
+        data.withdrawals || [],
+        data.gmails || [],
+        paymentFeesOverride,
+      );
       ["DANA", "OVO", "GoPay", "ShopeePay", "BCA", "BRI", "Mandiri"].forEach((key) => {
         const input = document.getElementById(`fee${key}`);
         if (input) input.value = Number(db.settings.paymentFees[key] || 0);
@@ -417,7 +430,10 @@
       db.settings[key] = previous; // kembalikan tampilan ke kondisi sebenarnya
       db.settings.storeClosedReason = previousClosedReason;
       window.reloadAdminDb?.();
-      showToast("error", `Gagal ${next ? "membuka" : "menutup"} ${label}: ${errorText(error, "coba lagi nanti.")}`);
+      showToast(
+        "error",
+        `Gagal ${next ? "membuka" : "menutup"} ${label}: ${errorText(error, "coba lagi nanti.")}`,
+      );
       return;
     }
     showToast("success", `${label} berhasil ${next ? "dibuka" : "ditutup"}!`);
@@ -455,7 +471,8 @@
         method: "POST",
         body: JSON.stringify({ username: lu.value.trim(), password: lp.value }),
       });
-      if (!result?.user?.id) throw new Error("Login gagal! Server tidak mengembalikan sesi login. 😟");
+      if (!result?.user?.id)
+        throw new Error("Login gagal! Server tidak mengembalikan sesi login. 😟");
       if (result.user.role !== "admin") {
         lerr.textContent = "Akun ini bukan admin.";
         showToast("error", "Login gagal! Akun ini tidak memiliki akses admin.");
@@ -485,22 +502,33 @@
       ? '<i class="fa fa-spinner fa-spin mr-2" aria-hidden="true"></i><span>Memproses setoran…</span>'
       : button.dataset.idleLabel || "Proses Setoran";
   };
+  const markDepositOptimistic = (id, status, extra = {}) => {
+    const deposit = db?.setoran?.find((item) => String(item.id) === String(id));
+    if (!deposit) return;
+    Object.assign(deposit, { status, ...extra });
+    window.reloadAdminDb?.();
+  };
   window.doAcc = async (id) => {
     const confirmButton = document.getElementById("depositActionConfirmButton");
     if (confirmButton?.disabled) return;
     let acceptedEmails;
     try {
-      acceptedEmails = [
-        ...document.querySelectorAll("input[name='acceptedEmail']:checked"),
-      ].map((input) => input.value);
+      acceptedEmails = [...document.querySelectorAll("input[name='acceptedEmail']:checked")].map(
+        (input) => input.value,
+      );
       if (!acceptedEmails.length) {
         showToast("warning", "⚠️ Centang minimal 1 Gmail yang ingin diterima!");
         return;
       }
       setDepositActionProcessing(true);
-      await api(`admin/deposits/${id}/approve`, {
+      await api(`admin/deposits/${encodeURIComponent(id)}/approve`, {
         method: "POST",
         body: JSON.stringify({ acceptedEmails }),
+      });
+      markDepositOptimistic(id, "diterima", {
+        accepted_emails: acceptedEmails,
+        accepted: acceptedEmails.length,
+        verifiedAt: Date.now(),
       });
     } catch (error) {
       setDepositActionProcessing(false);
@@ -509,7 +537,7 @@
     }
     closeModal();
     showToast("success", "Setoran berhasil diterima dan saldo user diperbarui!");
-    await refreshAfterAction();
+    void refreshAfterAction();
   };
   window.doRej = async (id) => {
     const confirmButton = document.getElementById("depositActionConfirmButton");
@@ -530,9 +558,14 @@
         return;
       }
       setDepositActionProcessing(true);
-      await api(`admin/deposits/${id}/reject`, {
+      await api(`admin/deposits/${encodeURIComponent(id)}/reject`, {
         method: "POST",
         body: JSON.stringify({ reason, rejectedEmails }),
+      });
+      markDepositOptimistic(id, "ditolak", {
+        rejected_emails: rejectedEmails,
+        reason,
+        verifiedAt: Date.now(),
       });
     } catch (error) {
       setDepositActionProcessing(false);
@@ -541,15 +574,24 @@
     }
     closeModal();
     showToast("success", "Setoran berhasil ditolak dan alasan tersimpan.");
-    await refreshAfterAction();
+    void refreshAfterAction();
   };
-  const bulkGmails = (id) => [...new Set(String(document.getElementById(id)?.value || "").split(/[\s,]+/).map((value) => value.trim().toLowerCase()).filter(Boolean))];
+  const bulkGmails = (id) => [
+    ...new Set(
+      String(document.getElementById(id)?.value || "")
+        .split(/[\s,]+/)
+        .map((value) => value.trim().toLowerCase())
+        .filter(Boolean),
+    ),
+  ];
   const bulkDepositIdsFromGmails = (gmails) => {
     const wanted = new Set(gmails);
     const matched = new Map();
     (Array.isArray(db?.setoran) ? db.setoran : []).forEach((deposit) => {
       if (deposit.status !== "pending") return;
-      const found = (Array.isArray(deposit.emails) ? deposit.emails : []).some((email) => wanted.has(String(email).trim().toLowerCase()));
+      const found = (Array.isArray(deposit.emails) ? deposit.emails : []).some((email) =>
+        wanted.has(String(email).trim().toLowerCase()),
+      );
       if (found) matched.set(String(deposit.id), deposit);
     });
     return [...matched.keys()];
@@ -581,29 +623,48 @@
   };
   window.bulkApproveDeposits = async () => {
     const gmails = bulkGmails("bulkApproveIds");
-    if (!gmails.length) return showToast("warning", "⚠️ Masukkan minimal satu Gmail untuk Bulk Setuju.");
+    if (!gmails.length)
+      return showToast("warning", "⚠️ Masukkan minimal satu Gmail untuk Bulk Setuju.");
     const ids = bulkDepositIdsFromGmails(gmails);
-    if (!ids.length) return showToast("warning", "⚠️ Tidak ada Gmail yang cocok dengan setoran pending.");
-    if (!window.confirm(`Setujui ${gmails.length} Gmail pada ${ids.length} setoran pending?`)) return;
+    if (!ids.length)
+      return showToast("warning", "⚠️ Tidak ada Gmail yang cocok dengan setoran pending.");
+    if (!window.confirm(`Setujui ${gmails.length} Gmail pada ${ids.length} setoran pending?`))
+      return;
     setBulkStatus(`Memproses 0/${ids.length} setoran…`);
     const result = await runBulk(ids, { path: "approve" });
-    setBulkStatus(`Selesai: ${result.success} berhasil, ${result.failed} gagal.`, result.failed ? "text-amber-800" : "text-green-700");
-    showToast(result.failed ? "warning" : "success", `Bulk setuju selesai: ${result.success} berhasil, ${result.failed} gagal.`);
+    setBulkStatus(
+      `Selesai: ${result.success} berhasil, ${result.failed} gagal.`,
+      result.failed ? "text-amber-800" : "text-green-700",
+    );
+    showToast(
+      result.failed ? "warning" : "success",
+      `Bulk setuju selesai: ${result.success} berhasil, ${result.failed} gagal.`,
+    );
   };
   window.bulkRejectDeposits = async () => {
     const gmails = bulkGmails("bulkRejectIds");
-    if (!gmails.length) return showToast("warning", "⚠️ Masukkan minimal satu Gmail untuk Bulk Tolak.");
+    if (!gmails.length)
+      return showToast("warning", "⚠️ Masukkan minimal satu Gmail untuk Bulk Tolak.");
     const ids = bulkDepositIdsFromGmails(gmails);
-    if (!ids.length) return showToast("warning", "⚠️ Tidak ada Gmail yang cocok dengan setoran pending.");
+    if (!ids.length)
+      return showToast("warning", "⚠️ Tidak ada Gmail yang cocok dengan setoran pending.");
     const type = document.getElementById("bulkRejectReasonType")?.value || "Lainnya";
     const detail = document.getElementById("bulkRejectReason")?.value.trim() || "";
-    if (type === "Lainnya" && !detail) return showToast("warning", "⚠️ Tulis alasan penolakan sendiri.");
+    if (type === "Lainnya" && !detail)
+      return showToast("warning", "⚠️ Tulis alasan penolakan sendiri.");
     const reason = type === "Lainnya" ? detail : detail ? `${type}: ${detail}` : type;
-    if (!window.confirm(`Tolak Gmail dari ${ids.length} setoran dengan alasan "${reason}"?`)) return;
+    if (!window.confirm(`Tolak Gmail dari ${ids.length} setoran dengan alasan "${reason}"?`))
+      return;
     setBulkStatus(`Memproses 0/${ids.length} setoran…`);
     const result = await runBulk(ids, { path: "reject", body: { reason } });
-    setBulkStatus(`Selesai: ${result.success} berhasil, ${result.failed} gagal.`, result.failed ? "text-amber-800" : "text-green-700");
-    showToast(result.failed ? "warning" : "success", `Bulk tolak selesai: ${result.success} berhasil, ${result.failed} gagal.`);
+    setBulkStatus(
+      `Selesai: ${result.success} berhasil, ${result.failed} gagal.`,
+      result.failed ? "text-amber-800" : "text-green-700",
+    );
+    showToast(
+      result.failed ? "warning" : "success",
+      `Bulk tolak selesai: ${result.success} berhasil, ${result.failed} gagal.`,
+    );
   };
   window.accWd = async (id) => {
     try {
@@ -632,7 +693,10 @@
     showToast("success", "Penarikan berhasil ditolak dan saldo dikembalikan ke user.");
   };
   const userActionText = {
-    delete: { ok: "Akun user berhasil dihapus beserta riwayatnya.", fail: "Gagal menghapus akun user" },
+    delete: {
+      ok: "Akun user berhasil dihapus beserta riwayatnya.",
+      fail: "Gagal menghapus akun user",
+    },
     block: { ok: "Akun user berhasil diblokir.", fail: "Gagal memblokir akun user" },
     unblock: { ok: "Blokir akun user berhasil dibuka.", fail: "Gagal membuka blokir akun user" },
   };
@@ -641,7 +705,8 @@
     try {
       await api(`admin/users/${id}/${action}`, { method: "POST" });
     } catch (error) {
-      const reason = error.status === 403 ? "Tidak ada akses admin." : errorText(error, "coba lagi nanti.");
+      const reason =
+        error.status === 403 ? "Tidak ada akses admin." : errorText(error, "coba lagi nanti.");
       showToast("error", `${text.fail}: ${reason}`);
       return;
     }
@@ -685,11 +750,12 @@
         cFee.value,
         ...paymentMethods.map((key) => document.getElementById(`fee${key}`)?.value),
       ];
-      if (feeValues.some((value) => Number(value || 0) < 0 || Number(value || 0) % FEE_STEP !== 0))
-        {
-          showToast("warning", "⚠️ Fee harus kelipatan Rp1.000 (contoh: 0, 1.000, 2.000).");
-          return;
-        }
+      if (
+        feeValues.some((value) => Number(value || 0) < 0 || Number(value || 0) % FEE_STEP !== 0)
+      ) {
+        showToast("warning", "⚠️ Fee harus kelipatan Rp1.000 (contoh: 0, 1.000, 2.000).");
+        return;
+      }
       paymentFees = Object.fromEntries(
         paymentMethods.map((key) => [
           key,
@@ -734,12 +800,13 @@
     db.settings.paymentMode = cPaymentMode.value;
     db.settings.rulesText = cRules.value;
     showToast("success", "Pengaturan platform berhasil disimpan!");
-    try {
-      await refresh(paymentFees);
-    } catch (error) {
+    void refresh(paymentFees).catch((error) => {
       console.error("Gagal memuat ulang data admin:", error);
-      showToast("warning", "⚠️ Pengaturan tersimpan, tetapi tampilan belum ter-update. Muat ulang halaman.");
-    }
+      showToast(
+        "warning",
+        "⚠️ Pengaturan tersimpan, tetapi tampilan belum ter-update. Muat ulang halaman.",
+      );
+    });
   };
   window.save = async () => {
     try {
@@ -761,24 +828,41 @@
       setTimeout(() => window.top.location.assign("/auth"), 350);
     } catch (error) {
       console.error("Admin Logout Error:", error);
-      showToast("error", `Logout admin gagal: ${errorText(error, "periksa koneksi lalu coba lagi.")}`);
+      showToast(
+        "error",
+        `Logout admin gagal: ${errorText(error, "periksa koneksi lalu coba lagi.")}`,
+      );
     }
   };
   window.addEventListener("DOMContentLoaded", async () => {
     try {
-      const { user } = await api("auth/me");
-      if (!user || user.role !== "admin") {
+      const data = await api("admin/bootstrap");
+      if (!data?.user || data.user.role !== "admin") {
         window.top.location.replace("/auth");
         return;
       }
-      await refresh();
+      db = normalize(
+        data.settings || {},
+        data.deposits || [],
+        data.users || [],
+        data.withdrawals || [],
+        data.gmails || [],
+      );
+      window.reloadAdminDb?.();
       showApp();
       window.setInterval(() => {
         if (document.visibilityState === "visible") refresh().catch(() => {});
       }, 15000);
     } catch (error) {
+      if (error.status === 401 || error.status === 403) {
+        window.top.location.replace("/auth");
+        return;
+      }
       console.error("Gagal memuat dashboard admin:", error);
-      showToast("error", `Gagal memuat dashboard admin: ${errorText(error, "server tidak merespons.")}`);
+      showToast(
+        "error",
+        `Gagal memuat dashboard admin: ${errorText(error, "server tidak merespons.")}`,
+      );
     }
   });
 })();
