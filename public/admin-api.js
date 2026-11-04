@@ -36,6 +36,27 @@
       showToast("warning", "⚠️ Perubahan tersimpan, tetapi tabel belum ter-update. Muat ulang halaman.");
     }
   };
+  // Jalankan refresh penuh di latar belakang supaya UI tidak menunggu 5 request.
+  let refreshQueued = false;
+  const refreshInBackground = () => {
+    if (refreshQueued) return;
+    refreshQueued = true;
+    void (async () => {
+      // Kalau ada refresh lama (polling) yang masih jalan, tunggu lalu ambil data terbaru.
+      if (refreshInFlight) await refreshInFlight.catch(() => {});
+      refreshQueued = false;
+      await refreshAfterAction();
+    })();
+  };
+  // Pakai settings yang dikembalikan server PATCH agar tampilan langsung berubah.
+  const applySavedSettings = (response, paymentFeesOverride = null) => {
+    const saved = response?.settings;
+    if (saved && db) {
+      const next = normalize(saved, [], [], [], db.assignedGmails || [], paymentFeesOverride);
+      db.settings = next.settings;
+    }
+    window.reloadAdminDb?.();
+  };
   const paymentMethods = ["DANA", "OVO", "GoPay", "ShopeePay", "BCA", "BRI", "Mandiri"];
   const FEE_STEP = 1000;
   const FIXED_MIN_WITHDRAWAL = 4000;
@@ -385,8 +406,9 @@
     ...overrides,
   });
   window.persistSettings = async () => {
+    let response;
     try {
-      await api("admin/settings", {
+      response = await api("admin/settings", {
         method: "PATCH",
         body: JSON.stringify(settingsPayload()),
       });
@@ -394,8 +416,9 @@
       showToast("error", `Gagal memperbarui status fitur: ${errorText(error, "coba lagi nanti.")}`);
       return false;
     }
+    applySavedSettings(response);
     showToast("success", "Status fitur berhasil diperbarui!");
-    await refreshAfterAction();
+    refreshInBackground();
     return true;
   };
   // Sakelar Buka/Tutup fitur: toast baru muncul setelah server menjawab.
@@ -408,9 +431,14 @@
     const previousClosedReason = db.settings.storeClosedReason;
     const next = !previous;
     db.settings[key] = next;
-    if (key === "storOpen" && next) db.settings.storeClosedReason = "";
+    if (key === "storOpen" && next) {
+      db.settings.storeClosedReason = "";
+      window.clearStoreClosedReasonDraft?.();
+    }
+    window.reloadAdminDb?.(); // langsung tampilkan perubahan sakelar
+    let response;
     try {
-      await api("admin/settings", {
+      response = await api("admin/settings", {
         method: "PATCH",
         body: JSON.stringify(settingsPayload()),
       });
@@ -421,8 +449,9 @@
       showToast("error", `Gagal ${next ? "membuka" : "menutup"} ${label}: ${errorText(error, "coba lagi nanti.")}`);
       return;
     }
+    applySavedSettings(response);
     showToast("success", `${label} berhasil ${next ? "dibuka" : "ditutup"}!`);
-    await refreshAfterAction();
+    refreshInBackground();
   };
   window.saveStoreClosedReason = async () => {
     if (db.settings?.storOpen !== false) {
@@ -434,8 +463,9 @@
     db.settings.storeClosedReason = String(input?.value || "")
       .trim()
       .slice(0, 300);
+    let response;
     try {
-      await api("admin/settings", {
+      response = await api("admin/settings", {
         method: "PATCH",
         body: JSON.stringify(settingsPayload()),
       });
@@ -444,8 +474,10 @@
       showToast("error", `Alasan gagal disimpan: ${errorText(error, "coba lagi nanti.")}`);
       return;
     }
+    window.clearStoreClosedReasonDraft?.();
+    applySavedSettings(response);
     showToast("success", "Alasan penutupan setor berhasil disimpan.");
-    await refreshAfterAction();
+    refreshInBackground();
   };
   window.doLogin = async (event) => {
     event.preventDefault();
@@ -686,6 +718,7 @@
       return;
     }
     let paymentFees;
+    let savedResponse;
     try {
       const feeValues = [
         cFee.value,
@@ -702,7 +735,7 @@
           normalizeFee(document.getElementById(`fee${key}`)?.value || 0),
         ]),
       );
-      await api("admin/settings", {
+      savedResponse = await api("admin/settings", {
         method: "PATCH",
         body: JSON.stringify(
           settingsPayload({
@@ -736,20 +769,16 @@
       showToast("error", `Pengaturan gagal disimpan: ${errorText(error, "coba lagi nanti.")}`);
       return;
     }
-    db.settings.paymentFees = paymentFees;
-    db.settings.paymentMode = cPaymentMode.value;
-    db.settings.rulesText = cRules.value;
+    // Langsung tampilkan hasil dari server, refresh penuh jalan di latar belakang.
+    document.activeElement?.blur?.();
+    applySavedSettings(savedResponse, paymentFees);
     showToast("success", "Pengaturan platform berhasil disimpan!");
-    try {
-      await refresh(paymentFees);
-    } catch (error) {
-      console.error("Gagal memuat ulang data admin:", error);
-      showToast("warning", "⚠️ Pengaturan tersimpan, tetapi tampilan belum ter-update. Muat ulang halaman.");
-    }
+    refreshInBackground();
   };
   window.save = async () => {
+    let response;
     try {
-      await api("admin/settings", {
+      response = await api("admin/settings", {
         method: "PATCH",
         body: JSON.stringify(settingsPayload()),
       });
@@ -757,7 +786,8 @@
       showToast("error", `Gagal menyimpan perubahan: ${errorText(error, "coba lagi nanti.")}`);
       return false;
     }
-    await refreshAfterAction();
+    applySavedSettings(response);
+    refreshInBackground();
     return true;
   };
   window.logout = async () => {
