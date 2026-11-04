@@ -881,6 +881,15 @@
       depositHint.textContent = generatorEnabled
         ? "Wajib gunakan Gmail yang tampil di panel Generated Gmail."
         : "Generate mati: kamu dapat setor Gmail apa saja dengan Password Wajib.";
+    const generateModeNotice = document.getElementById("generateModeNotice");
+    if (generateModeNotice) {
+      generateModeNotice.textContent = generatorEnabled
+        ? "Generate Telah Aktif, Buat Terlebih Dahulu Di Generated Gmail Sebelum Setor!!"
+        : "Generate Sedang Off Tunggu Admin Mengembalikan On Lagi";
+      generateModeNotice.className = generatorEnabled
+        ? "rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-center text-[11px] font-extrabold leading-relaxed text-amber-800"
+        : "rounded-xl border border-slate-300 bg-slate-100 px-3 py-2.5 text-center text-[11px] font-extrabold leading-relaxed text-slate-700";
+    }
     document.querySelectorAll("[data-stock-count]").forEach((option) => {
       option.disabled = stockGenerateBusy;
     });
