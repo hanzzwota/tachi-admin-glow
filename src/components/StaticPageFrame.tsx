@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { HourglassLoader } from "./HourglassLoader";
 export function StaticPageFrame({
   view,
   query = "",
@@ -46,9 +47,9 @@ export function StaticPageFrame({
         <div
           role="status"
           aria-live="polite"
-          className="absolute inset-0 z-10 flex items-center justify-center bg-background text-sm font-semibold text-foreground"
+          className="absolute inset-0 z-10 flex items-center justify-center bg-background"
         >
-          Memuat
+          <HourglassLoader />
         </div>
       )}
       <iframe

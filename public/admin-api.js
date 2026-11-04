@@ -719,6 +719,7 @@
     }
     let paymentFees;
     let savedResponse;
+    let restoreSaveButton = () => {};
     try {
       const feeValues = [
         cFee.value,
@@ -735,6 +736,17 @@
           normalizeFee(document.getElementById(`fee${key}`)?.value || 0),
         ]),
       );
+      const submitButton = event.submitter || event.target?.querySelector?.('[type="submit"]');
+      if (submitButton) {
+        submitButton.dataset.label ||= submitButton.textContent;
+        submitButton.textContent = "Menyimpan…";
+        submitButton.disabled = true;
+      }
+      restoreSaveButton = () => {
+        if (!submitButton) return;
+        submitButton.textContent = submitButton.dataset.label;
+        submitButton.disabled = false;
+      };
       savedResponse = await api("admin/settings", {
         method: "PATCH",
         body: JSON.stringify(
@@ -753,7 +765,6 @@
             captchaText: cCaptcha.value.trim() || "CAPTCHA",
             dailyLimit: cDaily.value,
             batchLimit: cLimit.value,
-            announcement: cAnn.value,
             informationCards: readInformationCards(),
             rulesText: cRules.value,
             supportChannels: readSupportChannels(),
@@ -766,11 +777,14 @@
         ),
       });
     } catch (error) {
+      restoreSaveButton();
       showToast("error", `Pengaturan gagal disimpan: ${errorText(error, "coba lagi nanti.")}`);
       return;
     }
+    restoreSaveButton();
     // Langsung tampilkan hasil dari server, refresh penuh jalan di latar belakang.
     document.activeElement?.blur?.();
+    window.informationCardsDirty = false;
     applySavedSettings(savedResponse, paymentFees);
     showToast("success", "Pengaturan platform berhasil disimpan!");
     refreshInBackground();

@@ -562,7 +562,8 @@ async function updateSettings(request: Request) {
               category: text(card["category"]).slice(0, 40) || "Info",
             };
           })
-          .filter((item) => item.title && item.info)
+          .map((item) => ({ ...item, title: item.title || item.category || "Info" }))
+          .filter((item) => item.info)
           .slice(0, 12)
       : Array.isArray(current?.["information_cards"])
         ? current["information_cards"]
@@ -601,41 +602,62 @@ async function updateSettings(request: Request) {
     payment_mode: paymentMode,
     ...coreSettings
   } = allowed;
+  // Satu request untuk semua kolom supaya simpan terasa instan; fallback per kolom
+  // hanya kalau ada kolom opsional yang belum dimigrasi.
+  let savedInOneRequest = false;
+  try {
+    await patchSettings({
+      ...coreSettings,
+      payment_fees: paymentFees,
+      information_cards: informationCards,
+      rules_text: rulesText,
+      support_channels: supportChannels,
+      payment_mode: paymentMode,
+      store_closed_reason: text(
+        payload["storeClosedReason"] ?? current?.["store_closed_reason"],
+      ).slice(0, 300),
+    });
+    savedInOneRequest = true;
+  } catch {
+    savedInOneRequest = false;
+  }
+  if (!savedInOneRequest) {
   await patchSettings(coreSettings);
-  for (const optionalSetting of [
-    ["payment_fees", paymentFees],
-    ["information_cards", informationCards],
-    ["rules_text", rulesText],
-    ["support_channels", supportChannels],
-    ["payment_mode", paymentMode],
-    [
-      "store_closed_reason",
-      text(payload["storeClosedReason"] ?? current?.["store_closed_reason"]).slice(0, 300),
-    ],
-    ["information_cards", allowed.information_cards],
-  ] as const) {
-    try {
-      await patchSettings({ [optionalSetting[0]]: optionalSetting[1] });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      const optionalColumnMissing =
-        message.includes("PGRST204") ||
-        (message.includes("400") && message.includes(optionalSetting[0]));
-      if (
-        optionalColumnMissing &&
-        optionalSetting[0] === "information_cards" &&
-        Array.isArray(optionalSetting[1]) &&
-        optionalSetting[1].length
-      ) {
-        throw new Error(
-          "Konfigurasi info belum tersimpan karena migration information_cards belum diterapkan di database.",
-        );
+    for (const optionalSetting of [
+      ["payment_fees", paymentFees],
+      ["information_cards", informationCards],
+      ["rules_text", rulesText],
+      ["support_channels", supportChannels],
+      ["payment_mode", paymentMode],
+      [
+        "store_closed_reason",
+        text(payload["storeClosedReason"] ?? current?.["store_closed_reason"]).slice(0, 300),
+      ],
+      ["information_cards", allowed.information_cards],
+    ] as const) {
+      try {
+        await patchSettings({ [optionalSetting[0]]: optionalSetting[1] });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        const optionalColumnMissing =
+          message.includes("PGRST204") ||
+          (message.includes("400") && message.includes(optionalSetting[0]));
+        if (
+          optionalColumnMissing &&
+          optionalSetting[0] === "information_cards" &&
+          Array.isArray(optionalSetting[1]) &&
+          optionalSetting[1].length
+        ) {
+          throw new Error(
+            "Konfigurasi info belum tersimpan karena migration information_cards belum diterapkan di database.",
+          );
+        }
+        if (
+          !optionalColumnMissing ||
+          (optionalSetting[0] === "store_closed_reason" && optionalSetting[1])
+        )
+          throw error;
       }
-      if (
-        !optionalColumnMissing ||
-        (optionalSetting[0] === "store_closed_reason" && optionalSetting[1])
-      )
-        throw error;
     }
   }
   const saved = await getSettings();

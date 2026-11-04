@@ -30,6 +30,8 @@
         min-height: 100vh;
       }
 
+      #appModal:not(.hidden) { display: flex; align-items: center; justify-content: center; }
+      #appModal #informationModalPanel { margin: auto; max-height: calc(100dvh - 2rem); overflow-y: auto; }
       #appModal.information-modal #informationModalPanel {
         max-width: 410px;
         border: 1px solid rgba(255, 255, 255, 0.08);
@@ -1150,7 +1152,7 @@
           <div
             class="bg-slate-50/80 border border-slate-200/60 rounded-xl p-3 min-h-[52px] flex items-center"
           >
-            <p id="announcementText" class="text-xs font-bold text-slate-700 tracking-wide">
+            <p id="announcementText" onclick="openCurrentAnnouncement()" role="button" tabindex="0" class="w-full cursor-pointer text-xs font-bold text-slate-700 tracking-wide">
               RATE NAIK. 4,5K
             </p>
           </div>
@@ -1934,12 +1936,22 @@
     <script>
       // Announcement carousel data (sinkron dengan pengaturan Admin)
       function getAnnouncements() {
-        const adminMsg = window.tachiApiState?.settings?.announcement?.trim() || "";
-        const list = adminMsg
-          ? [adminMsg]
-          : ["UPDATE HARGA GMAIL TERBARU", "STOK GMAIL FRESH DIPROSES SANGAT CEPAT!"];
-        return list.map((text, i) => ({ id: i + 1 + "/" + list.length, text }));
+        const cards = informationCardsFromSettings(window.tachiApiState?.settings || {});
+        const list = cards.length
+          ? cards
+          : [{ category: "Info", title: "Pengumuman", info: "Belum ada pengumuman dari admin." }];
+        return list.map((card, i) => ({ id: i + 1 + "/" + list.length, text: card.title, card }));
       }
+      window.openCurrentAnnouncement = () => {
+        const item = announcements[currentSlideIndex];
+        if (!item?.card) return;
+        informationExpanded = false;
+        openedInformationCard = item.card;
+        document.getElementById("appModal").classList.add("information-modal");
+        renderLatestInformationCard(item.card);
+        document.getElementById("appModal").classList.remove("hidden");
+      };
+      let openedInformationCard = null;
       let announcements = getAnnouncements();
       let currentSlideIndex = 0;
 
@@ -2052,15 +2064,19 @@
             ? settings.informationCards
             : [];
         return rawCards
-          .filter((card) => card && String(card.title || "").trim() && String(card.info || "").trim())
+          .filter((card) => card && String(card.info || "").trim())
           .map((card) => ({
             category: String(card.category || "Info").trim() || "Info",
-            title: String(card.title).trim(),
+            title: String(card.title || card.category || "Info").trim(),
             info: String(card.info).trim(),
           }))
           .slice(0, 12);
       }
+      // Overlay otomatis saat buka web dihapus; info tampil di kartu Pengumuman.
       function maybeShowInformationOverlay() {
+        updateSlide();
+      }
+      function maybeShowInformationOverlayLegacy() {
         const dashboard = document.getElementById("view-dashboard");
         if (!dashboard || dashboard.classList.contains("hidden")) return;
         const settings = window.tachiApiState?.settings || {};
@@ -2100,9 +2116,7 @@
         body.innerHTML = `<article class="information-content-card"><div class="mb-2"><span class="inline-flex rounded-md bg-white/10 px-2 py-1 text-[9px] font-bold uppercase tracking-wide text-slate-400">${escapeSupport(card.category || "Info")}</span></div><p class="whitespace-pre-line text-xs leading-7 text-slate-300">${escapeSupport(content)}</p></article>${isLong ? `<button id="informationExpandButton" type="button" onclick="toggleInformationExpanded()">${informationExpanded ? "Ringkas" : "Lihat Selengkapnya"}</button>` : ""}`;
       }
       window.toggleInformationExpanded = () => {
-        const settings = window.tachiApiState?.settings || {};
-        const cards = informationCardsFromSettings(settings);
-        const latest = cards[0] || (settings.announcement?.trim() ? { category: "Pengumuman", title: "Info Terbaru", info: settings.announcement.trim() } : null);
+        const latest = openedInformationCard;
         if (!latest) return;
         informationExpanded = !informationExpanded;
         renderLatestInformationCard(latest);

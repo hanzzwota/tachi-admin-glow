@@ -525,14 +525,6 @@
               <div id="assignedStockList" class="mt-3 max-h-56 space-y-2 overflow-y-auto"></div>
             </div>
             <p class="text-xs text-slate-500" id="dailyInfo"></p>
-            <label class="block text-xs font-semibold text-slate-500"
-              >Teks Pengumuman Running / overlay saat user membuka web<textarea
-                id="cAnn"
-                rows="3"
-                maxlength="300"
-                class="inp mt-1"
-              ></textarea>
-            </label>
             <div class="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-3 space-y-3">
               <div class="flex items-start justify-between gap-3">
                 <div>
@@ -1207,7 +1199,6 @@
         cCaptcha.value = s.captchaText || "CAPTCHA";
         cLimit.value = s.limit;
         cDaily.value = s.dailyMax;
-        cAnn.value = s.announcement;
         cRules.value = s.rulesText || "";
         renderInformationCardsEditor();
         [1, 2].forEach((index) => {
@@ -1222,9 +1213,23 @@
         dailyInfo.className = "text-xs text-slate-500";
         dailyInfo.textContent = `Terpakai hari ini (${db.daily.date}): ${db.daily.count}/${s.dailyMax > 0 ? s.dailyMax : "tanpa batas"} Gmail • reset otomatis 00:00 WIB`;
       }
-      function renderInformationCardsEditor() {
+      function syncInformationCardsDraft() {
+        if (!document.querySelector(".information-card-editor")) return;
+        db.settings.informationCards = [...document.querySelectorAll(".information-card-editor")].map((card) => ({
+          category: card.querySelector('[data-info-field="category"]')?.value || "",
+          title: card.querySelector('[data-info-field="title"]')?.value || "",
+          info: card.querySelector('[data-info-field="info"]')?.value || "",
+        }));
+      }
+      window.informationCardsDirty = false;
+      document.addEventListener("input", (event) => {
+        if (event.target?.closest?.(".information-card-editor")) window.informationCardsDirty = true;
+      });
+      function renderInformationCardsEditor(force = false) {
         const editor = document.getElementById("informationCardsEditor");
         if (!editor) return;
+        // Jangan timpa kartu yang sedang diketik saat data dimuat ulang otomatis.
+        if (window.informationCardsDirty && !force) return;
         const cards = Array.isArray(db.settings.informationCards) ? db.settings.informationCards : [];
         editor.innerHTML = cards.length
           ? cards
@@ -1252,17 +1257,22 @@
             title: card.querySelector('[data-info-field="title"]')?.value.trim() || "",
             info: card.querySelector('[data-info-field="info"]')?.value.trim() || "",
           }))
-          .filter((card) => card.title && card.info)
+          .filter((card) => card.title || card.info)
+          .map((card) => ({ ...card, title: card.title || card.category || "Info" }))
           .slice(0, 12);
       }
       window.addInformationCard = () => {
+        syncInformationCardsDraft();
+        window.informationCardsDirty = true;
         db.settings.informationCards = [{ category: "Info", title: "", info: "" }, ...(db.settings.informationCards || [])];
-        renderInformationCardsEditor();
+        renderInformationCardsEditor(true);
         document.querySelector('.information-card-editor:first-child [data-info-field="title"]')?.focus();
       };
       window.removeInformationCard = (index) => {
+        syncInformationCardsDraft();
+        window.informationCardsDirty = true;
         db.settings.informationCards = (db.settings.informationCards || []).filter((_, cardIndex) => cardIndex !== index);
-        renderInformationCardsEditor();
+        renderInformationCardsEditor(true);
       };
       function setSupportToggle(id, enabled) {
         const button = document.getElementById(id);
@@ -1293,7 +1303,6 @@
           campaignPass: cPass.value.trim(),
           limit: lim,
           dailyMax: Math.max(0, +cDaily.value),
-          announcement: cAnn.value.trim(),
         });
         showToast("warning", NOT_SAVED);
       }
