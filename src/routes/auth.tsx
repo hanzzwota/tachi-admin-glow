@@ -3,7 +3,7 @@ import { StaticPageFrame } from "../components/StaticPageFrame";
 
 export const Route = createFileRoute("/auth")({
   validateSearch: (search: Record<string, unknown>) => ({
-    view: search.view === "register" ? "register" : "login",
+    view: search["view"] === "register" ? "register" : "login",
   }),
   component: AuthPage,
 });

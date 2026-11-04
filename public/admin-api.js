@@ -164,6 +164,7 @@
           withdrawn: Number(item.withdrawn || 0),
           id: item.id,
           blocked: item.is_blocked === true,
+          needsPassword: item.needs_password === true,
           wallet: { name: item.wallet_name || "", dana: item.wallet_number || "" },
           vip: false,
         }))
@@ -650,6 +651,11 @@
   };
   window.blockUser = (id) => userAction(id, "block");
   window.unblockUser = (id) => userAction(id, "unblock");
+  window.resetUserPassword = async (id) => {
+    const data = await api(`admin/users/${id}/password`, { method: "POST" });
+    await refreshAfterAction();
+    return data.password;
+  };
   window.deleteUser = (id) => {
     if (confirm("Hapus akun user beserta riwayatnya? Tindakan ini tidak dapat dibatalkan."))
       userAction(id, "delete");

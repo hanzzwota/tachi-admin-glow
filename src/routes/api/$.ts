@@ -54,24 +54,24 @@ function withdrawalMinimums(adminMin: unknown) {
 }
 function canonicalSupportChannels(value: unknown) {
   const source = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
-  const legacyWhatsApp = Array.isArray(source.whatsapp) ? source.whatsapp : [];
-  const legacyTelegram = Array.isArray(source.telegram) ? source.telegram : [];
-  const rawAdmins = Array.isArray(source.admins) ? source.admins : [];
+  const legacyWhatsApp = Array.isArray(source["whatsapp"]) ? source["whatsapp"] : [];
+  const legacyTelegram = Array.isArray(source["telegram"]) ? source["telegram"] : [];
+  const rawAdmins = Array.isArray(source["admins"]) ? source["admins"] : [];
   const admins = [0, 1].map((index) => {
     const item =
       rawAdmins[index] && typeof rawAdmins[index] === "object"
         ? (rawAdmins[index] as Record<string, unknown>)
         : {};
     return {
-      name: text(item.name) || `Admin ${index + 1}`,
-      whatsapp: text(item.whatsapp) || text(legacyWhatsApp[index]),
-      telegram: text(item.telegram) || text(legacyTelegram[index]),
-      enabled: item.enabled !== false,
+      name: text(item["name"]) || `Admin ${index + 1}`,
+      whatsapp: text(item["whatsapp"]) || text(legacyWhatsApp[index]),
+      telegram: text(item["telegram"]) || text(legacyTelegram[index]),
+      enabled: item["enabled"] !== false,
     };
   });
   return {
-    whatsappEnabled: source.whatsappEnabled !== false && source.whatsapp_enabled !== false,
-    telegramEnabled: source.telegramEnabled !== false && source.telegram_enabled !== false,
+    whatsappEnabled: source["whatsappEnabled"] !== false && source["whatsapp_enabled"] !== false,
+    telegramEnabled: source["telegramEnabled"] !== false && source["telegram_enabled"] !== false,
     admins,
   };
 }
@@ -87,13 +87,13 @@ async function body(request: Request): Promise<Body> {
 
 async function login(request: Request) {
   const payload = await body(request);
-  const username = text(payload.username);
-  const password = typeof payload.password === "string" ? payload.password : "";
+  const username = text(payload["username"]);
+  const password = typeof payload["password"] === "string" ? payload["password"] : "";
   if (!/^[a-zA-Z0-9_.]{3,30}$/.test(username) || password.length < 6)
     return json({ error: "Username atau password tidak valid" }, { status: 400 });
 
-  const adminUsername = process.env.ADMIN_USERNAME ?? "";
-  const adminPassword = process.env.ADMIN_PASSWORD ?? "";
+  const adminUsername = process.env["ADMIN_USERNAME"] ?? "";
+  const adminPassword = process.env["ADMIN_PASSWORD"] ?? "";
   const isAdminCredentials = Boolean(
     adminUsername && adminPassword && username === adminUsername && password === adminPassword,
   );
@@ -123,37 +123,45 @@ async function login(request: Request) {
             `profiles?select=*&username=eq.${encodeURIComponent(username)}&limit=1`,
           )
         )[0];
-    } else if (user.role !== "admin") {
+    } else if (user["role"] !== "admin") {
       return json(
         { error: "Username admin sudah dipakai akun user. Gunakan username admin khusus." },
         { status: 409 },
       );
     }
   } else {
+    if (user && !user["password_hash"])
+      return json(
+        {
+          error:
+            "Akun ini sudah dipindahkan ke sistem baru. Hubungi admin untuk mendapatkan password baru.",
+        },
+        { status: 403 },
+      );
     if (
       !user ||
-      !(await verifyPassword(password, String(user.password_hash), String(user.password_salt)))
+      !(await verifyPassword(password, String(user["password_hash"]), String(user["password_salt"])))
     )
       return json({ error: "Username atau password salah" }, { status: 401 });
   }
   if (!user) return json({ error: "Username atau password salah" }, { status: 401 });
-  if (user.is_blocked === true) return json({ error: "Akun ini diblokir admin" }, { status: 403 });
-  const session = await createSession(String(user.id));
+  if (user["is_blocked"] === true) return json({ error: "Akun ini diblokir admin" }, { status: 403 });
+  const session = await createSession(String(user["id"]));
   return json({ user: publicUser(user) }, { headers: { "set-cookie": session.cookie } });
 }
 
 async function register(request: Request) {
   const payload = await body(request);
-  const username = text(payload.username);
-  const displayName = text(payload.displayName) || text(payload.name);
-  const password = typeof payload.password === "string" ? payload.password : "";
+  const username = text(payload["username"]);
+  const displayName = text(payload["displayName"]) || text(payload["name"]);
+  const password = typeof payload["password"] === "string" ? payload["password"] : "";
   if (!/^[a-zA-Z0-9_.]{3,30}$/.test(username))
     return json(
       { error: "Username 3-30 karakter, hanya huruf, angka, titik, dan underscore" },
       { status: 400 },
     );
   if (password.length < 6) return json({ error: "Password minimal 6 karakter" }, { status: 400 });
-  if (process.env.ADMIN_USERNAME && username === process.env.ADMIN_USERNAME)
+  if (process.env["ADMIN_USERNAME"] && username === process.env["ADMIN_USERNAME"])
     return json({ error: "Username tersebut dicadangkan untuk admin" }, { status: 409 });
   const existing = await supabaseFetch<Record<string, unknown>[]>(
     `profiles?select=id&username=eq.${encodeURIComponent(username)}&limit=1`,
@@ -178,7 +186,7 @@ async function register(request: Request) {
       )
     )[0];
   if (!user) return json({ error: "Akun gagal dibuat, silakan coba lagi" }, { status: 500 });
-  const session = await createSession(String(user.id));
+  const session = await createSession(String(user["id"]));
   return json(
     { user: publicUser(user) },
     { status: 201, headers: { "set-cookie": session.cookie } },
@@ -187,16 +195,16 @@ async function register(request: Request) {
 
 function publicUser(user: Record<string, unknown>) {
   return {
-    id: user.id,
-    username: user.username,
-    displayName: user.display_name,
-    role: user.role,
-    balance: Number(user.balance ?? 0),
-    withdrawn: Number(user.withdrawn ?? 0),
+    id: user["id"],
+    username: user["username"],
+    displayName: user["display_name"],
+    role: user["role"],
+    balance: Number(user["balance"] ?? 0),
+    withdrawn: Number(user["withdrawn"] ?? 0),
     wallet: {
-      bank: text(user.wallet_bank) || "DANA",
-      name: text(user.wallet_name),
-      number: text(user.wallet_number),
+      bank: text(user["wallet_bank"]) || "DANA",
+      name: text(user["wallet_name"]),
+      number: text(user["wallet_number"]),
     },
   };
 }
@@ -205,14 +213,14 @@ async function userDeposits(request: Request, admin = false) {
   const user = admin ? await requireAdmin(request) : await requireUser(request);
   const query = admin
     ? "deposits?select=*,profiles!deposits_user_id_fkey(username,display_name)&order=created_at.desc&limit=500"
-    : `deposits?select=*&user_id=eq.${encodeURIComponent(String(user.id))}&order=created_at.desc&limit=100`;
+    : `deposits?select=*&user_id=eq.${encodeURIComponent(String(user["id"]))}&order=created_at.desc&limit=100`;
   const rows = await supabaseFetch<Record<string, unknown>[]>(query);
   return json({ deposits: rows });
 }
 
 async function userDepositDetail(request: Request, id: string) {
   const user = await requireUser(request);
-  const userFilter = `user_id=eq.${encodeURIComponent(String(user.id))}&limit=1`;
+  const userFilter = `user_id=eq.${encodeURIComponent(String(user["id"]))}&limit=1`;
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
     id,
   );
@@ -225,28 +233,57 @@ async function userDepositDetail(request: Request, id: string) {
   return json({
     deposit: rows[0],
     settings: {
-      campaign_password: settings?.campaign_password ?? "",
-      pw_text: settings?.pw_text ?? "PW",
-      pw_enabled: settings?.pw_enabled !== false,
+      campaign_password: settings?.["campaign_password"] ?? "",
+      pw_text: settings?.["pw_text"] ?? "PW",
+      pw_enabled: settings?.["pw_enabled"] !== false,
     },
   });
 }
 
 async function adminUsers(request: Request) {
   await requireAdmin(request);
-  const users = await supabaseFetch<Record<string, unknown>[]>(
-    "profiles?select=id,username,display_name,role,balance,withdrawn,wallet_bank,wallet_name,wallet_number,is_blocked&role=eq.user&order=created_at.desc&limit=500",
+  const [users, withoutPassword] = await Promise.all([
+    supabaseFetch<Record<string, unknown>[]>(
+      "profiles?select=id,username,display_name,role,balance,withdrawn,wallet_bank,wallet_name,wallet_number,is_blocked&role=eq.user&order=created_at.desc&limit=500",
+    ),
+    // Accounts moved from the old database have no password until an admin sets one.
+    supabaseFetch<{ id: string }[]>("profiles?select=id&role=eq.user&password_hash=is.null"),
+  ]);
+  const pending = new Set(withoutPassword.map((row) => row.id));
+  return json({ users: users.map((user) => ({ ...user, needs_password: pending.has(String(user["id"])) })) });
+}
+
+function generateTemporaryPassword(length = 10) {
+  const alphabet = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789";
+  const bytes = crypto.getRandomValues(new Uint8Array(length));
+  return Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join("");
+}
+
+async function resetUserPassword(request: Request, id: string) {
+  await requireAdmin(request);
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return json({ error: "User tidak valid" }, { status: 400 });
+  const password = generateTemporaryPassword();
+  const hashed = await hashPassword(password);
+  const updated = await supabaseFetch<Record<string, unknown>[]>(
+    `profiles?id=eq.${encodeURIComponent(id)}&role=eq.user`,
+    {
+      method: "PATCH",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify({ password_hash: hashed.hash, password_salt: hashed.salt }),
+    },
   );
-  return json({ users });
+  if (!updated?.length) return json({ error: "User tidak ditemukan" }, { status: 404 });
+  await supabaseFetch(`sessions?profile_id=eq.${encodeURIComponent(id)}`, { method: "DELETE" });
+  return json({ ok: true, password });
 }
 
 async function createDeposit(request: Request) {
   const user = await requireUser(request);
   const payload = await body(request);
-  const requestedRoute = text(payload.jalur).trim().toUpperCase();
+  const requestedRoute = text(payload["jalur"]).trim().toUpperCase();
   if (requestedRoute !== "PW" && requestedRoute !== "CAPTCHA")
     return json({ error: "Jalur setoran tidak valid" }, { status: 400 });
-  const emails = Array.isArray(payload.emails) ? payload.emails.map(text).filter(Boolean) : [];
+  const emails = Array.isArray(payload["emails"]) ? payload["emails"].map(text).filter(Boolean) : [];
   if (!emails.length || emails.some((email) => !/^[a-z0-9._%+-]{1,64}@gmail\.com$/i.test(email)))
     return json({ error: "Daftar Gmail tidak valid" }, { status: 400 });
   const seenEmails = new Set<string>();
@@ -264,34 +301,34 @@ async function createDeposit(request: Request) {
       { status: 409 },
     );
   const settings = await getSettings();
-  if (!settings?.store_open)
+  if (!settings?.["store_open"])
     return json(
       {
-        error: text(settings?.store_closed_reason)
-          ? `Setoran sedang ditutup admin. Silakan coba lagi nanti. ${text(settings.store_closed_reason)}`
+        error: text(settings?.["store_closed_reason"])
+          ? `Setoran sedang ditutup admin. Silakan coba lagi nanti. ${text(settings?.["store_closed_reason"])}`
           : "Setoran sedang ditutup oleh admin",
       },
       { status: 423 },
     );
   const jalur = requestedRoute;
-  if (jalur === "PW" && settings.pw_enabled === false)
+  if (jalur === "PW" && settings["pw_enabled"] === false)
     return json({ error: "Jalur PW sedang dinonaktifkan admin" }, { status: 423 });
-  if (jalur === "CAPTCHA" && settings.captcha_enabled !== true)
+  if (jalur === "CAPTCHA" && settings["captcha_enabled"] !== true)
     return json({ error: "Jalur CAPTCHA sedang dinonaktifkan admin" }, { status: 423 });
-  if (jalur === "PW" && text(payload.campaignPassword) !== String(settings.campaign_password))
+  if (jalur === "PW" && text(payload["campaignPassword"]) !== String(settings["campaign_password"]))
     return json({ error: "Password wajib salah" }, { status: 403 });
   const rate = Number(jalur === "PW" ? settings["pw_rate"] : settings["captcha_rate"]);
   if (!Number.isSafeInteger(rate) || rate < 0)
     return json({ error: "Konfigurasi harga jalur belum valid" }, { status: 503 });
-  if (emails.length > Number(settings.batch_limit))
-    return json({ error: `Maksimal ${settings.batch_limit} Gmail per transaksi` }, { status: 400 });
-  if (settings.auto_stock_enabled === true) {
+  if (emails.length > Number(settings["batch_limit"]))
+    return json({ error: `Maksimal ${settings["batch_limit"]} Gmail per transaksi` }, { status: 400 });
+  if (settings["auto_stock_enabled"] === true) {
     const generatedClaims = await supabaseFetch<Record<string, unknown>[]>(
-      `generated_gmail_claims?select=gmail,normalized_gmail&user_id=eq.${encodeURIComponent(String(user.id))}&archived_at=is.null&limit=1000`,
+      `generated_gmail_claims?select=gmail,normalized_gmail&user_id=eq.${encodeURIComponent(String(user["id"]))}&archived_at=is.null&limit=1000`,
     );
     const generatedSet = new Set(
       generatedClaims
-        .map((claim) => text(claim.normalized_gmail || claim.gmail).toLowerCase())
+        .map((claim) => text(claim["normalized_gmail"] || claim["gmail"]).toLowerCase())
         .filter(Boolean),
     );
     const notGenerated = emails.filter((email) => !generatedSet.has(email.toLowerCase()));
@@ -316,7 +353,7 @@ async function createDeposit(request: Request) {
     },
   );
   if (duplicateRows.length) {
-    const duplicateEmails = duplicateRows.map((item) => text(item.email)).filter(Boolean);
+    const duplicateEmails = duplicateRows.map((item) => text(item["email"])).filter(Boolean);
     const shown = duplicateEmails.slice(0, 5).join(", ");
     const remaining =
       duplicateEmails.length > 5 ? `, dan ${duplicateEmails.length - 5} lainnya` : "";
@@ -333,10 +370,10 @@ async function createDeposit(request: Request) {
     `deposits?select=emails&created_at=gte.${dayStart}&limit=500`,
   );
   const submittedToday = today.reduce(
-    (total, row) => total + (Array.isArray(row.emails) ? row.emails.length : 0),
+    (total, row) => total + (Array.isArray(row["emails"]) ? row["emails"].length : 0),
     0,
   );
-  const dailyLimit = Number(settings.daily_limit ?? 0);
+  const dailyLimit = Number(settings["daily_limit"] ?? 0);
   if (dailyLimit > 0 && submittedToday + emails.length > dailyLimit)
     return json(
       { error: `Batas setor hari ini tersisa ${Math.max(0, dailyLimit - submittedToday)} Gmail` },
@@ -346,7 +383,7 @@ async function createDeposit(request: Request) {
     method: "POST",
     headers: { Prefer: "return=representation" },
     body: JSON.stringify({
-      user_id: user.id,
+      user_id: user["id"],
       transaction_number: `TRX-${new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date()).replaceAll("-", "")}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
       emails,
       status: "pending",
@@ -362,8 +399,8 @@ async function createDeposit(request: Request) {
 async function approveDeposit(request: Request, id: string) {
   const admin = await requireAdmin(request);
   const payload = await body(request);
-  const acceptedEmails = Array.isArray(payload.acceptedEmails)
-    ? payload.acceptedEmails.map(text).filter(Boolean)
+  const acceptedEmails = Array.isArray(payload["acceptedEmails"])
+    ? payload["acceptedEmails"].map(text).filter(Boolean)
     : null;
   const result = await supabaseFetch<{ ok: boolean; earned: number; error_code: string | null }[]>(
     "rpc/approve_deposit_atomic",
@@ -371,7 +408,7 @@ async function approveDeposit(request: Request, id: string) {
       method: "POST",
       body: JSON.stringify({
         p_deposit_id: id,
-        p_admin_id: admin.id,
+        p_admin_id: admin["id"],
         p_accepted_emails: acceptedEmails,
       }),
     },
@@ -385,10 +422,10 @@ async function approveDeposit(request: Request, id: string) {
 async function rejectDeposit(request: Request, id: string) {
   const admin = await requireAdmin(request);
   const payload = await body(request);
-  const reason = text(payload.reason);
+  const reason = text(payload["reason"]);
   if (!reason) return json({ error: "Alasan penolakan wajib diisi" }, { status: 400 });
-  const rejectedEmails = Array.isArray(payload.rejectedEmails)
-    ? payload.rejectedEmails.map(text).filter(Boolean)
+  const rejectedEmails = Array.isArray(payload["rejectedEmails"])
+    ? payload["rejectedEmails"].map(text).filter(Boolean)
     : null;
   let result: { ok: boolean; error_code: string | null }[];
   try {
@@ -398,7 +435,7 @@ async function rejectDeposit(request: Request, id: string) {
         method: "POST",
         body: JSON.stringify({
           p_deposit_id: id,
-          p_admin_id: admin.id,
+          p_admin_id: admin["id"],
           p_reason: reason,
           p_rejected_emails: rejectedEmails,
         }),
@@ -439,7 +476,7 @@ async function rejectDeposit(request: Request, id: string) {
       "rpc/reject_deposit_atomic",
       {
         method: "POST",
-        body: JSON.stringify({ p_deposit_id: id, p_admin_id: admin.id, p_reason: reason }),
+        body: JSON.stringify({ p_deposit_id: id, p_admin_id: admin["id"], p_reason: reason }),
       },
     );
   }
@@ -452,12 +489,12 @@ async function updateSettings(request: Request) {
   await requireAdmin(request);
   const payload = await body(request);
   const current = await getSettings();
-  const stock = Array.isArray(payload.gmailStock) ? payload.gmailStock : [];
+  const stock = Array.isArray(payload["gmailStock"]) ? payload["gmailStock"] : [];
   const numberOrZero = (value: unknown) => {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : 0;
   };
-  const incomingFee = payload.fee ?? current?.fee ?? 0;
+  const incomingFee = payload["fee"] ?? current?.["fee"] ?? 0;
   const legacyRate = payload["rate"];
   const parseRate = (value: unknown) => {
     if (typeof value === "string" && !value.trim()) return Number.NaN;
@@ -470,7 +507,7 @@ async function updateSettings(request: Request) {
   const captchaRate = parseRate(
     payload["captchaRate"] ?? legacyRate ?? current?.["captcha_rate"] ?? current?.["rate"] ?? 4500,
   );
-  const incomingPaymentFees = payload.paymentFees ?? current?.payment_fees ?? {};
+  const incomingPaymentFees = payload["paymentFees"] ?? current?.["payment_fees"] ?? {};
   const rawFees =
     incomingPaymentFees && typeof incomingPaymentFees === "object"
       ? Object.values(incomingPaymentFees as Record<string, unknown>)
@@ -496,57 +533,57 @@ async function updateSettings(request: Request) {
     captcha_rate: captchaRate,
     min_withdrawal: Math.max(
       FIXED_MIN_WITHDRAWAL,
-      numberOrZero(payload.minWithdrawal ?? current?.min_withdrawal),
+      numberOrZero(payload["minWithdrawal"] ?? current?.["min_withdrawal"]),
     ),
-    fee: normalizeFee(payload.fee ?? current?.fee),
+    fee: normalizeFee(payload["fee"] ?? current?.["fee"]),
     payment_fees: canonicalPaymentFees(
-      payload.paymentFees ?? current?.payment_fees,
-      normalizeFee(payload.fee ?? current?.fee),
+      payload["paymentFees"] ?? current?.["payment_fees"],
+      normalizeFee(payload["fee"] ?? current?.["fee"]),
     ),
-    campaign_password: text(payload.campaignPassword ?? current?.campaign_password),
-    pw_text: text(payload.pwText ?? current?.pw_text) || "PW",
-    pw_enabled: booleanValue(payload.pwEnabled, current?.pw_enabled !== false),
-    captcha_enabled: booleanValue(payload.captchaEnabled, current?.captcha_enabled === true),
-    captcha_text: text(payload.captchaText ?? current?.captcha_text) || "CAPTCHA",
-    store_open: booleanValue(payload.storeOpen, current?.store_open !== false),
-    withdraw_open: booleanValue(payload.withdrawOpen, current?.withdraw_open !== false),
-    checker_open: booleanValue(payload.checkerOpen, current?.checker_open !== false),
-    daily_limit: numberOrZero(payload.dailyLimit ?? current?.daily_limit),
-    batch_limit: numberOrZero(payload.batchLimit ?? current?.batch_limit),
-    announcement: text(payload.announcement ?? current?.announcement),
-    information_cards: Array.isArray(payload.informationCards)
-      ? payload.informationCards
+    campaign_password: text(payload["campaignPassword"] ?? current?.["campaign_password"]),
+    pw_text: text(payload["pwText"] ?? current?.["pw_text"]) || "PW",
+    pw_enabled: booleanValue(payload["pwEnabled"], current?.["pw_enabled"] !== false),
+    captcha_enabled: booleanValue(payload["captchaEnabled"], current?.["captcha_enabled"] === true),
+    captcha_text: text(payload["captchaText"] ?? current?.["captcha_text"]) || "CAPTCHA",
+    store_open: booleanValue(payload["storeOpen"], current?.["store_open"] !== false),
+    withdraw_open: booleanValue(payload["withdrawOpen"], current?.["withdraw_open"] !== false),
+    checker_open: booleanValue(payload["checkerOpen"], current?.["checker_open"] !== false),
+    daily_limit: numberOrZero(payload["dailyLimit"] ?? current?.["daily_limit"]),
+    batch_limit: numberOrZero(payload["batchLimit"] ?? current?.["batch_limit"]),
+    announcement: text(payload["announcement"] ?? current?.["announcement"]),
+    information_cards: Array.isArray(payload["informationCards"])
+      ? payload["informationCards"]
           .filter((item) => item && typeof item === "object")
           .map((item) => {
             const card = item as Record<string, unknown>;
             return {
-              title: text(card.title).slice(0, 80),
-              info: text(card.info).slice(0, 1000),
-              category: text(card.category).slice(0, 40) || "Info",
+              title: text(card["title"]).slice(0, 80),
+              info: text(card["info"]).slice(0, 1000),
+              category: text(card["category"]).slice(0, 40) || "Info",
             };
           })
           .filter((item) => item.title && item.info)
           .slice(0, 12)
-      : Array.isArray(current?.information_cards)
-        ? current.information_cards
+      : Array.isArray(current?.["information_cards"])
+        ? current["information_cards"]
         : [],
-    rules_text: text(payload.rulesText ?? current?.rules_text),
-    payment_mode: paymentModes.includes(payload.paymentMode as (typeof paymentModes)[number])
-      ? payload.paymentMode
-      : current?.payment_mode === "dana_only"
+    rules_text: text(payload["rulesText"] ?? current?.["rules_text"]),
+    payment_mode: paymentModes.includes(payload["paymentMode"] as (typeof paymentModes)[number])
+      ? payload["paymentMode"]
+      : current?.["payment_mode"] === "dana_only"
         ? "dana_only"
         : "all",
     support_channels: canonicalSupportChannels(
-      payload.supportChannels ?? current?.support_channels,
+      payload["supportChannels"] ?? current?.["support_channels"],
     ),
     auto_stock_enabled: booleanValue(
-      payload.autoStockEnabled,
-      current?.auto_stock_enabled === true,
+      payload["autoStockEnabled"],
+      current?.["auto_stock_enabled"] === true,
     ),
-    gmail_stock: Array.isArray(payload.gmailStock)
+    gmail_stock: Array.isArray(payload["gmailStock"])
       ? stock
-      : Array.isArray(current?.gmail_stock)
-        ? current.gmail_stock
+      : Array.isArray(current?.["gmail_stock"])
+        ? current["gmail_stock"]
         : [],
   };
   const patchSettings = async (values: Record<string, unknown>) => {
@@ -573,7 +610,7 @@ async function updateSettings(request: Request) {
     ["payment_mode", paymentMode],
     [
       "store_closed_reason",
-      text(payload.storeClosedReason ?? current?.store_closed_reason).slice(0, 300),
+      text(payload["storeClosedReason"] ?? current?.["store_closed_reason"]).slice(0, 300),
     ],
     ["information_cards", allowed.information_cards],
   ] as const) {
@@ -613,11 +650,11 @@ async function updateSettings(request: Request) {
 function userSettings(settings: Record<string, unknown> | null) {
   if (!settings) return null;
   const { gmail_stock: _gmailStock, ...safeSettings } = settings;
-  const fallbackFee = normalizeFee(safeSettings.fee);
-  safeSettings.fee = fallbackFee;
-  safeSettings.payment_fees = canonicalPaymentFees(safeSettings.payment_fees, fallbackFee);
-  safeSettings.payment_mode = safeSettings.payment_mode === "dana_only" ? "dana_only" : "all";
-  safeSettings.withdrawal_minimums = withdrawalMinimums(safeSettings.min_withdrawal);
+  const fallbackFee = normalizeFee(safeSettings["fee"]);
+  safeSettings["fee"] = fallbackFee;
+  safeSettings["payment_fees"] = canonicalPaymentFees(safeSettings["payment_fees"], fallbackFee);
+  safeSettings["payment_mode"] = safeSettings["payment_mode"] === "dana_only" ? "dana_only" : "all";
+  safeSettings["withdrawal_minimums"] = withdrawalMinimums(safeSettings["min_withdrawal"]);
   return safeSettings;
 }
 
@@ -628,27 +665,27 @@ async function dailyDepositStats(settings: Record<string, unknown> | null) {
     `deposits?select=emails&created_at=gte.${start}&limit=500`,
   );
   const used = rows.reduce(
-    (total, row) => total + (Array.isArray(row.emails) ? row.emails.length : 0),
+    (total, row) => total + (Array.isArray(row["emails"]) ? row["emails"].length : 0),
     0,
   );
-  const limit = Math.max(0, Number(settings?.daily_limit ?? 0));
+  const limit = Math.max(0, Number(settings?.["daily_limit"] ?? 0));
   return { daily_used: used, daily_remaining: limit ? Math.max(0, limit - used) : null };
 }
 
 async function claimGmailStock(request: Request) {
   const user = await requireUser(request);
   const payload = await body(request);
-  const count = Number(payload.count ?? 1);
+  const count = Number(payload["count"] ?? 1);
   if (!Number.isSafeInteger(count) || count < 1 || count > 5)
     return json({ error: "Jumlah Gmail per batch harus 1-5 akun" }, { status: 400 });
 
   const settings = await getSettings();
-  if (!settings?.auto_stock_enabled)
+  if (!settings?.["auto_stock_enabled"])
     return json({ error: "Generate Gmail sedang dimatikan admin" }, { status: 423 });
 
   const claimed = await supabaseFetch<{ gmail: string }[]>("rpc/claim_gmail_stock_batch", {
     method: "POST",
-    body: JSON.stringify({ p_user_id: user.id, p_count: count }),
+    body: JSON.stringify({ p_user_id: user["id"], p_count: count }),
   });
   const gmails = Array.isArray(claimed) ? claimed.map((item) => item.gmail).filter(Boolean) : [];
   if (!gmails.length) return json({ error: "Stok Gmail sedang kosong" }, { status: 409 });
@@ -657,7 +694,7 @@ async function claimGmailStock(request: Request) {
 
 async function generatedGmailList(request: Request) {
   const user = await requireUser(request);
-  const userId = encodeURIComponent(String(user.id));
+  const userId = encodeURIComponent(String(user["id"]));
   const [claims, deposits] = await Promise.all([
     supabaseFetch<Record<string, unknown>[]>(
       `generated_gmail_claims?select=id,gmail,normalized_gmail,created_at&user_id=eq.${userId}&archived_at=is.null&order=created_at.desc&limit=1000`,
@@ -669,35 +706,35 @@ async function generatedGmailList(request: Request) {
 
   const statusByEmail = new Map<string, { status: string; deposit_id: string }>();
   for (const deposit of deposits) {
-    const emails = Array.isArray(deposit.emails) ? deposit.emails.map(text) : [];
+    const emails = Array.isArray(deposit["emails"]) ? deposit["emails"].map(text) : [];
     const accepted = new Set(
-      Array.isArray(deposit.accepted_emails)
-        ? deposit.accepted_emails.map((email) => text(email).toLowerCase())
+      Array.isArray(deposit["accepted_emails"])
+        ? deposit["accepted_emails"].map((email) => text(email).toLowerCase())
         : [],
     );
     const rejected = new Set(
-      Array.isArray(deposit.rejected_emails)
-        ? deposit.rejected_emails.map((email) => text(email).toLowerCase())
+      Array.isArray(deposit["rejected_emails"])
+        ? deposit["rejected_emails"].map((email) => text(email).toLowerCase())
         : [],
     );
     for (const email of emails) {
       const normalized = email.toLowerCase();
       if (!normalized || statusByEmail.has(normalized)) continue;
       let status = "diproses";
-      if (accepted.has(normalized) || (deposit.status === "diterima" && !rejected.has(normalized)))
+      if (accepted.has(normalized) || (deposit["status"] === "diterima" && !rejected.has(normalized)))
         status = "berhasil";
-      else if (rejected.has(normalized) || deposit.status === "ditolak") status = "ditolak";
-      statusByEmail.set(normalized, { status, deposit_id: String(deposit.id) });
+      else if (rejected.has(normalized) || deposit["status"] === "ditolak") status = "ditolak";
+      statusByEmail.set(normalized, { status, deposit_id: String(deposit["id"]) });
     }
   }
 
   return json({
     gmails: claims.map((claim) => {
-      const status = statusByEmail.get(String(claim.normalized_gmail).toLowerCase());
+      const status = statusByEmail.get(String(claim["normalized_gmail"]).toLowerCase());
       return {
-        id: claim.id,
-        gmail: claim.gmail,
-        created_at: claim.created_at,
+        id: claim["id"],
+        gmail: claim["gmail"],
+        created_at: claim["created_at"],
         status: status?.status ?? "belum_disetor",
         deposit_id: status?.deposit_id ?? null,
       };
@@ -707,7 +744,7 @@ async function generatedGmailList(request: Request) {
 
 async function archiveGeneratedGmail(request: Request, id: string) {
   const user = await requireUser(request);
-  const filter = `id=eq.${encodeURIComponent(id)}&user_id=eq.${encodeURIComponent(String(user.id))}&archived_at=is.null`;
+  const filter = `id=eq.${encodeURIComponent(id)}&user_id=eq.${encodeURIComponent(String(user["id"]))}&archived_at=is.null`;
   const rows = await supabaseFetch<Record<string, unknown>[]>(
     `generated_gmail_claims?select=id&${filter}&limit=1`,
   );
@@ -727,19 +764,19 @@ async function adminGeneratedGmailList(request: Request) {
   );
   return json({
     gmails: rows.map((row) => ({
-      id: row.id,
-      gmail: row.gmail,
-      normalized_gmail: row.normalized_gmail,
-      user_id: row.user_id,
-      created_at: row.created_at,
-      archived_at: row.archived_at,
+      id: row["id"],
+      gmail: row["gmail"],
+      normalized_gmail: row["normalized_gmail"],
+      user_id: row["user_id"],
+      created_at: row["created_at"],
+      archived_at: row["archived_at"],
       username:
-        row.profiles && typeof row.profiles === "object"
-          ? (row.profiles as Record<string, unknown>).username
-          : row.user_id,
+        row["profiles"] && typeof row["profiles"] === "object"
+          ? (row["profiles"] as Record<string, unknown>)["username"]
+          : row["user_id"],
       display_name:
-        row.profiles && typeof row.profiles === "object"
-          ? (row.profiles as Record<string, unknown>).display_name
+        row["profiles"] && typeof row["profiles"] === "object"
+          ? (row["profiles"] as Record<string, unknown>)["display_name"]
           : "",
     })),
   });
@@ -748,12 +785,12 @@ async function adminGeneratedGmailList(request: Request) {
 async function updateWallet(request: Request) {
   const user = await requireUser(request);
   const payload = await body(request);
-  const bank = text(payload.bank) || "DANA";
-  const name = text(payload.name).slice(0, 100);
-  const number = text(payload.number);
+  const bank = text(payload["bank"]) || "DANA";
+  const name = text(payload["name"]).slice(0, 100);
+  const number = text(payload["number"]);
   const supportedBanks = new Set(["DANA", "OVO", "GoPay", "ShopeePay", "BCA", "BRI", "Mandiri"]);
   const settings = await getSettings();
-  if (settings?.payment_mode === "dana_only" && bank !== "DANA")
+  if (settings?.["payment_mode"] === "dana_only" && bank !== "DANA")
     return json(
       { error: "Admin saat ini hanya membuka payment DANA. Pilih DANA lalu isi ulang payment." },
       { status: 400 },
@@ -761,7 +798,7 @@ async function updateWallet(request: Request) {
   if (!supportedBanks.has(bank) || !name || !/^[0-9]{8,16}$/.test(number))
     return json({ error: "Nomor wallet 8-16 digit dan nama wajib diisi" }, { status: 400 });
   const updated = await supabaseFetch<Record<string, unknown>[]>(
-    `profiles?id=eq.${encodeURIComponent(String(user.id))}&select=id,wallet_bank,wallet_name,wallet_number`,
+    `profiles?id=eq.${encodeURIComponent(String(user["id"]))}&select=id,wallet_bank,wallet_name,wallet_number`,
     {
       method: "PATCH",
       headers: { Prefer: "return=representation" },
@@ -772,10 +809,10 @@ async function updateWallet(request: Request) {
     updated[0] ??
     (
       await supabaseFetch<Record<string, unknown>[]>(
-        `profiles?id=eq.${encodeURIComponent(String(user.id))}&select=id,wallet_bank,wallet_name,wallet_number&limit=1`,
+        `profiles?id=eq.${encodeURIComponent(String(user["id"]))}&select=id,wallet_bank,wallet_name,wallet_number&limit=1`,
       )
     )[0];
-  if (!saved || saved.wallet_number !== number || saved.wallet_name !== name)
+  if (!saved || saved["wallet_number"] !== number || saved["wallet_name"] !== name)
     return json({ error: "Data rekening gagal disimpan, silakan coba lagi" }, { status: 409 });
   const freshUser = await getCurrentUser(request);
   return json({ ok: true, wallet: saved, user: freshUser ? publicUser(freshUser) : undefined });
@@ -785,30 +822,30 @@ async function userWithdrawals(request: Request, admin = false) {
   const user = admin ? await requireAdmin(request) : await requireUser(request);
   const query = admin
     ? "withdrawals?select=*,profiles(username,display_name)&order=created_at.desc&limit=500"
-    : `withdrawals?select=*&user_id=eq.${encodeURIComponent(String(user.id))}&order=created_at.desc&limit=100`;
+    : `withdrawals?select=*&user_id=eq.${encodeURIComponent(String(user["id"]))}&order=created_at.desc&limit=100`;
   return json({ withdrawals: await supabaseFetch<Record<string, unknown>[]>(query) });
 }
 
 async function createWithdrawal(request: Request) {
   const user = await requireUser(request);
   const settings = await getSettings();
-  if (!settings?.withdraw_open)
+  if (!settings?.["withdraw_open"])
     return json({ error: "Penarikan sedang ditutup oleh admin" }, { status: 423 });
   const payload = await body(request);
-  const amount = Math.floor(Number(payload.amount));
-  const balance = Number(user.balance ?? 0);
-  const configuredBank = paymentMethods.includes(String(user.wallet_bank))
-    ? String(user.wallet_bank)
+  const amount = Math.floor(Number(payload["amount"]));
+  const balance = Number(user["balance"] ?? 0);
+  const configuredBank = paymentMethods.includes(String(user["wallet_bank"]))
+    ? String(user["wallet_bank"])
     : "DANA";
-  if (settings.payment_mode === "dana_only" && configuredBank !== "DANA")
+  if (settings["payment_mode"] === "dana_only" && configuredBank !== "DANA")
     return json(
       { error: "Admin saat ini hanya membuka payment DANA. Pilih DANA lalu isi ulang payment." },
       { status: 400 },
     );
   const bank = configuredBank;
-  const paymentFees = canonicalPaymentFees(settings.payment_fees, normalizeFee(settings.fee));
+  const paymentFees = canonicalPaymentFees(settings["payment_fees"], normalizeFee(settings["fee"]));
   const fee = paymentFees[bank] ?? 0;
-  const minimum = withdrawalMinimums(settings.min_withdrawal)[bank] ?? 0;
+  const minimum = withdrawalMinimums(settings["min_withdrawal"])[bank] ?? 0;
   if (!Number.isFinite(amount) || amount <= 0 || amount < minimum)
     return json(
       { error: `Minimal penarikan ${bank} Rp${minimum.toLocaleString("id-ID")}` },
@@ -817,12 +854,12 @@ async function createWithdrawal(request: Request) {
   if (fee >= amount)
     return json({ error: "Fee harus lebih kecil daripada nominal penarikan" }, { status: 400 });
   if (amount > balance) return json({ error: "Saldo tidak cukup" }, { status: 400 });
-  if (!user.wallet_number || !user.wallet_name)
+  if (!user["wallet_number"] || !user["wallet_name"])
     return json({ error: "Isi data rekening terlebih dahulu" }, { status: 400 });
-  if (payload.confirmWallet !== true)
+  if (payload["confirmWallet"] !== true)
     return json({ error: "Konfirmasi nomor payment terlebih dahulu" }, { status: 400 });
   const updatedProfiles = await supabaseFetch<Record<string, unknown>[]>(
-    `profiles?id=eq.${encodeURIComponent(String(user.id))}&balance=eq.${encodeURIComponent(String(balance))}`,
+    `profiles?id=eq.${encodeURIComponent(String(user["id"]))}&balance=eq.${encodeURIComponent(String(balance))}`,
     {
       method: "PATCH",
       headers: { Prefer: "return=representation" },
@@ -833,7 +870,7 @@ async function createWithdrawal(request: Request) {
     return json({ error: "Saldo berubah, silakan muat ulang lalu coba lagi" }, { status: 409 });
   const restoreBalance = () =>
     supabaseFetch(
-      `profiles?id=eq.${encodeURIComponent(String(user.id))}&balance=eq.${encodeURIComponent(String(balance - amount))}`,
+      `profiles?id=eq.${encodeURIComponent(String(user["id"]))}&balance=eq.${encodeURIComponent(String(balance - amount))}`,
       {
         method: "PATCH",
         headers: { Prefer: "return=minimal" },
@@ -846,13 +883,13 @@ async function createWithdrawal(request: Request) {
       method: "POST",
       headers: { Prefer: "return=representation" },
       body: JSON.stringify({
-        user_id: user.id,
+        user_id: user["id"],
         amount,
         fee,
         fee_deducted_from_amount: true,
         wallet_bank: bank,
-        wallet_name: user.wallet_name,
-        wallet_number: user.wallet_number,
+        wallet_name: user["wallet_name"],
+        wallet_number: user["wallet_number"],
         status: "pending",
       }),
     });
@@ -870,12 +907,12 @@ async function createWithdrawal(request: Request) {
         method: "POST",
         headers: { Prefer: "return=representation" },
         body: JSON.stringify({
-          user_id: user.id,
+          user_id: user["id"],
           amount,
           fee,
           fee_deducted_from_amount: true,
-          wallet_name: user.wallet_name,
-          wallet_number: user.wallet_number,
+          wallet_name: user["wallet_name"],
+          wallet_number: user["wallet_number"],
           status: "pending",
         }),
       });
@@ -901,20 +938,20 @@ async function processWithdrawal(request: Request, id: string, status: "selesai"
     headers: { Prefer: "return=minimal" },
     body: JSON.stringify({
       status,
-      reason: status === "ditolak" ? text(payload.reason) || "Ditolak admin" : null,
+      reason: status === "ditolak" ? text(payload["reason"]) || "Ditolak admin" : null,
       completed_at: new Date().toISOString(),
     }),
   });
   const userRows = await supabaseFetch<Record<string, unknown>[]>(
-    `profiles?select=${status === "selesai" ? "withdrawn" : "balance"}&id=eq.${encodeURIComponent(String(withdrawal.user_id))}&limit=1`,
+    `profiles?select=${status === "selesai" ? "withdrawn" : "balance"}&id=eq.${encodeURIComponent(String(withdrawal["user_id"]))}&limit=1`,
   );
   const field = status === "selesai" ? "withdrawn" : "balance";
   const delta =
     status === "selesai"
-      ? Number(withdrawal.amount ?? 0)
-      : Number(withdrawal.amount ?? 0) +
-        (withdrawal.fee_deducted_from_amount === true ? 0 : Number(withdrawal.fee ?? 0));
-  await supabaseFetch(`profiles?id=eq.${encodeURIComponent(String(withdrawal.user_id))}`, {
+      ? Number(withdrawal["amount"] ?? 0)
+      : Number(withdrawal["amount"] ?? 0) +
+        (withdrawal["fee_deducted_from_amount"] === true ? 0 : Number(withdrawal["fee"] ?? 0));
+  await supabaseFetch(`profiles?id=eq.${encodeURIComponent(String(withdrawal["user_id"]))}`, {
     method: "PATCH",
     headers: { Prefer: "return=minimal" },
     body: JSON.stringify({ [field]: Number(userRows[0]?.[field] ?? 0) + delta }),
@@ -974,25 +1011,27 @@ async function handler(request: Request, path: string) {
   if (request.method === "GET" && path === "settings") {
     const user = await requireUser(request);
     const settings = await getSettings();
-    const safe = user.role === "admin" ? settings : userSettings(settings);
+    const safe = user["role"] === "admin" ? settings : userSettings(settings);
     return json({ settings: { ...(safe || {}), ...(await dailyDepositStats(settings)) } });
   }
   if (request.method === "GET" && path === "deposits") return userDeposits(request);
   if (request.method === "GET" && path.startsWith("deposits/") && path.split("/").length === 2)
-    return userDepositDetail(request, path.split("/")[1]);
+    return userDepositDetail(request, path.split("/")[1] ?? "");
   if (request.method === "POST" && path === "deposits") return createDeposit(request);
   if (request.method === "GET" && path === "admin/deposits") return userDeposits(request, true);
   if (request.method === "GET" && path === "admin/users") return adminUsers(request);
   if (request.method === "POST" && path.startsWith("admin/deposits/") && path.endsWith("/approve"))
-    return approveDeposit(request, path.split("/")[2]);
+    return approveDeposit(request, path.split("/")[2] ?? "");
   if (request.method === "POST" && path.startsWith("admin/deposits/") && path.endsWith("/reject"))
-    return rejectDeposit(request, path.split("/")[2]);
+    return rejectDeposit(request, path.split("/")[2] ?? "");
   if (request.method === "POST" && path.startsWith("admin/users/") && path.endsWith("/block"))
-    return setUserBlocked(request, path.split("/")[2], true);
+    return setUserBlocked(request, path.split("/")[2] ?? "", true);
   if (request.method === "POST" && path.startsWith("admin/users/") && path.endsWith("/unblock"))
-    return setUserBlocked(request, path.split("/")[2], false);
+    return setUserBlocked(request, path.split("/")[2] ?? "", false);
+  if (request.method === "POST" && path.startsWith("admin/users/") && path.endsWith("/password"))
+    return resetUserPassword(request, path.split("/")[2] ?? "");
   if (request.method === "POST" && path.startsWith("admin/users/") && path.endsWith("/delete"))
-    return deleteUser(request, path.split("/")[2]);
+    return deleteUser(request, path.split("/")[2] ?? "");
   if (request.method === "PATCH" && path === "admin/settings") return updateSettings(request);
   if (request.method === "POST" && path === "stock/claim") return claimGmailStock(request);
   if (request.method === "GET" && path === "stock/generated") return generatedGmailList(request);
@@ -1010,13 +1049,13 @@ async function handler(request: Request, path: string) {
     path.startsWith("admin/withdrawals/") &&
     path.endsWith("/approve")
   )
-    return processWithdrawal(request, path.split("/")[2], "selesai");
+    return processWithdrawal(request, path.split("/")[2] ?? "", "selesai");
   if (
     request.method === "POST" &&
     path.startsWith("admin/withdrawals/") &&
     path.endsWith("/reject")
   )
-    return processWithdrawal(request, path.split("/")[2], "ditolak");
+    return processWithdrawal(request, path.split("/")[2] ?? "", "ditolak");
   return json({ error: "API route tidak ditemukan" }, { status: 404 });
 }
 

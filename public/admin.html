@@ -1089,7 +1089,7 @@
   <td class="p-2 font-bold">${rp(u.saldo)}</td><td class="p-2 text-xs"><button onclick="userHist('${esc(u.username)}')" class="text-blue-600 underline">${st.length} transaksi</button></td>
   <td class="p-2"><button onclick="toggleVip('${esc(u.username)}')" class="px-2 py-1 rounded-lg text-xs font-bold ${u.vip ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600"}">${u.vip ? '<i class="fa fa-crown mr-1"></i>VIP' : "Reguler"}</button><div class="mt-1 text-[10px] font-bold ${u.blocked ? "text-red-600" : "text-green-600"}">${u.blocked ? "DIBLOKIR" : "AKTIF"}</div></td>
   <td class="p-2 text-right whitespace-nowrap"><button onclick="saldoModal('${esc(u.username)}')" class="px-2 py-1.5 rounded-lg btn-p text-xs font-bold">Saldo</button>
-  <button onclick="resetPw('${esc(u.username)}')" class="px-2 py-1.5 rounded-lg bg-slate-100 text-xs font-bold">Reset PW</button>
+  <button onclick="resetPw('${u.id}', '${esc(u.username)}')" class="px-2 py-1.5 rounded-lg ${u.needsPassword ? "bg-amber-100 text-amber-700" : "bg-slate-100"} text-xs font-bold">${u.needsPassword ? "Atur PW" : "Reset PW"}</button>
   ${u.blocked ? `<button onclick="unblockUser('${u.id}')" class="px-2 py-1.5 rounded-lg bg-green-100 text-green-700 text-xs font-bold">Unblock</button>` : `<button onclick="blockUser('${u.id}')" class="px-2 py-1.5 rounded-lg bg-amber-100 text-amber-700 text-xs font-bold">Block</button>`}
   <button onclick="deleteUser('${u.id}')" class="px-2 py-1.5 rounded-lg bg-red-100 text-red-700 text-xs font-bold">Hapus</button></td></tr>`;
           })
@@ -1127,14 +1127,18 @@
         // Belum ada endpoint koreksi saldo di server -> jangan tampilkan success palsu.
         showToast("warning", NOT_SAVED);
       }
-      function resetPw(n) {
-        // Belum ada endpoint reset password di server: password acak ini tidak akan berlaku.
-        showToast("warning", NOT_SAVED);
-        return;
-        const np = Math.random().toString(36).slice(-8);
+      async function resetPw(id, n) {
+        if (!confirm(`Buat password baru untuk ${n}? Password lama tidak berlaku lagi.`)) return;
+        let np;
+        try {
+          np = await window.resetUserPassword(id);
+        } catch (error) {
+          showToast("error", `Gagal reset password: ${error?.message || "coba lagi nanti."}`);
+          return;
+        }
         openModal(
           "Password Direset",
-          `<p class="text-sm">Password baru untuk <b>${esc(n)}</b>:</p><div class="flex gap-2 mt-2"><input readonly value="${np}" class="inp font-mono"><button onclick="copy('${np}')" class="btn-p px-4 rounded-xl"><i class="fa fa-copy"></i></button></div>`,
+          `<p class="text-sm">Password baru untuk <b>${esc(n)}</b>:</p><div class="flex gap-2 mt-2"><input readonly value="${esc(np)}" class="inp font-mono"><button onclick="copy('${esc(np)}')" class="btn-p px-4 rounded-xl"><i class="fa fa-copy"></i></button></div><p class="text-xs text-slate-500 mt-2">Berikan password ini ke user. User dapat login dengan password ini.</p>`,
         );
       }
 
