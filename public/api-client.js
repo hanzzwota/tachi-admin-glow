@@ -173,6 +173,7 @@
     if (settings.pw_enabled === false && settings.captcha_enabled === true) selectedDepositRoute = "CAPTCHA";
     if (settings.captcha_enabled !== true && settings.pw_enabled !== false) selectedDepositRoute = "PW";
     if (pwCard) {
+      pwCard.setAttribute("aria-pressed", String(selectedDepositRoute === "PW"));
       pwCard.disabled = settings.pw_enabled === false;
       pwCard.classList.toggle("opacity-50", settings.pw_enabled === false);
       pwCard.classList.toggle("grayscale", settings.pw_enabled === false);
@@ -185,6 +186,7 @@
       pwCard.classList.toggle("text-slate-600", selectedDepositRoute !== "PW" || settings.pw_enabled === false);
     }
     if (captchaCard) {
+      captchaCard.setAttribute("aria-pressed", String(selectedDepositRoute === "CAPTCHA"));
       captchaCard.disabled = settings.captcha_enabled !== true;
       captchaCard.classList.toggle("opacity-50", settings.captcha_enabled !== true);
       captchaCard.classList.toggle("grayscale", settings.captcha_enabled !== true);

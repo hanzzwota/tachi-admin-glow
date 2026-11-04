@@ -1242,12 +1242,12 @@
         <div
           class="bg-white rounded-2xl p-4 card-soft-shadow border border-slate-100 flex flex-col gap-3"
         >
-          <div class="flex w-full gap-1 rounded-2xl border border-blue-100 bg-slate-50 p-1">
-            <button type="button" id="pwRouteCard" onclick="selectDepositRoute('PW')" class="route-tab flex-1 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-2.5 text-xs font-black text-white shadow-md transition active:scale-[.99]">
-              <span id="pwRoutePassword">PW: -</span>
+          <div role="group" aria-label="Pilih jalur Gmail" class="flex w-full items-stretch gap-1 rounded-2xl border border-blue-100 bg-slate-50 p-1">
+            <button type="button" id="pwRouteCard" aria-pressed="true" onclick="selectDepositRoute('PW')" class="route-tab flex min-h-11 min-w-0 flex-1 items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-2 py-2.5 text-center text-xs font-black leading-tight text-white shadow-[0_6px_16px_-6px_rgba(37,99,235,0.6)] transition hover:brightness-105 active:scale-[.99]">
+              <span id="pwRoutePassword" class="break-words">PW: -</span>
             </button>
-            <button type="button" id="captchaRouteCard" onclick="selectDepositRoute('CAPTCHA')" class="route-tab flex-1 rounded-xl border border-blue-100 bg-white px-3 py-2.5 text-xs font-black text-slate-600 shadow-sm transition active:scale-[.99]">
-              <span id="captchaRouteText">CAPTCHA</span>
+            <button type="button" id="captchaRouteCard" aria-pressed="false" onclick="selectDepositRoute('CAPTCHA')" class="route-tab flex min-h-11 min-w-0 flex-1 items-center justify-center rounded-xl border border-blue-100 bg-white px-2 py-2.5 text-center text-xs font-black leading-tight text-slate-600 shadow-sm transition hover:border-blue-300 hover:text-blue-700 active:scale-[.99]">
+              <span id="captchaRouteText" class="break-words">CAPTCHA</span>
             </button>
           </div>
           <div class="flex items-center justify-between">
