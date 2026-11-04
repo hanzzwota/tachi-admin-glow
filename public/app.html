@@ -97,6 +97,36 @@
         color: #f8fafc;
       }
 
+
+      /* Rules overlay */
+      #appModal.rules-modal #informationModalPanel {
+        max-width: 420px; padding: 1.5rem 1.25rem 1.25rem; border-radius: 1.5rem;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        background: linear-gradient(180deg, #0b1f4d 0%, #0a1430 100%);
+        color: #f8fafc; box-shadow: 0 30px 80px rgba(2, 6, 23, 0.6);
+      }
+      #appModal.rules-modal #informationModalHeader { position: relative; display: block; text-align: center; margin-bottom: 1.1rem; }
+      #appModal.rules-modal #informationModalIcon {
+        display: flex; width: 3.25rem; height: 3.25rem; margin: 0 auto 0.75rem; align-items: center; justify-content: center;
+        border-radius: 1rem; background: rgba(212, 175, 55, 0.14); color: #f5d77a; font-size: 1.3rem;
+        box-shadow: inset 0 0 0 1px rgba(245, 215, 122, 0.3);
+      }
+      #appModal.rules-modal #modalTitle { color: #fff; font-size: 1.15rem; letter-spacing: 0.02em; }
+      #appModal.rules-modal #informationModalSubtitle { display: block; margin-top: 0.35rem; color: #94a3b8; font-size: 0.72rem; }
+      #appModal.rules-modal #informationModalClose { position: absolute; top: -0.5rem; right: -0.25rem; background: rgba(255,255,255,0.06); color: #cbd5e1; }
+      #appModal.rules-modal #modalBody { color: #e2e8f0; max-height: 55vh; }
+      #appModal.rules-modal .rules-list { display: flex; flex-direction: column; gap: 0.6rem; margin: 0; padding: 0; list-style: none; }
+      #appModal.rules-modal .rules-list li {
+        display: flex; gap: 0.75rem; align-items: flex-start; padding: 0.75rem 0.85rem;
+        border-radius: 0.9rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.07);
+      }
+      #appModal.rules-modal .rules-list p { margin: 0; font-size: 0.78rem; line-height: 1.6; color: #e2e8f0; }
+      #appModal.rules-modal .rules-num {
+        flex-shrink: 0; width: 1.5rem; height: 1.5rem; border-radius: 999px; display: flex; align-items: center; justify-content: center;
+        background: linear-gradient(135deg, #f5d77a, #c9a227); color: #0b1f4d; font-size: 0.7rem; font-weight: 800;
+      }
+      #appModal.rules-modal #informationModalFooter { background: #fff; color: #0b1f4d; border-radius: 0.9rem; padding: 0.75rem; }
+
       /* Ambient background mesh gradient */
       .bg-mesh {
         background: radial-gradient(circle at 50% 0%, #dbeafe 0%, #eff6ff 50%, #e0f2fe 100%);
@@ -1152,9 +1182,11 @@
           <div
             class="bg-slate-50/80 border border-slate-200/60 rounded-xl p-3 min-h-[52px] flex items-center"
           >
-            <p id="announcementText" onclick="openCurrentAnnouncement()" role="button" tabindex="0" class="w-full cursor-pointer text-xs font-bold text-slate-700 tracking-wide">
-              RATE NAIK. 4,5K
-            </p>
+            <div onclick="openCurrentAnnouncement()" role="button" tabindex="0" class="w-full cursor-pointer">
+              <p id="announcementText" class="text-xs font-extrabold text-slate-800 tracking-wide">Pengumuman</p>
+              <p id="announcementPreview" class="mt-1 text-[11px] leading-relaxed text-slate-600 whitespace-pre-line line-clamp-3"></p>
+              <span id="announcementMore" class="mt-1.5 hidden items-center gap-1 text-[11px] font-bold text-blue-600">Lihat selengkapnya <i class="fa-solid fa-chevron-right text-[9px]"></i></span>
+            </div>
           </div>
 
           <div class="flex items-center justify-between pt-1">
@@ -1947,6 +1979,7 @@
         if (!item?.card) return;
         informationExpanded = false;
         openedInformationCard = item.card;
+        resetRulesModal();
         document.getElementById("appModal").classList.add("information-modal");
         renderLatestInformationCard(item.card);
         document.getElementById("appModal").classList.remove("hidden");
@@ -1960,6 +1993,31 @@
           window.tachiApiState?.settings?.rules_text ||
           "1. Gmail harus fresh.\n2. Wajib menggunakan password yang dicantumkan di bawah.\n3. Keputusan admin tachi69gmail mutlak.";
         openModal("Rules Hari Ini", rules);
+        const modal = document.getElementById("appModal");
+        modal.classList.add("rules-modal");
+        document.getElementById("informationModalIcon")?.classList.remove("hidden");
+        const icon = document.getElementById("informationModalIcon");
+        if (icon) icon.innerHTML = '<i class="fa-solid fa-shield-halved"></i>';
+        const subtitle = document.getElementById("informationModalSubtitle");
+        if (subtitle) {
+          subtitle.textContent = "Baca dan patuhi sebelum melakukan setoran.";
+          subtitle.classList.remove("hidden");
+        }
+        const lines = String(rules)
+          .split(/\n+/)
+          .map((line) => line.trim())
+          .filter(Boolean);
+        document.getElementById("modalBody").innerHTML =
+          '<ol class="rules-list">' +
+          lines
+            .map((line, i) => {
+              const clean = line.replace(/^\s*(\d+[.)]|[-•*])\s*/, "");
+              return `<li><span class="rules-num">${i + 1}</span><p>${escapeSupport(clean)}</p></li>`;
+            })
+            .join("") +
+          "</ol>";
+        const footer = document.getElementById("informationModalFooter");
+        if (footer) footer.textContent = "Saya Mengerti";
       }
       function supportUrl(type, value) {
         const raw = String(value || "").trim();
@@ -2049,8 +2107,18 @@
         const badge = document.getElementById("announcementBadge");
         const text = document.getElementById("announcementText");
         if (badge && text) {
-          badge.innerText = announcements[currentSlideIndex].id;
-          text.innerText = announcements[currentSlideIndex].text;
+          const current = announcements[currentSlideIndex];
+          badge.innerText = current.id;
+          text.innerText = current.text;
+          const preview = document.getElementById("announcementPreview");
+          const more = document.getElementById("announcementMore");
+          const info = String(current.card?.info || "");
+          const PREVIEW = 110;
+          if (preview) preview.innerText = info.length > PREVIEW ? info.slice(0, PREVIEW).trim() + "…" : info;
+          if (more) {
+            more.classList.toggle("hidden", info.length <= PREVIEW);
+            more.classList.toggle("inline-flex", info.length > PREVIEW);
+          }
         }
       }
 
@@ -2466,7 +2534,15 @@
       }
 
       // Dynamic Modal handlers
+      function resetRulesModal() {
+        document.getElementById("appModal").classList.remove("rules-modal");
+        const icon = document.getElementById("informationModalIcon");
+        if (icon) icon.innerHTML = '<i class="fa-solid fa-sparkles"></i>';
+        const footer = document.getElementById("informationModalFooter");
+        if (footer) footer.textContent = "Tutup";
+      }
       function openModal(title, body) {
+        resetRulesModal();
         document.getElementById("appModal").classList.remove("information-modal");
         document.getElementById("informationModalIcon")?.classList.add("hidden");
         document.getElementById("informationModalSubtitle")?.classList.add("hidden");
@@ -2476,6 +2552,7 @@
       }
 
       function closeModal() {
+        resetRulesModal();
         document.getElementById("appModal").classList.remove("information-modal");
         document.getElementById("informationModalIcon")?.classList.add("hidden");
         document.getElementById("informationModalSubtitle")?.classList.add("hidden");
