@@ -707,7 +707,7 @@
             announcement: cAnn.value,
             rulesText: cRules.value,
             supportChannels: readSupportChannels(),
-            autoStockEnabled: cAutoStock.checked,
+            autoStockEnabled: db.settings.autoStockEnabled === true,
             gmailStock: cStock.value
               .split(/\s+/)
               .map((x) => x.trim())
