@@ -162,6 +162,61 @@ export async function getSettings() {
   return rows[0] ?? null;
 }
 
+export const INVALID_DATABASE_KEY_MESSAGE =
+  "Server tidak bisa masuk ke database: kunci SUPABASE_SECRET_KEY / SUPABASE_SERVICE_ROLE_KEY di hosting tidak valid atau bukan milik project SUPABASE_URL. Admin perlu memperbarui environment variable lalu redeploy.";
+export const MISSING_MIGRATION_MESSAGE =
+  "Struktur database belum lengkap (migration belum diterapkan di project Supabase yang dipakai server).";
+
+export function isInvalidDatabaseKeyMessage(message: string) {
+  return (
+    /^Supabase 401\b/.test(message) &&
+    /(Unregistered API key|Invalid API key|No API key|JWT|invalid.*key)/i.test(message)
+  );
+}
+
+export function isMissingColumnMessage(message: string) {
+  return (
+    message.startsWith("Supabase ") &&
+    /(PGRST204|"42703"|Could not find the '[^']+' column|column [^ ]+ does not exist)/.test(message)
+  );
+}
+
+/** Secret-free status for /api/health: shows which project the server uses and whether it can read it. */
+export async function databaseHealth(columns: string[]) {
+  let project = "";
+  try {
+    const { url } = supabaseConfig();
+    project = new URL(url).hostname.split(".")[0] ?? "";
+  } catch {
+    return { database: "not_configured", project, missing_columns: [] as string[] };
+  }
+  try {
+    await supabaseFetch("app_settings?select=id&limit=1");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const database =
+      error instanceof DatabaseUnavailableError
+        ? "unreachable"
+        : isInvalidDatabaseKeyMessage(message)
+          ? "invalid_key"
+          : isMissingColumnMessage(message) || /PGRST205|42P01/.test(message)
+            ? "missing_tables"
+            : "error";
+    return { database, project, missing_columns: [] as string[] };
+  }
+  const missing: string[] = [];
+  for (const column of columns) {
+    try {
+      await supabaseFetch(`app_settings?select=${encodeURIComponent(column)}&limit=0`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (isMissingColumnMessage(message) || message.startsWith("Supabase 400"))
+        missing.push(column);
+    }
+  }
+  return { database: missing.length ? "missing_columns" : "ok", project, missing_columns: missing };
+}
+
 export function json(data: unknown, init: ResponseInit = {}) {
   return Response.json(data, {
     ...init,
@@ -193,6 +248,13 @@ export function errorResponse(error: unknown) {
       },
       { status: 503 },
     );
+  }
+  // Wrong/rotated key on the host (e.g. Vercel env) makes every query fail with 401.
+  if (isInvalidDatabaseKeyMessage(message)) {
+    return json({ error: INVALID_DATABASE_KEY_MESSAGE }, { status: 503 });
+  }
+  if (isMissingColumnMessage(message)) {
+    return json({ error: MISSING_MIGRATION_MESSAGE }, { status: 503 });
   }
   // Never leak raw database errors to the browser.
   const safe = message.startsWith("Supabase ") ? "Terjadi kesalahan pada database server" : message;
