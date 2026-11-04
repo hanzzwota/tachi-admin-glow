@@ -47,6 +47,8 @@ $$;
 
 grant execute on function public.approve_deposit_atomic(uuid, uuid, jsonb) to service_role;
 
+drop function if exists public.reject_deposit_atomic(uuid, uuid, text);
+
 create or replace function public.reject_deposit_atomic(
   p_deposit_id uuid,
   p_admin_id uuid,

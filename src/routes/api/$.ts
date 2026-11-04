@@ -390,18 +390,59 @@ async function rejectDeposit(request: Request, id: string) {
   const rejectedEmails = Array.isArray(payload.rejectedEmails)
     ? payload.rejectedEmails.map(text).filter(Boolean)
     : null;
-  const result = await supabaseFetch<{ ok: boolean; error_code: string | null }[]>(
-    "rpc/reject_deposit_atomic",
-    {
-      method: "POST",
-      body: JSON.stringify({
-        p_deposit_id: id,
-        p_admin_id: admin.id,
-        p_reason: reason,
-        p_rejected_emails: rejectedEmails,
-      }),
-    },
-  );
+  let result: { ok: boolean; error_code: string | null }[];
+  try {
+    result = await supabaseFetch<{ ok: boolean; error_code: string | null }[]>(
+      "rpc/reject_deposit_atomic",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          p_deposit_id: id,
+          p_admin_id: admin.id,
+          p_reason: reason,
+          p_rejected_emails: rejectedEmails,
+        }),
+      },
+    );
+  } catch (error) {
+    // Older deployments still expose the 3-argument RPC. Keep full-deposit
+    // rejection working while the latest migration is being applied; partial
+    // Gmail selection must not silently reject the entire transaction.
+    const detail = error instanceof Error ? error.message : String(error);
+    const missingLatestRpc =
+      detail.startsWith("Supabase 404") && /reject_deposit_atomic/i.test(detail);
+    if (!missingLatestRpc) throw error;
+
+    const deposits = await supabaseFetch<{ emails?: unknown; status?: unknown }[]>(
+      `deposits?select=emails,status&id=eq.${encodeURIComponent(id)}&limit=1`,
+    );
+    const deposit = deposits[0];
+    const allEmails = Array.isArray(deposit?.emails)
+      ? deposit.emails.map(text).filter(Boolean)
+      : [];
+    const selected =
+      rejectedEmails?.map((email) => email.toLowerCase()) ??
+      allEmails.map((email) => email.toLowerCase());
+    const allSelected =
+      selected.length === allEmails.length &&
+      allEmails.every((email) => selected.includes(email.toLowerCase()));
+    if (!allSelected) {
+      return json(
+        {
+          error:
+            "Database belum memakai migration penolakan per-Gmail. Terapkan migration terbaru sebelum menolak sebagian Gmail.",
+        },
+        { status: 503 },
+      );
+    }
+    result = await supabaseFetch<{ ok: boolean; error_code: string | null }[]>(
+      "rpc/reject_deposit_atomic",
+      {
+        method: "POST",
+        body: JSON.stringify({ p_deposit_id: id, p_admin_id: admin.id, p_reason: reason }),
+      },
+    );
+  }
   if (!result[0]?.ok)
     return json({ error: "Setoran tidak ditemukan atau sudah diproses" }, { status: 409 });
   return json({ ok: true });
