@@ -239,6 +239,48 @@ async function adminUsers(request: Request) {
   );
   return json({ users });
 }
+async function adminBootstrap(request: Request) {
+  const admin = await requireAdmin(request);
+  const [deposits, users, settings, withdrawals, gmails] = await Promise.all([
+    supabaseFetch<Record<string, unknown>[]>(
+      "deposits?select=*,profiles!deposits_user_id_fkey(username,display_name)&order=created_at.desc&limit=500",
+    ),
+    supabaseFetch<Record<string, unknown>[]>(
+      "profiles?select=id,username,display_name,role,balance,withdrawn,wallet_bank,wallet_name,wallet_number,is_blocked&role=eq.user&order=created_at.desc&limit=500",
+    ),
+    getSettings(),
+    supabaseFetch<Record<string, unknown>[]>(
+      "withdrawals?select=*,profiles(username,display_name)&order=created_at.desc&limit=500",
+    ),
+    supabaseFetch<Record<string, unknown>[]>(
+      "generated_gmail_claims?select=id,gmail,normalized_gmail,user_id,created_at,archived_at,profiles(username,display_name)&order=created_at.desc&limit=5000",
+    ),
+  ]);
+  const daily = await dailyDepositStats(settings);
+  return json({
+    user: publicUser(admin),
+    settings: settings ? { ...settings, ...daily } : null,
+    deposits,
+    users,
+    withdrawals,
+    gmails: gmails.map((row) => ({
+      id: row.id,
+      gmail: row.gmail,
+      normalized_gmail: row.normalized_gmail,
+      user_id: row.user_id,
+      created_at: row.created_at,
+      archived_at: row.archived_at,
+      username:
+        row.profiles && typeof row.profiles === "object"
+          ? (row.profiles as Record<string, unknown>).username
+          : row.user_id,
+      display_name:
+        row.profiles && typeof row.profiles === "object"
+          ? (row.profiles as Record<string, unknown>).display_name
+          : "",
+    })),
+  });
+}
 
 async function createDeposit(request: Request) {
   const user = await requireUser(request);
@@ -449,9 +491,9 @@ async function rejectDeposit(request: Request, id: string) {
 }
 
 async function updateSettings(request: Request) {
-  await requireAdmin(request);
+  const [admin, current] = await Promise.all([requireAdmin(request), getSettings()]);
+  void admin;
   const payload = await body(request);
-  const current = await getSettings();
   const stock = Array.isArray(payload.gmailStock) ? payload.gmailStock : [];
   const numberOrZero = (value: unknown) => {
     const parsed = Number(value);
@@ -549,64 +591,25 @@ async function updateSettings(request: Request) {
         ? current.gmail_stock
         : [],
   };
-  const patchSettings = async (values: Record<string, unknown>) => {
-    await supabaseFetch("app_settings?id=eq.1", {
-      method: "PATCH",
-      headers: { Prefer: "return=representation" },
-      body: JSON.stringify(values),
-    });
+  const allowedWithCompatibility = {
+    ...allowed,
+    store_closed_reason: text(payload.storeClosedReason ?? current?.store_closed_reason).slice(
+      0,
+      300,
+    ),
   };
-  const {
-    payment_fees: paymentFees,
-    information_cards: informationCards,
-    rules_text: rulesText,
-    support_channels: supportChannels,
-    payment_mode: paymentMode,
-    ...coreSettings
-  } = allowed;
-  await patchSettings(coreSettings);
-  for (const optionalSetting of [
-    ["payment_fees", paymentFees],
-    ["information_cards", informationCards],
-    ["rules_text", rulesText],
-    ["support_channels", supportChannels],
-    ["payment_mode", paymentMode],
-    [
-      "store_closed_reason",
-      text(payload.storeClosedReason ?? current?.store_closed_reason).slice(0, 300),
-    ],
-    ["information_cards", allowed.information_cards],
-  ] as const) {
-    try {
-      await patchSettings({ [optionalSetting[0]]: optionalSetting[1] });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      const optionalColumnMissing =
-        message.includes("PGRST204") ||
-        (message.includes("400") && message.includes(optionalSetting[0]));
-      if (
-        optionalColumnMissing &&
-        optionalSetting[0] === "information_cards" &&
-        Array.isArray(optionalSetting[1]) &&
-        optionalSetting[1].length
-      ) {
-        throw new Error(
-          "Konfigurasi info belum tersimpan karena migration information_cards belum diterapkan di database.",
-        );
-      }
-      if (
-        !optionalColumnMissing ||
-        (optionalSetting[0] === "store_closed_reason" && optionalSetting[1])
-      )
-        throw error;
-    }
-  }
-  const saved = await getSettings();
+  const savedRows = await supabaseFetch<Record<string, unknown>[]>("app_settings?id=eq.1", {
+    method: "PATCH",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify(allowedWithCompatibility),
+  });
+  const saved = savedRows[0] || { ...current, ...allowedWithCompatibility };
   if (!saved) {
     throw new Error(
       "Konfigurasi app_settings tidak ditemukan. Jalankan migration Supabase terlebih dahulu.",
     );
   }
+
   return json({ settings: saved });
 }
 
@@ -981,6 +984,7 @@ async function handler(request: Request, path: string) {
   if (request.method === "GET" && path.startsWith("deposits/") && path.split("/").length === 2)
     return userDepositDetail(request, path.split("/")[1]);
   if (request.method === "POST" && path === "deposits") return createDeposit(request);
+  if (request.method === "GET" && path === "admin/bootstrap") return adminBootstrap(request);
   if (request.method === "GET" && path === "admin/deposits") return userDeposits(request, true);
   if (request.method === "GET" && path === "admin/users") return adminUsers(request);
   if (request.method === "POST" && path.startsWith("admin/deposits/") && path.endsWith("/approve"))
