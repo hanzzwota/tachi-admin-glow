@@ -552,7 +552,8 @@
     container.innerHTML = filtered
       .map((row) => {
         const [label, badge, icon] = statusStyle[row.status];
-        const details = `<a target="_top" href="/riwayat/${encodeURIComponent(row.transactionNumber || row.depositId || "")}" class="mt-1 inline-flex items-center gap-1 text-xs font-bold text-sky-300">Lihat proses <i class="fa-solid fa-chevron-right text-[9px]"></i></a>`;
+        const rejectReason = row.status === "ditolak" ? `<p class="mt-1 break-all text-[11px] font-bold text-rose-500">${escapeHtml(row.email)} | alasan: ${escapeHtml(row.reason || "Ditolak admin")}</p>` : "";
+        const details = rejectReason + `<a target="_top" href="/riwayat/${encodeURIComponent(row.transactionNumber || row.depositId || "")}" class="mt-1 inline-flex items-center gap-1 text-xs font-bold text-sky-300">Lihat proses <i class="fa-solid fa-chevron-right text-[9px]"></i></a>`;
         return `<article class="riwayat-card flex items-start justify-between gap-3 rounded-[22px] border border-blue-100/80 bg-blue-100/80 p-3.5 shadow-[0_7px_22px_rgba(59,130,246,0.08)]"><div class="min-w-0 flex-1"><p class="riwayat-email break-all font-mono text-[12px] font-semibold leading-relaxed text-slate-100">${escapeHtml(row.email)}</p><p class="riwayat-meta mt-1 text-[11px] leading-relaxed text-slate-300">Stor: ${escapeHtml(formatDate(row.createdAt))}</p><p class="riwayat-meta text-[11px] leading-relaxed text-slate-300">Verifikasi: ${escapeHtml(formatDate(row.verifiedAt))}</p></div><div class="flex w-[104px] shrink-0 flex-col items-end"><span class="inline-flex items-center gap-1 rounded-full ${badge} px-2.5 py-1 text-[11px] font-extrabold"><i class="fa-solid ${icon}"></i>${label}</span>${details}</div></article>`;
       })
       .join("");
@@ -586,8 +587,15 @@
       { label: "Pending", detail: approved || rejected ? "Setoran telah diproses oleh admin." : "Menunggu untuk diproses oleh admin." },
       { label: approved ? "Disetujui" : rejected ? "Ditolak" : "Disetujui / Ditolak", detail: approved ? `Saldo ${format(deposit.earned || accepted * rate)} sudah ditambahkan.` : rejected ? `Alasan: ${deposit.reason || ""}` : "Keputusan admin belum dibuat." },
     ];
+    const rejectedList = Array.isArray(deposit.rejected_emails) && deposit.rejected_emails.length
+      ? deposit.rejected_emails
+      : rejected ? emails : [];
+    const reasonText = String(deposit.reason || "Ditolak admin");
+    const rejectedHtml = rejectedList.length
+      ? `<div class="mt-1 rounded-2xl border border-rose-100 bg-rose-50 p-3"><p class="text-[11px] font-bold uppercase tracking-wider text-rose-600">Gmail Ditolak Admin</p><ul class="mt-2 space-y-1">${rejectedList.map((email) => `<li class="break-all font-mono text-xs text-rose-700">${escapeHtml(email)} <span class="font-sans font-semibold">| alasan: ${escapeHtml(reasonText)}</span></li>`).join("")}</ul></div>`
+      : "";
     const activeIndex = approved || rejected ? 2 : 1;
-    timeline.innerHTML = steps.map((step, index) => {
+    timeline.innerHTML = rejectedHtml + steps.map((step, index) => {
       const completed = approved || index < activeIndex;
       const active = !completed && index === activeIndex;
       const color = rejected && index === 2 ? "bg-rose-600" : completed ? "bg-emerald-500" : active ? "bg-amber-400" : "bg-slate-300";

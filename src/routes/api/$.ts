@@ -485,11 +485,35 @@ async function rejectDeposit(request: Request, id: string) {
   return json({ ok: true });
 }
 
+// Gmail that was already handed out (claimed by a user or submitted in a deposit)
+// must never return to the stock, even when the admin saves an outdated list.
+async function filterUndistributedStock(emails: string[]): Promise<string[]> {
+  const seen = new Set<string>();
+  const unique = emails.filter((email) => {
+    const key = email.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  const used = new Set<string>();
+  for (let i = 0; i < unique.length; i += 100) {
+    const chunk = unique.slice(i, i + 100).map((email) => email.toLowerCase());
+    const list = encodeURIComponent(`(${chunk.map((e) => `"${e.replace(/"/g, "")}"`).join(",")})`);
+    const rows = await supabaseFetch<Record<string, unknown>[]>(
+      `generated_gmail_claims?select=normalized_gmail&normalized_gmail=in.${list}`,
+    );
+    for (const row of rows) used.add(text(row["normalized_gmail"]).toLowerCase());
+  }
+  return unique.filter((email) => !used.has(email.toLowerCase()));
+}
+
 async function updateSettings(request: Request) {
   await requireAdmin(request);
   const payload = await body(request);
   const current = await getSettings();
-  const stock = Array.isArray(payload["gmailStock"]) ? payload["gmailStock"] : [];
+  const stock = Array.isArray(payload["gmailStock"])
+    ? await filterUndistributedStock(payload["gmailStock"].map(text).filter(Boolean))
+    : [];
   const numberOrZero = (value: unknown) => {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : 0;
@@ -722,11 +746,11 @@ async function generatedGmailList(request: Request) {
       `generated_gmail_claims?select=id,gmail,normalized_gmail,created_at&user_id=eq.${userId}&archived_at=is.null&order=created_at.desc&limit=1000`,
     ),
     supabaseFetch<Record<string, unknown>[]>(
-      `deposits?select=id,emails,status,accepted_emails,rejected_emails,created_at&user_id=eq.${userId}&order=created_at.desc&limit=1000`,
+      `deposits?select=id,emails,status,accepted_emails,rejected_emails,reason,created_at&user_id=eq.${userId}&order=created_at.desc&limit=1000`,
     ),
   ]);
 
-  const statusByEmail = new Map<string, { status: string; deposit_id: string }>();
+  const statusByEmail = new Map<string, { status: string; deposit_id: string; reason: string | null }>();
   for (const deposit of deposits) {
     const emails = Array.isArray(deposit["emails"]) ? deposit["emails"].map(text) : [];
     const accepted = new Set(
@@ -746,7 +770,11 @@ async function generatedGmailList(request: Request) {
       if (accepted.has(normalized) || (deposit["status"] === "diterima" && !rejected.has(normalized)))
         status = "berhasil";
       else if (rejected.has(normalized) || deposit["status"] === "ditolak") status = "ditolak";
-      statusByEmail.set(normalized, { status, deposit_id: String(deposit["id"]) });
+      statusByEmail.set(normalized, {
+        status,
+        deposit_id: String(deposit["id"]),
+        reason: status === "ditolak" ? text(deposit["reason"]) || "Ditolak admin" : null,
+      });
     }
   }
 
@@ -758,6 +786,7 @@ async function generatedGmailList(request: Request) {
         gmail: claim["gmail"],
         created_at: claim["created_at"],
         status: status?.status ?? "belum_disetor",
+        reason: status?.reason ?? null,
         deposit_id: status?.deposit_id ?? null,
       };
     }),
