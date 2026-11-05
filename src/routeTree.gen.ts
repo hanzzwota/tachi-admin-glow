@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AdminryugantengRouteImport } from './routes/adminryuganteng'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as LoginRouteImport } from './routes/login'
@@ -31,6 +32,11 @@ const IndexRoute = IndexRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminryugantengRoute = AdminryugantengRouteImport.update({
+  id: '/adminryuganteng',
+  path: '/adminryuganteng',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -92,6 +98,7 @@ const RiwayatNomortrxRoute = RiwayatNomortrxRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/adminryuganteng': typeof AdminryugantengRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
@@ -107,6 +114,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/adminryuganteng': typeof AdminryugantengRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
@@ -123,6 +131,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/adminryuganteng': typeof AdminryugantengRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
@@ -140,6 +149,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/adminryuganteng'
     | '/auth'
     | '/dashboard'
     | '/login'
@@ -155,6 +165,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin'
+    | '/adminryuganteng'
     | '/auth'
     | '/dashboard'
     | '/login'
@@ -170,6 +181,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
+    | '/adminryuganteng'
     | '/auth'
     | '/dashboard'
     | '/login'
@@ -186,6 +198,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  AdminryugantengRoute: typeof AdminryugantengRoute
   AuthRoute: typeof AuthRoute
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
@@ -212,6 +225,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/adminryuganteng': {
+      id: '/adminryuganteng'
+      path: '/adminryuganteng'
+      fullPath: '/adminryuganteng'
+      preLoaderRoute: typeof AdminryugantengRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -308,6 +328,7 @@ const RiwayatRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  AdminryugantengRoute: AdminryugantengRoute,
   AuthRoute: AuthRoute,
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,

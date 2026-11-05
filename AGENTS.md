@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Deposit submission (POST /api/deposits) runs all checks and the insert inside the `submit_deposit_atomic` RPC; keep validation there so a submit costs one database round trip.

@@ -89,6 +89,11 @@ async function hashSession(token: string) {
   return bytesToBase64(new Uint8Array(digest));
 }
 
+export async function sessionTokenHash(request: Request) {
+  const token = cookieValue(request);
+  return token ? hashSession(token) : null;
+}
+
 function cookieValue(request: Request) {
   return request.headers.get("cookie")?.match(new RegExp(`${SESSION_COOKIE}=([^;]+)`))?.[1];
 }

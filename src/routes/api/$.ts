@@ -11,6 +11,7 @@ import {
   requireUser,
   supabaseFetch,
   verifyPassword,
+  sessionTokenHash,
 } from "../../server/supabase";
 import { rateLimit } from "../../server/rate-limit";
 
@@ -278,122 +279,22 @@ async function resetUserPassword(request: Request, id: string) {
 }
 
 async function createDeposit(request: Request) {
-  const user = await requireUser(request);
-  const payload = await body(request);
-  const requestedRoute = text(payload["jalur"]).trim().toUpperCase();
-  if (requestedRoute !== "PW" && requestedRoute !== "CAPTCHA")
-    return json({ error: "Jalur setoran tidak valid" }, { status: 400 });
+  const [tokenHash, payload] = await Promise.all([sessionTokenHash(request), body(request)]);
+  if (!tokenHash) return json({ error: "Anda harus login terlebih dahulu" }, { status: 401 });
   const emails = Array.isArray(payload["emails"]) ? payload["emails"].map(text).filter(Boolean) : [];
-  if (!emails.length || emails.some((email) => !/^[a-z0-9._%+-]{1,64}@gmail\.com$/i.test(email)))
-    return json({ error: "Daftar Gmail tidak valid" }, { status: 400 });
-  const seenEmails = new Set<string>();
-  const duplicatesInRequest = new Set<string>();
-  emails.forEach((email) => {
-    const normalized = email.toLowerCase();
-    if (seenEmails.has(normalized)) duplicatesInRequest.add(normalized);
-    seenEmails.add(normalized);
-  });
-  if (duplicatesInRequest.size)
-    return json(
-      {
-        error: `Gmail yang sama tidak boleh dikirim lebih dari satu kali: ${[...duplicatesInRequest].slice(0, 5).join(", ")}`,
-      },
-      { status: 409 },
-    );
-  const settings = await getSettings();
-  if (!settings?.["store_open"])
-    return json(
-      {
-        error: text(settings?.["store_closed_reason"])
-          ? `Setoran sedang ditutup admin. Silakan coba lagi nanti. ${text(settings?.["store_closed_reason"])}`
-          : "Setoran sedang ditutup oleh admin",
-      },
-      { status: 423 },
-    );
-  const jalur = requestedRoute;
-  if (jalur === "PW" && settings["pw_enabled"] === false)
-    return json({ error: "Jalur PW sedang dinonaktifkan admin" }, { status: 423 });
-  if (jalur === "CAPTCHA" && settings["captcha_enabled"] !== true)
-    return json({ error: "Jalur CAPTCHA sedang dinonaktifkan admin" }, { status: 423 });
-  if (jalur === "PW" && text(payload["campaignPassword"]) !== String(settings["campaign_password"]))
-    return json({ error: "Password wajib salah" }, { status: 403 });
-  const rate = Number(jalur === "PW" ? settings["pw_rate"] : settings["captcha_rate"]);
-  if (!Number.isSafeInteger(rate) || rate < 0)
-    return json({ error: "Konfigurasi harga jalur belum valid" }, { status: 503 });
-  if (emails.length > Number(settings["batch_limit"]))
-    return json({ error: `Maksimal ${settings["batch_limit"]} Gmail per transaksi` }, { status: 400 });
-  if (settings["auto_stock_enabled"] === true) {
-    const generatedClaims = await supabaseFetch<Record<string, unknown>[]>(
-      `generated_gmail_claims?select=gmail,normalized_gmail&user_id=eq.${encodeURIComponent(String(user["id"]))}&archived_at=is.null&limit=1000`,
-    );
-    const generatedSet = new Set(
-      generatedClaims
-        .map((claim) => text(claim["normalized_gmail"] || claim["gmail"]).toLowerCase())
-        .filter(Boolean),
-    );
-    const notGenerated = emails.filter((email) => !generatedSet.has(email.toLowerCase()));
-    if (notGenerated.length) {
-      const shown = notGenerated.slice(0, 5).join(", ");
-      const remaining = notGenerated.length > 5 ? `, dan ${notGenerated.length - 5} lainnya` : "";
-      return json(
-        {
-          warning: true,
-          rejected: true,
-          error: `Setoran tidak dikirim dan tidak masuk Riwayat. Gmail wajib sesuai daftar Generated Gmail pada UI. Gmail tidak sesuai: ${shown}${remaining}`,
-        },
-        { status: 422 },
-      );
-    }
-  }
-  const duplicateRows = await supabaseFetch<Record<string, unknown>[]>(
-    "rpc/find_duplicate_deposit_gmails",
-    {
-      method: "POST",
-      body: JSON.stringify({ p_emails: emails }),
-    },
-  );
-  if (duplicateRows.length) {
-    const duplicateEmails = duplicateRows.map((item) => text(item["email"])).filter(Boolean);
-    const shown = duplicateEmails.slice(0, 5).join(", ");
-    const remaining =
-      duplicateEmails.length > 5 ? `, dan ${duplicateEmails.length - 5} lainnya` : "";
-    return json(
-      {
-        error: `Gmail sudah pernah dikirim dan tidak dapat dikirim ulang: ${shown}${remaining}`,
-      },
-      { status: 409 },
-    );
-  }
-  const jakartaDate = new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10);
-  const dayStart = encodeURIComponent(`${jakartaDate}T00:00:00+07:00`);
-  const today = await supabaseFetch<Record<string, unknown>[]>(
-    `deposits?select=emails&created_at=gte.${dayStart}&limit=500`,
-  );
-  const submittedToday = today.reduce(
-    (total, row) => total + (Array.isArray(row["emails"]) ? row["emails"].length : 0),
-    0,
-  );
-  const dailyLimit = Number(settings["daily_limit"] ?? 0);
-  if (dailyLimit > 0 && submittedToday + emails.length > dailyLimit)
-    return json(
-      { error: `Batas setor hari ini tersisa ${Math.max(0, dailyLimit - submittedToday)} Gmail` },
-      { status: 429 },
-    );
-  const rows = await supabaseFetch<Record<string, unknown>[]>("deposits", {
+  // Login, blocked, settings, duplicate, daily-limit checks and the insert run in one RPC.
+  const result = await supabaseFetch<Record<string, unknown>>("rpc/submit_deposit_atomic", {
     method: "POST",
-    headers: { Prefer: "return=representation" },
     body: JSON.stringify({
-      user_id: user["id"],
-      transaction_number: `TRX-${new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date()).replaceAll("-", "")}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
-      emails,
-      status: "pending",
-      jalur,
-      rate,
-      submitted_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      p_token_hash: tokenHash,
+      p_emails: emails,
+      p_jalur: text(payload["jalur"]).trim().toUpperCase(),
+      p_campaign_password: text(payload["campaignPassword"]),
     }),
   });
-  return json({ deposit: rows[0] }, { status: 201 });
+  const status = Number(result?.["status"] ?? 500);
+  const { status: _status, ...rest } = result ?? {};
+  return json(rest, { status: Number.isInteger(status) && status >= 200 ? status : 500 });
 }
 
 async function approveDeposit(request: Request, id: string) {

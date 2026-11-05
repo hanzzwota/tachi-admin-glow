@@ -827,10 +827,23 @@
       if (seenEmails.has(email)) duplicateEmails.add(email);
       seenEmails.add(email);
     });
+    // Unregist rejections may be submitted again; every other submitted Gmail stays locked.
+    const isUnregistRetry = (deposit, email) => {
+      if (deposit.status !== "ditolak" || !/^\s*un-?s?regist/i.test(String(deposit.reason || ""))) return false;
+      const lower = (list) => (Array.isArray(list) ? list.map((e) => String(e).trim().toLowerCase()) : []);
+      if (lower(deposit.accepted_emails).includes(email)) return false;
+      const rejected = lower(deposit.rejected_emails);
+      return !rejected.length || rejected.includes(email);
+    };
+    const latestDepositByEmail = new Map();
+    state.deposits.forEach((deposit) =>
+      (Array.isArray(deposit.emails) ? deposit.emails : []).forEach((raw) => {
+        const email = String(raw).trim().toLowerCase();
+        if (!latestDepositByEmail.has(email)) latestDepositByEmail.set(email, deposit);
+      }),
+    );
     const previouslySubmitted = new Set(
-      state.deposits
-        .flatMap((deposit) => (Array.isArray(deposit.emails) ? deposit.emails : []))
-        .map((email) => String(email).trim().toLowerCase()),
+      [...latestDepositByEmail].filter(([email, deposit]) => !isUnregistRetry(deposit, email)).map(([email]) => email),
     );
     emails.forEach((email) => {
       if (previouslySubmitted.has(email)) duplicateEmails.add(email);
@@ -871,8 +884,9 @@
     }
     depositSubmissionBusy = true;
     applyUserDom();
+    let createdDeposit = null;
     try {
-      await api("deposits", {
+      const response = await api("deposits", {
         method: "POST",
         body: JSON.stringify({
           emails,
@@ -880,6 +894,7 @@
           campaignPassword: selectedDepositRoute === "PW" ? state.settings?.campaign_password : "",
         }),
       });
+      createdDeposit = response?.deposit || null;
     } catch (error) {
       const duplicateConflict =
         error.status === 409 &&
@@ -908,13 +923,22 @@
       depositSubmissionBusy = false;
       applyUserDom();
     }
-    await refreshGeneratedStockGmails().catch((error) =>
-      console.error("Gagal memperbarui status Gmail hasil generate:", error),
-    );
+    // Show the result immediately; refresh the rest in the background.
     input.value = "";
     showToast("success", `${emails.length} Gmail berhasil disetor dan menunggu validasi admin!`);
-    syncAppData().catch((error) => console.error("Gagal memuat ulang data:", error));
+    if (createdDeposit) {
+      state.deposits = [createdDeposit, ...state.deposits.filter((d) => String(d.id) !== String(createdDeposit.id))];
+      try {
+        renderHistory(window.activeRiwayatFilter || "semua");
+        applyUserDom();
+      } catch (renderError) {
+        console.error("Gagal menampilkan riwayat terbaru:", renderError);
+      }
+    }
     setTimeout(() => window.navigateTo?.("riwayat"), 300);
+    refreshGeneratedStockGmails()
+      .catch((error) => console.error("Gagal memperbarui status Gmail hasil generate:", error))
+      .finally(() => syncAppData().catch((error) => console.error("Gagal memuat ulang data:", error)));
   };
   window.copyCampaignPassword = async () => {
     const value = state.settings?.campaign_password || "";
@@ -1128,8 +1152,8 @@
     if (!item) return;
     try {
       await api(`stock/generated/${encodeURIComponent(item.id)}`, { method: "DELETE" });
-      await refreshGeneratedStockGmails();
-      showToast("success", "Gmail diarsipkan dari daftar. Akun tidak dikembalikan ke stok.");
+      showToast("success", "Gmail dibuang dari daftar. Akun tidak dikembalikan ke stok.");
+      refreshGeneratedStockGmails().catch((error) => console.error("Gagal memuat ulang Gmail:", error));
     } catch (error) {
       showToast("error", `Gagal mengarsipkan Gmail: ${errorText(error, "coba lagi nanti.")}`);
     }
