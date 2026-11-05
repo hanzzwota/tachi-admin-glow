@@ -907,17 +907,37 @@ async function generatedGmailList(request: Request) {
 
 async function archiveGeneratedGmail(request: Request, id: string) {
   const user = await requireUser(request);
-  const filter = `id=eq.${encodeURIComponent(id)}&user_id=eq.${encodeURIComponent(String(user["id"]))}&archived_at=is.null`;
-  const rows = await supabaseFetch<Record<string, unknown>[]>(
-    `generated_gmail_claims?select=id&${filter}&limit=1`,
-  );
-  if (!rows.length) return json({ error: "Gmail tidak ditemukan" }, { status: 404 });
-  await supabaseFetch(`generated_gmail_claims?${filter}`, {
-    method: "PATCH",
-    headers: { Prefer: "return=minimal" },
-    body: JSON.stringify({ archived_at: new Date().toISOString() }),
-  });
-  return json({ ok: true });
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return json({ error: "Gmail tidak ditemukan" }, { status: 404 });
+  let result: { outcome?: string } | null;
+  try {
+    result = await supabaseFetch<{ outcome?: string } | null>("rpc/delete_generated_gmail", {
+      method: "POST",
+      body: JSON.stringify({ p_user_id: user["id"], p_id: id }),
+    });
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    if (detail.startsWith("Supabase 404") && /delete_generated_gmail/i.test(detail))
+      return json(
+        { error: "Database belum memakai migration hapus Gmail. Terapkan migration terbaru." },
+        { status: 503 },
+      );
+    throw error;
+  }
+  switch (result?.outcome) {
+    case "returned":
+      return json({ ok: true, outcome: "returned" });
+    case "archived":
+      return json({ ok: true, outcome: "archived" });
+    case "processing":
+      return json(
+        { error: "Gmail sedang diproses admin, tidak bisa dihapus", outcome: "processing" },
+        { status: 409 },
+      );
+    case "not_found":
+      return json({ error: "Gmail tidak ditemukan" }, { status: 404 });
+    default:
+      return json({ error: "Gagal menghapus Gmail" }, { status: 503 });
+  }
 }
 
 async function adminGeneratedGmailList(request: Request) {
@@ -1251,6 +1271,16 @@ export const Route = createFileRoute("/api/$")({
         }
       },
       PATCH: async ({ request }) => {
+        try {
+          return await handler(
+            request,
+            new URL(request.url).pathname.replace(/^\/api\/?/, "").replace(/\/$/, ""),
+          );
+        } catch (error) {
+          return error instanceof Response ? error : errorResponse(error);
+        }
+      },
+      DELETE: async ({ request }) => {
         try {
           return await handler(
             request,
