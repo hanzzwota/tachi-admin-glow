@@ -141,12 +141,17 @@ async function login(request: Request) {
       );
     if (
       !user ||
-      !(await verifyPassword(password, String(user["password_hash"]), String(user["password_salt"])))
+      !(await verifyPassword(
+        password,
+        String(user["password_hash"]),
+        String(user["password_salt"]),
+      ))
     )
       return json({ error: "Username atau password salah" }, { status: 401 });
   }
   if (!user) return json({ error: "Username atau password salah" }, { status: 401 });
-  if (user["is_blocked"] === true) return json({ error: "Akun ini diblokir admin" }, { status: 403 });
+  if (user["is_blocked"] === true)
+    return json({ error: "Akun ini diblokir admin" }, { status: 403 });
   const session = await createSession(String(user["id"]));
   return json({ user: publicUser(user) }, { headers: { "set-cookie": session.cookie } });
 }
@@ -252,7 +257,9 @@ async function adminUsers(request: Request) {
     supabaseFetch<{ id: string }[]>("profiles?select=id&role=eq.user&password_hash=is.null"),
   ]);
   const pending = new Set(withoutPassword.map((row) => row.id));
-  return json({ users: users.map((user) => ({ ...user, needs_password: pending.has(String(user["id"])) })) });
+  return json({
+    users: users.map((user) => ({ ...user, needs_password: pending.has(String(user["id"])) })),
+  });
 }
 
 async function adjustUserBalance(request: Request, id: string) {
@@ -310,16 +317,13 @@ async function leaderboard(request: Request) {
           : "";
   const createdFilter = since ? `&created_at=gte.${encodeURIComponent(since)}` : "";
   const depositQuery = `deposits?select=user_id,accepted_count,accepted_emails,earned,created_at,profiles(username,display_name,avatar_url,role)&status=eq.diterima${createdFilter}&limit=5000`;
-  let rows: Record<string, unknown>[];
-  try {
-    rows = await supabaseFetch<Record<string, unknown>[]>(depositQuery);
-  } catch (error) {
-    console.warn("Leaderboard memakai fallback tanpa avatar_url:", error);
-    rows = await supabaseFetch<Record<string, unknown>[]>(
-      `deposits?select=user_id,accepted_count,accepted_emails,earned,created_at,profiles(username,display_name,role)&status=eq.diterima${createdFilter}&limit=5000`,
-    );
-  }
-  const totals = new Map<string, { username: string; displayName: string; avatarUrl: string; approved: number; earnings: number }>();
+  // Jangan menelan error schema/database sebagai leaderboard kosong. Jika kolom
+  // avatar belum ada, errorResponse akan memberi pesan migration yang jelas.
+  const rows = await supabaseFetch<Record<string, unknown>[]>(depositQuery);
+  const totals = new Map<
+    string,
+    { username: string; displayName: string; avatarUrl: string; approved: number; earnings: number }
+  >();
   for (const row of rows) {
     const profile =
       row["profiles"] && typeof row["profiles"] === "object"
@@ -334,7 +338,13 @@ async function leaderboard(request: Request) {
     const approved =
       acceptedEmails.length || Math.max(0, Math.floor(Number(row["accepted_count"] ?? 0)));
     const userId = String(row["user_id"] ?? username);
-    const previous = totals.get(userId) ?? { username, displayName, avatarUrl, approved: 0, earnings: 0 };
+    const previous = totals.get(userId) ?? {
+      username,
+      displayName,
+      avatarUrl,
+      approved: 0,
+      earnings: 0,
+    };
     previous.approved += approved;
     previous.earnings += Math.max(0, Math.floor(Number(row["earned"] ?? 0)));
     totals.set(userId, previous);
@@ -358,12 +368,23 @@ async function updateProfileAvatar(request: Request) {
   const user = await requireUser(request);
   const payload = await body(request);
   const avatarUrl = text(payload["avatarUrl"]);
-  if (avatarUrl && (!/^data:image\/(png|jpe?g|webp|gif);base64,[a-z0-9+/]+=*$/i.test(avatarUrl) || avatarUrl.length > 1_500_000)) {
-    return json({ error: "Foto harus berupa PNG, JPG, WEBP, atau GIF maksimal 1,5 MB" }, { status: 400 });
+  const avatarMatch = avatarUrl.match(/^data:image\/(png|jpe?g|webp|gif);base64,([a-z0-9+/]+=*)$/i);
+  const base64Payload = avatarMatch?.[2] ?? "";
+  const padding = base64Payload.endsWith("==") ? 2 : base64Payload.endsWith("=") ? 1 : 0;
+  const decodedBytes = Math.max(0, Math.floor((base64Payload.length * 3) / 4) - padding);
+  if (avatarUrl && (!avatarMatch || decodedBytes > 1_000_000)) {
+    return json(
+      { error: "Foto harus berupa PNG, JPG, WEBP, atau GIF maksimal 1 MB" },
+      { status: 400 },
+    );
   }
   const updated = await supabaseFetch<Record<string, unknown>[]>(
     `profiles?id=eq.${encodeURIComponent(String(user["id"]))}&select=id,username,display_name,avatar_url,role,balance,withdrawn,wallet_bank,wallet_name,wallet_number`,
-    { method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify({ avatar_url: avatarUrl }) },
+    {
+      method: "PATCH",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify({ avatar_url: avatarUrl }),
+    },
   );
   if (!updated.length) return json({ error: "Foto profil gagal disimpan" }, { status: 500 });
   return json({ user: publicUser(updated[0]) });
@@ -396,7 +417,9 @@ async function resetUserPassword(request: Request, id: string) {
 async function createDeposit(request: Request) {
   const [tokenHash, payload] = await Promise.all([sessionTokenHash(request), body(request)]);
   if (!tokenHash) return json({ error: "Anda harus login terlebih dahulu" }, { status: 401 });
-  const emails = Array.isArray(payload["emails"]) ? payload["emails"].map(text).filter(Boolean) : [];
+  const emails = Array.isArray(payload["emails"])
+    ? payload["emails"].map(text).filter(Boolean)
+    : [];
   // Login, blocked, settings, duplicate, daily-limit checks and the insert run in one RPC.
   const result = await supabaseFetch<Record<string, unknown>>("rpc/submit_deposit_atomic", {
     method: "POST",
@@ -662,7 +685,7 @@ async function updateSettings(request: Request) {
     savedInOneRequest = false;
   }
   if (!savedInOneRequest) {
-  await patchSettings(coreSettings);
+    await patchSettings(coreSettings);
     for (const optionalSetting of [
       ["payment_fees", paymentFees],
       ["information_cards", informationCards],
@@ -766,7 +789,10 @@ async function generatedGmailList(request: Request) {
     ),
   ]);
 
-  const statusByEmail = new Map<string, { status: string; deposit_id: string; reason: string | null }>();
+  const statusByEmail = new Map<
+    string,
+    { status: string; deposit_id: string; reason: string | null }
+  >();
   for (const deposit of deposits) {
     const emails = Array.isArray(deposit["emails"]) ? deposit["emails"].map(text) : [];
     const accepted = new Set(
@@ -783,7 +809,10 @@ async function generatedGmailList(request: Request) {
       const normalized = email.toLowerCase();
       if (!normalized || statusByEmail.has(normalized)) continue;
       let status = "diproses";
-      if (accepted.has(normalized) || (deposit["status"] === "diterima" && !rejected.has(normalized)))
+      if (
+        accepted.has(normalized) ||
+        (deposit["status"] === "diterima" && !rejected.has(normalized))
+      )
         status = "berhasil";
       else if (rejected.has(normalized) || deposit["status"] === "ditolak") status = "ditolak";
       statusByEmail.set(normalized, {

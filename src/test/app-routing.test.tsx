@@ -26,6 +26,14 @@ describe("App routing", () => {
     expect(router.state.location.search).toEqual({ view: "register" });
   });
 
+  it("matches the leaderboard route directly", () => {
+    const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
+
+    const matches = router.matchRoutes("/leaderboard");
+
+    expect(matches.at(-1)?.routeId).toBe("/leaderboard");
+  });
+
   it("redirects legacy user page URLs to the primary routes", async () => {
     const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
 

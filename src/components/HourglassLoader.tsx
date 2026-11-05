@@ -30,9 +30,30 @@ export function HourglassLoader() {
           stroke="hsl(0,0%,100%)"
           fill="none"
         >
-          <circle transform="rotate(0,26,26)" r="24.5" cy="26" cx="26" strokeWidth="2.5" className="loader__motion-thick" />
-          <circle transform="rotate(90,26,26)" r="24.5" cy="26" cx="26" strokeWidth="1.75" className="loader__motion-medium" />
-          <circle transform="rotate(180,26,26)" r="24.5" cy="26" cx="26" strokeWidth="1" className="loader__motion-thin" />
+          <circle
+            transform="rotate(0,26,26)"
+            r="24.5"
+            cy="26"
+            cx="26"
+            strokeWidth="2.5"
+            className="loader__motion-thick"
+          />
+          <circle
+            transform="rotate(90,26,26)"
+            r="24.5"
+            cy="26"
+            cx="26"
+            strokeWidth="1.75"
+            className="loader__motion-medium"
+          />
+          <circle
+            transform="rotate(180,26,26)"
+            r="24.5"
+            cy="26"
+            cx="26"
+            strokeWidth="1"
+            className="loader__motion-thin"
+          />
         </g>
         <g transform="translate(13.75,9.25)" className="loader__model">
           <path
@@ -40,12 +61,62 @@ export function HourglassLoader() {
             fill="hsl(var(--hue),90%,85%)"
           />
           <g strokeLinecap="round" stroke="hsl(35,90%,90%)">
-            <line y2="20.75" x2="12" y1="15.75" x1="12" strokeDasharray="0.25 33.75" strokeWidth="1" className="loader__sand-grain-left" />
-            <line y2="21.75" x2="12.5" y1="16.75" x1="12.5" strokeDasharray="0.25 33.75" strokeWidth="1" className="loader__sand-grain-right" />
-            <line y2="31.5" x2="12.25" y1="18" x1="12.25" strokeDasharray="0.5 107.5" strokeWidth="1" className="loader__sand-drop" />
-            <line y2="31.5" x2="12.25" y1="14.75" x1="12.25" strokeDasharray="54 54" strokeWidth="1.5" className="loader__sand-fill" />
-            <line y2="31.5" x2="12" y1="16" x1="12" strokeDasharray="1 107" strokeWidth="1" stroke="hsl(35,90%,83%)" className="loader__sand-line-left" />
-            <line y2="31.5" x2="12.5" y1="16" x1="12.5" strokeDasharray="12 96" strokeWidth="1" stroke="hsl(35,90%,83%)" className="loader__sand-line-right" />
+            <line
+              y2="20.75"
+              x2="12"
+              y1="15.75"
+              x1="12"
+              strokeDasharray="0.25 33.75"
+              strokeWidth="1"
+              className="loader__sand-grain-left"
+            />
+            <line
+              y2="21.75"
+              x2="12.5"
+              y1="16.75"
+              x1="12.5"
+              strokeDasharray="0.25 33.75"
+              strokeWidth="1"
+              className="loader__sand-grain-right"
+            />
+            <line
+              y2="31.5"
+              x2="12.25"
+              y1="18"
+              x1="12.25"
+              strokeDasharray="0.5 107.5"
+              strokeWidth="1"
+              className="loader__sand-drop"
+            />
+            <line
+              y2="31.5"
+              x2="12.25"
+              y1="14.75"
+              x1="12.25"
+              strokeDasharray="54 54"
+              strokeWidth="1.5"
+              className="loader__sand-fill"
+            />
+            <line
+              y2="31.5"
+              x2="12"
+              y1="16"
+              x1="12"
+              strokeDasharray="1 107"
+              strokeWidth="1"
+              stroke="hsl(35,90%,83%)"
+              className="loader__sand-line-left"
+            />
+            <line
+              y2="31.5"
+              x2="12.5"
+              y1="16"
+              x1="12.5"
+              strokeDasharray="12 96"
+              strokeWidth="1"
+              stroke="hsl(35,90%,83%)"
+              className="loader__sand-line-right"
+            />
             <g strokeWidth="0" fill="hsl(35,90%,90%)">
               <path
                 d="M 12.25 15 L 15.392 13.486 C 21.737 11.168 22.5 2 22.5 2 L 2 2.013 C 2 2.013 2.753 11.046 9.009 13.438 L 12.25 15 Z"
@@ -71,9 +142,25 @@ export function HourglassLoader() {
             />
           </g>
           <rect height="2" width="24.5" fill="hsl(var(--hue),90%,50%)" />
-          <rect height="1" width="19.5" y="0.5" x="2.5" ry="0.5" rx="0.5" fill="hsl(var(--hue),90%,57.5%)" />
+          <rect
+            height="1"
+            width="19.5"
+            y="0.5"
+            x="2.5"
+            ry="0.5"
+            rx="0.5"
+            fill="hsl(var(--hue),90%,57.5%)"
+          />
           <rect height="2" width="24.5" y="31.5" fill="hsl(var(--hue),90%,50%)" />
-          <rect height="1" width="19.5" y="32" x="2.5" ry="0.5" rx="0.5" fill="hsl(var(--hue),90%,57.5%)" />
+          <rect
+            height="1"
+            width="19.5"
+            y="32"
+            x="2.5"
+            ry="0.5"
+            rx="0.5"
+            fill="hsl(var(--hue),90%,57.5%)"
+          />
         </g>
       </g>
     </svg>

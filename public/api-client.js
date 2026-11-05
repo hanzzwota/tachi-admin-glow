@@ -19,7 +19,9 @@
     }
     const data = await response.json().catch(() => ({}));
     if (!response.ok || data.error) {
-      const error = new Error(data.error || data.message || `Permintaan gagal (HTTP ${response.status})`);
+      const error = new Error(
+        data.error || data.message || `Permintaan gagal (HTTP ${response.status})`,
+      );
       error.status = response.status;
       error.data = data;
       throw error;
@@ -53,7 +55,9 @@
   };
   const format = (value) => `Rp${Number(value || 0).toLocaleString("id-ID")}`;
   const depositRateFor = (deposit) => {
-    const route = String(deposit?.jalur || "PW").trim().toUpperCase();
+    const route = String(deposit?.jalur || "PW")
+      .trim()
+      .toUpperCase();
     const configuredRate =
       route === "CAPTCHA" ? state.settings?.captcha_rate : state.settings?.pw_rate;
     return Number(deposit?.rate ?? configuredRate ?? state.settings?.rate ?? 4500);
@@ -102,7 +106,14 @@
       (character) =>
         ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character],
     );
-  const state = { user: null, settings: null, deposits: [], withdrawals: [], leaderboard: [], leaderboardMe: null };
+  const state = {
+    user: null,
+    settings: null,
+    deposits: [],
+    withdrawals: [],
+    leaderboard: [],
+    leaderboardMe: null,
+  };
   let activeLeaderboardPeriod = "7d";
   let selectedDepositRoute = "PW";
   let depositSubmissionBusy = false;
@@ -128,7 +139,10 @@
     if (isDanaOnly() && select.value !== "DANA") {
       select.value = "DANA";
       resetPaymentToDana();
-      showToast("warning", "⚠️ Admin hanya membuka payment DANA. Silakan isi ulang data payment DANA.");
+      showToast(
+        "warning",
+        "⚠️ Admin hanya membuka payment DANA. Silakan isi ulang data payment DANA.",
+      );
     }
   };
   const syncAdminProfileAction = (user) => {
@@ -153,9 +167,15 @@
     const fallback = document.getElementById("profileAvatarFallback");
     const avatarUrl = String(user?.avatarUrl || user?.avatar_url || "").trim();
     if (image && fallback) {
+      const initials = displayNameFor(user).trim().slice(0, 1).toUpperCase() || "?";
+      fallback.textContent = initials;
       image.src = avatarUrl;
       image.classList.toggle("hidden", !avatarUrl);
       fallback.classList.toggle("hidden", Boolean(avatarUrl));
+      image.onerror = () => {
+        image.classList.add("hidden");
+        fallback.classList.remove("hidden");
+      };
     }
   };
   const applyIdentityToDom = (user) => {
@@ -171,7 +191,9 @@
   };
   const dashboardDepositCounts = (deposits) => {
     const emailSet = (value) =>
-      new Set((Array.isArray(value) ? value : []).map((email) => String(email).trim().toLowerCase()));
+      new Set(
+        (Array.isArray(value) ? value : []).map((email) => String(email).trim().toLowerCase()),
+      );
     let accepted = 0;
     let pending = 0;
     deposits.forEach((deposit) => {
@@ -202,7 +224,9 @@
           accepted += 1;
         } else if (
           !rejectedEmails.has(key) &&
-          (checkingEmails.has(key) || checkingDeposit || (!hasIndividualDecisions && !wholeDepositRejected))
+          (checkingEmails.has(key) ||
+            checkingDeposit ||
+            (!hasIndividualDecisions && !wholeDepositRejected))
         ) {
           pending += 1;
         }
@@ -241,7 +265,8 @@
     const pwLabel = document.getElementById("pwRouteLabel");
     if (pwLabel) pwLabel.textContent = settings.pw_text || "PW";
     const pwPassword = document.getElementById("pwRoutePassword");
-    if (pwPassword) pwPassword.textContent = `${settings.pw_text || "PW"}: ${settings.campaign_password || "-"}`;
+    if (pwPassword)
+      pwPassword.textContent = `${settings.pw_text || "PW"}: ${settings.campaign_password || "-"}`;
     const pwRouteRate = document.getElementById("pwRouteRate");
     if (pwRouteRate) pwRouteRate.textContent = format(pwRate);
     const captchaRouteRate = document.getElementById("captchaRouteRate");
@@ -251,8 +276,14 @@
     if (pwCard) {
       pwCard.setAttribute("aria-pressed", String(selectedDepositRoute === "PW"));
       pwCard.disabled = settings.pw_enabled === false || depositSubmissionBusy;
-      pwCard.classList.toggle("route-selected", selectedDepositRoute === "PW" && settings.pw_enabled !== false);
-      pwCard.classList.toggle("route-unselected", selectedDepositRoute !== "PW" || settings.pw_enabled === false);
+      pwCard.classList.toggle(
+        "route-selected",
+        selectedDepositRoute === "PW" && settings.pw_enabled !== false,
+      );
+      pwCard.classList.toggle(
+        "route-unselected",
+        selectedDepositRoute !== "PW" || settings.pw_enabled === false,
+      );
       pwCard.classList.toggle("opacity-60", settings.pw_enabled === false);
       pwCard.classList.toggle("cursor-not-allowed", settings.pw_enabled === false);
       const disabledText = document.getElementById("pwRouteDisabledText");
@@ -261,14 +292,22 @@
     if (captchaCard) {
       captchaCard.setAttribute("aria-pressed", String(selectedDepositRoute === "CAPTCHA"));
       captchaCard.disabled = settings.captcha_enabled !== true || depositSubmissionBusy;
-      captchaCard.classList.toggle("route-selected", selectedDepositRoute === "CAPTCHA" && settings.captcha_enabled === true);
-      captchaCard.classList.toggle("route-unselected", selectedDepositRoute !== "CAPTCHA" || settings.captcha_enabled !== true);
+      captchaCard.classList.toggle(
+        "route-selected",
+        selectedDepositRoute === "CAPTCHA" && settings.captcha_enabled === true,
+      );
+      captchaCard.classList.toggle(
+        "route-unselected",
+        selectedDepositRoute !== "CAPTCHA" || settings.captcha_enabled !== true,
+      );
       captchaCard.classList.toggle("opacity-60", settings.captcha_enabled !== true);
       captchaCard.classList.toggle("cursor-not-allowed", settings.captcha_enabled !== true);
       const disabledText = document.getElementById("captchaRouteDisabledText");
-      if (disabledText) disabledText.classList.toggle("invisible", settings.captcha_enabled === true);
+      if (disabledText)
+        disabledText.classList.toggle("invisible", settings.captcha_enabled === true);
       const captchaIcon = captchaCard.querySelector(".route-icon");
-      if (captchaIcon) captchaIcon.classList.toggle("opacity-60", settings.captcha_enabled !== true);
+      if (captchaIcon)
+        captchaIcon.classList.toggle("opacity-60", settings.captcha_enabled !== true);
     }
     const captchaText = document.getElementById("captchaRouteText");
     if (captchaText) captchaText.textContent = settings.captcha_text || "CAPTCHA";
@@ -408,7 +447,10 @@
     if (checkerButton) checkerButton.classList.toggle("opacity-50", checkerClosed);
     if (checkerLabel) checkerLabel.textContent = checkerClosed ? "Checker (Ditutup)" : "Checker";
   };
-  const renderHistory = (filter = window.activeRiwayatFilter || "semua", deposits = state.deposits) => {
+  const renderHistory = (
+    filter = window.activeRiwayatFilter || "semua",
+    deposits = state.deposits,
+  ) => {
     const container = document.getElementById("riwayatListContainer");
     if (!container) return;
     const statusLabels = {
@@ -425,7 +467,9 @@
       ditolak: ["Ditolak", "bg-rose-600 text-white", "fa-circle-xmark"],
     };
     const emailSet = (value) =>
-      new Set((Array.isArray(value) ? value : []).map((email) => String(email).trim().toLowerCase()));
+      new Set(
+        (Array.isArray(value) ? value : []).map((email) => String(email).trim().toLowerCase()),
+      );
     const rows = deposits.flatMap((deposit) => {
       const emails = Array.isArray(deposit.emails) ? deposit.emails : [];
       const accepted = emailSet(deposit.accepted_emails);
@@ -443,10 +487,24 @@
         ditolak: "ditolak",
         rejected: "ditolak",
       }[depositStatus];
-      const checkingDeposit = ["dicek", "diperiksa", "diproses", "processing", "checking", "checked"].includes(depositStatus);
-      const jalur = String(deposit.jalur || deposit.channel || deposit.source || deposit.path || "PW").trim();
+      const checkingDeposit = [
+        "dicek",
+        "diperiksa",
+        "diproses",
+        "processing",
+        "checking",
+        "checked",
+      ].includes(depositStatus);
+      const jalur = String(
+        deposit.jalur || deposit.channel || deposit.source || deposit.path || "PW",
+      ).trim();
       const rate = depositRateFor(deposit);
-      const verifiedAt = deposit.verified_at || deposit.verifiedAt || deposit.reviewed_at || deposit.updated_at || null;
+      const verifiedAt =
+        deposit.verified_at ||
+        deposit.verifiedAt ||
+        deposit.reviewed_at ||
+        deposit.updated_at ||
+        null;
       return emails.map((email) => {
         const key = String(email).trim().toLowerCase();
         let status = "pending";
@@ -571,8 +629,13 @@
     container.innerHTML = filtered
       .map((row) => {
         const [label, badge, icon] = statusStyle[row.status];
-        const rejectReason = row.status === "ditolak" ? `<p class="mt-1 break-all text-[11px] font-bold text-rose-500">${escapeHtml(row.email)} | alasan: ${escapeHtml(row.reason || "Ditolak admin")}</p>` : "";
-        const details = rejectReason + `<a target="_top" href="/riwayat/${encodeURIComponent(row.transactionNumber || row.depositId || "")}" class="mt-1 inline-flex items-center gap-1 text-xs font-bold text-sky-300">Lihat proses <i class="fa-solid fa-chevron-right text-[9px]"></i></a>`;
+        const rejectReason =
+          row.status === "ditolak"
+            ? `<p class="mt-1 break-all text-[11px] font-bold text-rose-500">${escapeHtml(row.email)} | alasan: ${escapeHtml(row.reason || "Ditolak admin")}</p>`
+            : "";
+        const details =
+          rejectReason +
+          `<a target="_top" href="/riwayat/${encodeURIComponent(row.transactionNumber || row.depositId || "")}" class="mt-1 inline-flex items-center gap-1 text-xs font-bold text-sky-300">Lihat proses <i class="fa-solid fa-chevron-right text-[9px]"></i></a>`;
         return `<article class="riwayat-card flex items-start justify-between gap-3 rounded-[22px] border border-blue-100/80 bg-blue-100/80 p-3.5 shadow-[0_7px_22px_rgba(59,130,246,0.08)]"><div class="min-w-0 flex-1"><p class="riwayat-email break-all font-mono text-[12px] font-semibold leading-relaxed text-slate-100">${escapeHtml(row.email)}</p><p class="riwayat-meta mt-1 text-[11px] leading-relaxed text-slate-300">Stor: ${escapeHtml(formatDate(row.createdAt))}</p><p class="riwayat-meta text-[11px] leading-relaxed text-slate-300">Verifikasi: ${escapeHtml(formatDate(row.verifiedAt))}</p></div><div class="flex w-[104px] shrink-0 flex-col items-end"><span class="inline-flex items-center gap-1 rounded-full ${badge} px-2.5 py-1 text-[11px] font-extrabold"><i class="fa-solid ${icon}"></i>${label}</span>${details}</div></article>`;
       })
       .join("");
@@ -581,9 +644,14 @@
     const summary = document.getElementById("historyDetailSummary");
     const timeline = document.getElementById("historyDetailTimeline");
     if (!summary || !timeline) return;
-    const deposit = state.deposits.find((item) => String(item.id) === String(depositId) || String(item.transaction_number || "") === String(depositId));
+    const deposit = state.deposits.find(
+      (item) =>
+        String(item.id) === String(depositId) ||
+        String(item.transaction_number || "") === String(depositId),
+    );
     if (!deposit) {
-      summary.innerHTML = '<div class="text-sm font-semibold text-rose-600">Transaksi tidak ditemukan.</div>';
+      summary.innerHTML =
+        '<div class="text-sm font-semibold text-rose-600">Transaksi tidak ditemukan.</div>';
       timeline.innerHTML = "";
       return;
     }
@@ -596,33 +664,85 @@
     const formatDate = (value) => {
       if (!value) return "Menunggu pemeriksaan";
       const date = new Date(value);
-      return Number.isNaN(date.getTime()) ? "Menunggu pemeriksaan" : new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" }).format(date);
+      return Number.isNaN(date.getTime())
+        ? "Menunggu pemeriksaan"
+        : new Intl.DateTimeFormat("id-ID", {
+            day: "numeric",
+            month: "numeric",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            hourCycle: "h23",
+          }).format(date);
     };
     const route = String(deposit.jalur || "PW");
-    const routePassword = route.toUpperCase() === "PW" ? String(state.settings?.campaign_password || "-") : "-";
+    const routePassword =
+      route.toUpperCase() === "PW" ? String(state.settings?.campaign_password || "-") : "-";
     summary.innerHTML = `<div><p class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Gmail</p><p class="mt-1 break-all font-mono text-sm font-bold text-slate-800">${escapeHtml(emails.join(", ") || "-")}</p></div><div class="grid grid-cols-2 gap-3"><div class="rounded-2xl bg-sky-50 p-3"><p class="text-[11px] font-semibold text-slate-400">Jalur</p><p class="mt-1 text-sm font-extrabold text-slate-800">${escapeHtml(route)}</p><p class="mt-1 text-xs font-black text-slate-700">PW: ${escapeHtml(routePassword)} · ${format(rate)}</p></div><div class="rounded-2xl bg-sky-50 p-3"><p class="text-[11px] font-semibold text-slate-400">Tanggal Stor</p><p class="mt-1 text-xs font-bold text-slate-800">${formatDate(deposit.created_at)}</p></div></div><p class="text-[11px] text-slate-400">Nomor transaksi: <span class="font-mono">${escapeHtml(deposit.transaction_number || deposit.id)}</span></p>`;
     const steps = [
-      { label: "Setoran Terkirim", detail: `Gmail berhasil dikirim ke sistem · ${formatDate(deposit.created_at)}` },
-      { label: "Pending", detail: approved || rejected ? "Setoran telah diproses oleh admin." : "Menunggu untuk diproses oleh admin." },
-      { label: approved ? "Disetujui" : rejected ? "Ditolak" : "Disetujui / Ditolak", detail: approved ? `Saldo ${format(deposit.earned || accepted * rate)} sudah ditambahkan.` : rejected ? `Alasan: ${deposit.reason || ""}` : "Keputusan admin belum dibuat." },
+      {
+        label: "Setoran Terkirim",
+        detail: `Gmail berhasil dikirim ke sistem · ${formatDate(deposit.created_at)}`,
+      },
+      {
+        label: "Pending",
+        detail:
+          approved || rejected
+            ? "Setoran telah diproses oleh admin."
+            : "Menunggu untuk diproses oleh admin.",
+      },
+      {
+        label: approved ? "Disetujui" : rejected ? "Ditolak" : "Disetujui / Ditolak",
+        detail: approved
+          ? `Saldo ${format(deposit.earned || accepted * rate)} sudah ditambahkan.`
+          : rejected
+            ? `Alasan: ${deposit.reason || ""}`
+            : "Keputusan admin belum dibuat.",
+      },
     ];
-    const rejectedList = Array.isArray(deposit.rejected_emails) && deposit.rejected_emails.length
-      ? deposit.rejected_emails
-      : rejected ? emails : [];
+    const rejectedList =
+      Array.isArray(deposit.rejected_emails) && deposit.rejected_emails.length
+        ? deposit.rejected_emails
+        : rejected
+          ? emails
+          : [];
     const reasonText = String(deposit.reason || "Ditolak admin");
     const rejectedHtml = rejectedList.length
       ? `<div class="mt-1 rounded-2xl border border-rose-100 bg-rose-50 p-3"><p class="text-[11px] font-bold uppercase tracking-wider text-rose-600">Gmail Ditolak Admin</p><ul class="mt-2 space-y-1">${rejectedList.map((email) => `<li class="break-all font-mono text-xs text-rose-700">${escapeHtml(email)} <span class="font-sans font-semibold">| alasan: ${escapeHtml(reasonText)}</span></li>`).join("")}</ul></div>`
       : "";
     const activeIndex = approved || rejected ? 2 : 1;
-    timeline.innerHTML = rejectedHtml + steps.map((step, index) => {
-      const completed = approved || index < activeIndex;
-      const active = !completed && index === activeIndex;
-      const color = rejected && index === 2 ? "bg-rose-600" : completed ? "bg-emerald-500" : active ? "bg-amber-400" : "bg-slate-300";
-      const text = rejected && index === 2 ? "text-rose-700" : completed ? "text-slate-800" : active ? "text-amber-700" : "text-slate-400";
-      const lineColor = rejected && index === 1 ? "bg-rose-300" : completed ? "bg-emerald-300" : "bg-slate-200";
-      const line = index < steps.length - 1 ? `<span class="absolute left-1/2 top-8 h-9 w-0.5 -translate-x-1/2 ${lineColor}"></span>` : "";
-      return `<div class="relative flex gap-3 pb-5"><div class="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${color} text-xs text-white shadow-sm"><i class="fa-solid ${rejected && index === 2 ? "fa-xmark" : completed ? "fa-check" : "fa-clock"}"></i></div><div class="min-w-0"><p class="text-sm font-extrabold ${text}">${step.label}</p><p class="mt-1 text-xs leading-relaxed text-slate-500">${step.detail}</p></div>${line}</div>`;
-    }).join("");
+    timeline.innerHTML =
+      rejectedHtml +
+      steps
+        .map((step, index) => {
+          const completed = approved || index < activeIndex;
+          const active = !completed && index === activeIndex;
+          const color =
+            rejected && index === 2
+              ? "bg-rose-600"
+              : completed
+                ? "bg-emerald-500"
+                : active
+                  ? "bg-amber-400"
+                  : "bg-slate-300";
+          const text =
+            rejected && index === 2
+              ? "text-rose-700"
+              : completed
+                ? "text-slate-800"
+                : active
+                  ? "text-amber-700"
+                  : "text-slate-400";
+          const lineColor =
+            rejected && index === 1 ? "bg-rose-300" : completed ? "bg-emerald-300" : "bg-slate-200";
+          const line =
+            index < steps.length - 1
+              ? `<span class="absolute left-1/2 top-8 h-9 w-0.5 -translate-x-1/2 ${lineColor}"></span>`
+              : "";
+          return `<div class="relative flex gap-3 pb-5"><div class="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${color} text-xs text-white shadow-sm"><i class="fa-solid ${rejected && index === 2 ? "fa-xmark" : completed ? "fa-check" : "fa-clock"}"></i></div><div class="min-w-0"><p class="text-sm font-extrabold ${text}">${step.label}</p><p class="mt-1 text-xs leading-relaxed text-slate-500">${step.detail}</p></div>${line}</div>`;
+        })
+        .join("");
   };
   window.renderRiwayatDetail = renderHistoryDetail;
   const renderWithdrawals = () => {
@@ -648,43 +768,72 @@
     const meCard = document.getElementById("leaderboardMe");
     if (!container) return;
     const rows = Array.isArray(state.leaderboard) ? state.leaderboard : [];
-    const periodLabel = { today: "hari ini", "7d": "7 hari terakhir", "30d": "30 hari terakhir", all: "sepanjang masa" }[activeLeaderboardPeriod] || "periode terpilih";
+    const periodLabel =
+      {
+        today: "hari ini",
+        "7d": "7 hari terakhir",
+        "30d": "30 hari terakhir",
+        all: "sepanjang masa",
+      }[activeLeaderboardPeriod] || "periode terpilih";
     const avatar = (item, size = "h-12 w-12") => {
       const image = String(item?.avatar_url || item?.avatarUrl || "").trim();
-      const initials = String(item?.display_name || item?.username || "?").trim().slice(0, 1).toUpperCase();
+      const initials = String(item?.display_name || item?.username || "?")
+        .trim()
+        .slice(0, 1)
+        .toUpperCase();
       return image
-        ? `<img src="${escapeHtml(image)}" alt="Foto ${escapeHtml(item?.username)}" class="${size} rounded-full object-cover ring-2 ring-white shadow-md" />`
+        ? `<img src="${escapeHtml(image)}" alt="Foto ${escapeHtml(item?.username)}" class="${size} rounded-full object-cover ring-2 ring-white shadow-md" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'${size} flex items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-sm font-black text-white ring-2 ring-white shadow-md',textContent:'${escapeHtml(initials)}'}))" />`
         : `<span class="${size} flex items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-sm font-black text-white ring-2 ring-white shadow-md">${escapeHtml(initials)}</span>`;
     };
     const money = (value) => `Rp${Number(value || 0).toLocaleString("id-ID")}`;
     if (stateText) stateText.textContent = `Peringkat ${periodLabel}`;
     if (!rows.length) {
-      if (podium) podium.innerHTML = `<div class="flex h-52 w-full flex-col items-center justify-center text-center text-slate-500"><i class="fa-solid fa-ranking-star text-3xl text-blue-300"></i><p class="mt-2 text-sm font-bold">Belum ada peringkat</p><p class="text-xs">Belum ada Gmail disetujui pada ${periodLabel}.</p></div>`;
+      if (podium)
+        podium.innerHTML = `<div class="flex h-52 w-full flex-col items-center justify-center text-center text-slate-500"><i class="fa-solid fa-ranking-star text-3xl text-blue-300"></i><p class="mt-2 text-sm font-bold">Belum ada data leaderboard untuk periode ini.</p></div>`;
       container.innerHTML = "";
       if (meCard) meCard.classList.add("hidden");
       return;
     }
     const podiumSlots = [rows[1], rows[0], rows[2]];
     if (podium) {
-      podium.innerHTML = podiumSlots.map((item, slotIndex) => {
-        if (!item) return `<div class="w-1/3"></div>`;
-        const rank = item.rank;
-        const isWinner = rank === 1;
-        const block = isWinner ? "h-36 bg-slate-300/80" : rank === 2 ? "h-28 bg-gradient-to-b from-amber-300 to-yellow-100" : "h-24 bg-gradient-to-b from-orange-300 to-amber-100";
-        return `<div class="flex w-1/3 flex-col items-center justify-end text-center"><div class="relative mb-2">${isWinner ? '<i class="fa-solid fa-crown absolute -top-7 left-1/2 -translate-x-1/2 text-2xl text-amber-500"></i>' : ''}${avatar(item, isWinner ? "h-20 w-20" : "h-14 w-14")}</div><p class="max-w-full truncate px-1 text-xs font-black text-slate-700">${escapeHtml(item.username)}</p><p class="text-[10px] text-slate-500">${Number(item.approved_gmails || 0).toLocaleString("id-ID")} Gmail</p><div class="mt-1 flex w-full items-center justify-center rounded-t-3xl ${block} text-4xl font-black text-white">${rank}</div></div>`;
-      }).join("");
+      podium.innerHTML = podiumSlots
+        .map((item, slotIndex) => {
+          if (!item) return `<div class="w-1/3"></div>`;
+          const rank = item.rank;
+          const isWinner = rank === 1;
+          const block = isWinner
+            ? "h-36 bg-slate-300/80"
+            : rank === 2
+              ? "h-28 bg-gradient-to-b from-amber-300 to-yellow-100"
+              : "h-24 bg-gradient-to-b from-orange-300 to-amber-100";
+          return `<div class="flex w-1/3 flex-col items-center justify-end text-center"><div class="relative mb-2">${isWinner ? '<i class="fa-solid fa-crown absolute -top-7 left-1/2 -translate-x-1/2 text-2xl text-amber-500"></i>' : ""}${avatar(item, isWinner ? "h-20 w-20" : "h-14 w-14")}</div><p class="max-w-full truncate px-1 text-xs font-black text-slate-700">${escapeHtml(item.username)}</p><p class="text-[10px] text-slate-500">${Number(item.approved_gmails || 0).toLocaleString("id-ID")} Gmail</p><div class="mt-1 flex w-full items-center justify-center rounded-t-3xl ${block} text-4xl font-black text-white">${rank}</div></div>`;
+        })
+        .join("");
     }
     const me = state.leaderboardMe;
     if (meCard && me) {
       meCard.classList.remove("hidden");
       meCard.innerHTML = `<p class="text-xs font-bold text-blue-600">Peringkat Anda</p><div class="mt-2 flex items-center gap-3">${avatar(me, "h-12 w-12")}<div class="min-w-0 flex-1"><p class="truncate text-sm font-black text-slate-800">#${me.rank} ${escapeHtml(me.display_name || me.username)}</p><p class="text-[11px] text-slate-500">${Number(me.approved_gmails || 0).toLocaleString("id-ID")} Gmail diterima</p></div><div class="text-right"><p class="text-[10px] font-semibold text-slate-500">Total Pendapatan</p><p class="text-base font-black text-blue-600">${money(me.earnings)}</p></div></div>`;
     } else if (meCard) meCard.classList.add("hidden");
-    container.innerHTML = rows.slice(3).map((item) => `<article class="flex items-center gap-3 rounded-2xl border border-blue-100/80 bg-white/90 p-3.5 shadow-sm"><div class="w-8 shrink-0 text-center text-sm font-black text-slate-500">#${item.rank}</div>${avatar(item, "h-10 w-10")}<div class="min-w-0 flex-1"><p class="truncate text-sm font-extrabold text-slate-800">${escapeHtml(item.display_name || item.username)}</p><p class="truncate text-[11px] text-slate-500">@${escapeHtml(item.username)} · ${Number(item.approved_gmails || 0).toLocaleString("id-ID")} Gmail diterima</p></div><div class="shrink-0 text-right"><p class="text-base font-black text-blue-600">${money(item.earnings)}</p><p class="text-[10px] text-slate-400">${Number(item.approved_gmails || 0).toLocaleString("id-ID")} Gmail</p></div></article>`).join("");
+    container.innerHTML = rows
+      .slice(3)
+      .map(
+        (item) =>
+          `<article class="flex items-center gap-3 rounded-2xl border border-blue-100/80 bg-white/90 p-3.5 shadow-sm"><div class="w-8 shrink-0 text-center text-sm font-black text-slate-500">#${item.rank}</div>${avatar(item, "h-10 w-10")}<div class="min-w-0 flex-1"><p class="truncate text-sm font-extrabold text-slate-800">${escapeHtml(item.display_name || item.username)}</p><p class="truncate text-[11px] text-slate-500">@${escapeHtml(item.username)} · ${Number(item.approved_gmails || 0).toLocaleString("id-ID")} Gmail diterima</p></div><div class="shrink-0 text-right"><p class="text-base font-black text-blue-600">${money(item.earnings)}</p><p class="text-[10px] text-slate-400">${Number(item.approved_gmails || 0).toLocaleString("id-ID")} Gmail</p></div></article>`,
+      )
+      .join("");
   };
   window.selectLeaderboardPeriod = (period) => {
     if (!["today", "7d", "30d", "all"].includes(period)) return;
     activeLeaderboardPeriod = period;
-    document.querySelectorAll("[data-leaderboard-period]").forEach((button) => button.classList.toggle("leaderboard-period-active", button.dataset.leaderboardPeriod === period));
+    document
+      .querySelectorAll("[data-leaderboard-period]")
+      .forEach((button) =>
+        button.classList.toggle(
+          "leaderboard-period-active",
+          button.dataset.leaderboardPeriod === period,
+        ),
+      );
     window.refreshLeaderboard?.();
   };
   window.refreshLeaderboard = async () => {
@@ -696,7 +845,8 @@
       renderLeaderboard();
     } catch (error) {
       console.error("Gagal memuat leaderboard:", error);
-      if (container) container.innerHTML = '<div class="rounded-3xl border border-rose-100 bg-rose-50 p-8 text-center text-sm font-semibold text-rose-600">Leaderboard belum tersedia. Silakan coba lagi.</div>';
+      if (container)
+        container.innerHTML = `<div class="rounded-3xl border border-rose-100 bg-rose-50 p-8 text-center text-sm font-semibold text-rose-600">${escapeHtml(errorText(error, "Leaderboard gagal dimuat. Silakan coba lagi."))}</div>`;
       const stateText = document.getElementById("leaderboardState");
       if (stateText) stateText.textContent = "Belum tersedia";
     }
@@ -713,7 +863,10 @@
     reader.onload = async () => {
       try {
         const avatarUrl = String(reader.result || "");
-        const result = await api("profile/avatar", { method: "PATCH", body: JSON.stringify({ avatarUrl }) });
+        const result = await api("profile/avatar", {
+          method: "PATCH",
+          body: JSON.stringify({ avatarUrl }),
+        });
         state.user = { ...state.user, ...(result.user || {}), avatarUrl };
         applyIdentityToDom(state.user);
         showToast("success", "Foto profil berhasil diperbarui.");
@@ -837,7 +990,10 @@
         method: "POST",
         body: JSON.stringify(payload),
       });
-      console.log("Response dari server:", { user: result?.user?.username, role: result?.user?.role });
+      console.log("Response dari server:", {
+        user: result?.user?.username,
+        role: result?.user?.role,
+      });
 
       // SUCCESS hanya jika server benar-benar mengembalikan user (sesi cookie sudah dibuat).
       if (!result || !result.user || !result.user.id) {
@@ -864,7 +1020,10 @@
         await syncAppData();
       } catch (syncError) {
         console.error("Gagal memuat data akun:", syncError);
-        showToast("warning", "⚠️ Anda sudah masuk, tetapi data akun belum termuat. Muat ulang halaman.");
+        showToast(
+          "warning",
+          "⚠️ Anda sudah masuk, tetapi data akun belum termuat. Muat ulang halaman.",
+        );
       }
       setTimeout(() => window.navigateTo?.("dashboard"), 250);
     } catch (error) {
@@ -872,7 +1031,10 @@
       if (error.isNetworkError) {
         showToast("error", "Koneksi gagal! Silakan periksa jaringan Anda atau coba lagi nanti.");
       } else if (error.status === 429) {
-        showToast("error", error.message || "Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi.");
+        showToast(
+          "error",
+          error.message || "Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi.",
+        );
       } else if (error.status >= 500) {
         showToast(
           "error",
@@ -937,8 +1099,10 @@
     });
     // Unregist rejections may be submitted again; every other submitted Gmail stays locked.
     const isUnregistRetry = (deposit, email) => {
-      if (deposit.status !== "ditolak" || !/^\s*un-?s?regist/i.test(String(deposit.reason || ""))) return false;
-      const lower = (list) => (Array.isArray(list) ? list.map((e) => String(e).trim().toLowerCase()) : []);
+      if (deposit.status !== "ditolak" || !/^\s*un-?s?regist/i.test(String(deposit.reason || "")))
+        return false;
+      const lower = (list) =>
+        Array.isArray(list) ? list.map((e) => String(e).trim().toLowerCase()) : [];
       if (lower(deposit.accepted_emails).includes(email)) return false;
       const rejected = lower(deposit.rejected_emails);
       return !rejected.length || rejected.includes(email);
@@ -951,7 +1115,9 @@
       }),
     );
     const previouslySubmitted = new Set(
-      [...latestDepositByEmail].filter(([email, deposit]) => !isUnregistRetry(deposit, email)).map(([email]) => email),
+      [...latestDepositByEmail]
+        .filter(([email, deposit]) => !isUnregistRetry(deposit, email))
+        .map(([email]) => email),
     );
     emails.forEach((email) => {
       if (previouslySubmitted.has(email)) duplicateEmails.add(email);
@@ -977,7 +1143,11 @@
     }
     if (state.settings?.auto_stock_enabled === true) {
       const generatedSet = new Set(
-        generatedStockGmails.map((item) => String(item.gmail || "").trim().toLowerCase()),
+        generatedStockGmails.map((item) =>
+          String(item.gmail || "")
+            .trim()
+            .toLowerCase(),
+        ),
       );
       const notGenerated = emails.filter((email) => !generatedSet.has(email));
       if (notGenerated.length) {
@@ -1010,7 +1180,8 @@
           error.message || "",
         );
       const generatedMismatch =
-        error.status === 422 && /Generated Gmail|otomatis ditolak|tidak sesuai/i.test(error.message || "");
+        error.status === 422 &&
+        /Generated Gmail|otomatis ditolak|tidak sesuai/i.test(error.message || "");
       showToast(
         duplicateConflict || generatedMismatch ? "warning" : "error",
         duplicateConflict || generatedMismatch
@@ -1035,7 +1206,10 @@
     input.value = "";
     showToast("success", `${emails.length} Gmail berhasil disetor dan menunggu validasi admin!`);
     if (createdDeposit) {
-      state.deposits = [createdDeposit, ...state.deposits.filter((d) => String(d.id) !== String(createdDeposit.id))];
+      state.deposits = [
+        createdDeposit,
+        ...state.deposits.filter((d) => String(d.id) !== String(createdDeposit.id)),
+      ];
       try {
         renderHistory(window.activeRiwayatFilter || "semua");
         applyUserDom();
@@ -1046,7 +1220,9 @@
     setTimeout(() => window.navigateTo?.("riwayat"), 300);
     refreshGeneratedStockGmails()
       .catch((error) => console.error("Gagal memperbarui status Gmail hasil generate:", error))
-      .finally(() => syncAppData().catch((error) => console.error("Gagal memuat ulang data:", error)));
+      .finally(() =>
+        syncAppData().catch((error) => console.error("Gagal memuat ulang data:", error)),
+      );
   };
   window.copyCampaignPassword = async () => {
     const value = state.settings?.campaign_password || "";
@@ -1118,12 +1294,13 @@
     const modalButton = document.getElementById("stockGenerateModalButton");
     if (modalButton) {
       modalButton.disabled = stockGenerateBusy || !generatorEnabled;
-      modalButton.querySelector("span")?.replaceChildren(
-        document.createTextNode(stockGenerateBusy ? "Sedang generate…" : "Generate"),
-      );
+      modalButton
+        .querySelector("span")
+        ?.replaceChildren(
+          document.createTextNode(stockGenerateBusy ? "Sedang generate…" : "Generate"),
+        );
     }
-    if (generatedPanel)
-      generatedPanel.style.display = hasGeneratedGmail ? "flex" : "none";
+    if (generatedPanel) generatedPanel.style.display = hasGeneratedGmail ? "flex" : "none";
     if (progress) {
       if (stockGenerateBusy) {
         progress.textContent = "Mengambil maksimal 5 akun untuk batch ini…";
@@ -1260,7 +1437,9 @@
       return;
     }
     const currentTarget =
-      stockGenerateTarget > stockGenerateCompleted ? stockGenerateTarget : stockGenerateModalCount || 1;
+      stockGenerateTarget > stockGenerateCompleted
+        ? stockGenerateTarget
+        : stockGenerateModalCount || 1;
     stockGenerateModalCount = currentTarget;
     const input = document.getElementById("stockGenerateModalCount");
     if (input) input.value = String(currentTarget);
@@ -1524,7 +1703,10 @@
         return;
       }
       document.getElementById("withdrawalAmountInput").value = "";
-      showToast("success", `Permintaan penarikan ${format(amount)} berhasil dikirim dan sedang diproses!`);
+      showToast(
+        "success",
+        `Permintaan penarikan ${format(amount)} berhasil dikirim dan sedang diproses!`,
+      );
       syncAppData().catch((error) => console.error("Gagal memuat ulang data:", error));
     });
   };
@@ -1552,7 +1734,15 @@
       const requestedView = new URLSearchParams(location.search).get("view");
       if (user) {
         applyIdentityToDom(user);
-        const availableViews = ["dashboard", "stor", "saldo", "profil", "riwayat", "leaderboard", "riwayat-detail"];
+        const availableViews = [
+          "dashboard",
+          "stor",
+          "saldo",
+          "profil",
+          "riwayat",
+          "leaderboard",
+          "riwayat-detail",
+        ];
         const initialView = availableViews.includes(requestedView) ? requestedView : "dashboard";
         window.navigateTo?.(initialView);
         await syncAppData();

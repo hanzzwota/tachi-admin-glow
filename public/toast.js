@@ -114,7 +114,8 @@
    * - Error HTTP -> pesan dari backend bila ada, selain itu fallback kontekstual.
    */
   window.toastErrorMessage = (error, fallback) => {
-    if (error && error.isNetworkError) return "Koneksi gagal! Periksa jaringan Anda lalu coba lagi.";
+    if (error && error.isNetworkError)
+      return "Koneksi gagal! Periksa jaringan Anda lalu coba lagi.";
     const message = error && typeof error.message === "string" ? error.message.trim() : "";
     return message || fallback || "Terjadi kesalahan sistem. Coba lagi nanti.";
   };
