@@ -113,6 +113,7 @@
     withdrawals: [],
     leaderboard: [],
     leaderboardMe: null,
+    leaderboardTotals: null,
   };
   let activeLeaderboardPeriod = "7d";
   let selectedDepositRoute = "PW";
@@ -787,6 +788,23 @@
     };
     const money = (value) => `Rp${Number(value || 0).toLocaleString("id-ID")}`;
     if (stateText) stateText.textContent = `Peringkat ${periodLabel}`;
+    const summary = document.getElementById("leaderboardSummary");
+    if (summary) {
+      const totals = state.leaderboardTotals;
+      if (totals && rows.length) {
+        const cell = (value, label) =>
+          `<div class="rounded-2xl bg-white/90 px-2 py-2.5 shadow-sm"><p class="text-base font-black text-blue-600">${Number(value || 0).toLocaleString("id-ID")}</p><p class="text-[10px] font-semibold text-slate-500">${label}</p></div>`;
+        summary.innerHTML =
+          cell(totals.approved_gmails, "Total Gmail") +
+          cell(totals.depositors, "Penyetor") +
+          cell(totals.deposits, "Setoran");
+        summary.classList.remove("hidden");
+        summary.classList.add("grid");
+      } else {
+        summary.classList.add("hidden");
+        summary.classList.remove("grid");
+      }
+    }
     if (!rows.length) {
       if (podium)
         podium.innerHTML = `<div class="flex h-52 w-full flex-col items-center justify-center text-center text-slate-500"><i class="fa-solid fa-ranking-star text-3xl text-blue-300"></i><p class="mt-2 text-sm font-bold">Belum ada data leaderboard untuk periode ini.</p></div>`;
@@ -813,13 +831,13 @@
     const me = state.leaderboardMe;
     if (meCard && me) {
       meCard.classList.remove("hidden");
-      meCard.innerHTML = `<p class="text-xs font-bold text-blue-600">Peringkat Anda</p><div class="mt-2 flex items-center gap-3">${avatar(me, "h-12 w-12")}<div class="min-w-0 flex-1"><p class="truncate text-sm font-black text-slate-800">#${me.rank} ${escapeHtml(me.display_name || me.username)}</p><p class="text-[11px] text-slate-500">${Number(me.approved_gmails || 0).toLocaleString("id-ID")} Gmail diterima</p></div><div class="text-right"><p class="text-[10px] font-semibold text-slate-500">Total Pendapatan</p><p class="text-base font-black text-blue-600">${money(me.earnings)}</p></div></div>`;
+      meCard.innerHTML = `<p class="text-xs font-bold text-blue-600">Peringkat Anda</p><div class="mt-2 flex items-center gap-3">${avatar(me, "h-12 w-12")}<div class="min-w-0 flex-1"><p class="truncate text-sm font-black text-slate-800">#${me.rank} ${escapeHtml(me.display_name || me.username)}</p><p class="text-[11px] text-slate-500">${Number(me.approved_gmails || 0).toLocaleString("id-ID")} Gmail diterima · ${Number(me.deposit_count || 0).toLocaleString("id-ID")} setoran</p></div><div class="text-right"><p class="text-[10px] font-semibold text-slate-500">Total Pendapatan</p><p class="text-base font-black text-blue-600">${money(me.earnings)}</p></div></div>`;
     } else if (meCard) meCard.classList.add("hidden");
     container.innerHTML = rows
       .slice(3)
       .map(
         (item) =>
-          `<article class="flex items-center gap-3 rounded-2xl border border-blue-100/80 bg-white/90 p-3.5 shadow-sm"><div class="w-8 shrink-0 text-center text-sm font-black text-slate-500">#${item.rank}</div>${avatar(item, "h-10 w-10")}<div class="min-w-0 flex-1"><p class="truncate text-sm font-extrabold text-slate-800">${escapeHtml(item.display_name || item.username)}</p><p class="truncate text-[11px] text-slate-500">@${escapeHtml(item.username)} · ${Number(item.approved_gmails || 0).toLocaleString("id-ID")} Gmail diterima</p></div><div class="shrink-0 text-right"><p class="text-base font-black text-blue-600">${money(item.earnings)}</p><p class="text-[10px] text-slate-400">${Number(item.approved_gmails || 0).toLocaleString("id-ID")} Gmail</p></div></article>`,
+          `<article class="flex items-center gap-3 rounded-2xl border border-blue-100/80 bg-white/90 p-3.5 shadow-sm"><div class="w-8 shrink-0 text-center text-sm font-black text-slate-500">#${item.rank}</div>${avatar(item, "h-10 w-10")}<div class="min-w-0 flex-1"><p class="truncate text-sm font-extrabold text-slate-800">${escapeHtml(item.display_name || item.username)}</p><p class="truncate text-[11px] text-slate-500">@${escapeHtml(item.username)} · ${Number(item.deposit_count || 0).toLocaleString("id-ID")} setoran</p></div><div class="shrink-0 text-right"><p class="text-base font-black text-blue-600">${Number(item.approved_gmails || 0).toLocaleString("id-ID")} Gmail</p><p class="text-[10px] text-slate-400">${money(item.earnings)}</p></div></article>`,
       )
       .join("");
   };
@@ -836,12 +854,18 @@
       );
     window.refreshLeaderboard?.();
   };
+  let leaderboardRequestId = 0;
   window.refreshLeaderboard = async () => {
     const container = document.getElementById("leaderboardList");
+    const requestedPeriod = activeLeaderboardPeriod;
+    const requestId = ++leaderboardRequestId;
     try {
-      const result = await api(`leaderboard?period=${encodeURIComponent(activeLeaderboardPeriod)}`);
+      const result = await api(`leaderboard?period=${encodeURIComponent(requestedPeriod)}`);
+      // Abaikan respons lama bila user sudah pindah periode/refresh lagi.
+      if (requestId !== leaderboardRequestId) return;
       state.leaderboard = Array.isArray(result.leaderboard) ? result.leaderboard : [];
       state.leaderboardMe = result.me || null;
+      state.leaderboardTotals = result.totals || null;
       renderLeaderboard();
     } catch (error) {
       console.error("Gagal memuat leaderboard:", error);
@@ -851,6 +875,12 @@
       if (stateText) stateText.textContent = "Belum tersedia";
     }
   };
+  // Sinkron otomatis dengan data setoran selama halaman leaderboard terbuka.
+  window.setInterval(() => {
+    const view = document.getElementById("view-leaderboard");
+    if (document.visibilityState === "visible" && view && !view.classList.contains("hidden"))
+      window.refreshLeaderboard?.();
+  }, 30000);
   window.handleProfileAvatarChange = (input) => {
     const file = input?.files?.[0];
     if (!file) return;

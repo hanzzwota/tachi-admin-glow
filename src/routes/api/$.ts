@@ -303,65 +303,132 @@ async function adjustUserBalance(request: Request, id: string) {
   return json({ ok: true, user: updated[0], previous_balance: currentBalance, adjustment: amount });
 }
 
-async function leaderboard(request: Request) {
-  const currentUser = await requireUser(request);
-  const requestedPeriod = new URL(request.url).searchParams.get("period") || "7d";
-  const period = ["today", "7d", "30d", "all"].includes(requestedPeriod) ? requestedPeriod : "7d";
-  const since =
-    period === "today"
-      ? new Date(new Date().setUTCHours(0, 0, 0, 0)).toISOString()
-      : period === "7d"
-        ? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-        : period === "30d"
-          ? new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-          : "";
+type LeaderboardRow = {
+  rank: number;
+  username: string;
+  display_name: string;
+  avatar_url: string;
+  approved_gmails: number;
+  deposit_count: number;
+  earnings: number;
+};
+type LeaderboardResult = {
+  leaderboard: LeaderboardRow[];
+  me: LeaderboardRow | null;
+  totals: { approved_gmails: number; depositors: number; deposits: number };
+};
+
+function leaderboardSince(period: string) {
+  if (period === "today") {
+    // Hari ini mengikuti WIB (sama dengan kuota harian), bukan tengah malam UTC.
+    const jakartaDate = new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    return new Date(`${jakartaDate}T00:00:00+07:00`).toISOString();
+  }
+  if (period === "7d") return new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  if (period === "30d") return new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  return "";
+}
+
+// Cadangan bila migration leaderboard_stats belum dijalankan: baca semua setoran
+// diterima per halaman (tanpa batas 5000 baris) lalu hitung di server.
+async function leaderboardFromDeposits(
+  since: string,
+  currentUserId: string,
+): Promise<LeaderboardResult> {
   const createdFilter = since ? `&created_at=gte.${encodeURIComponent(since)}` : "";
-  const depositQuery = `deposits?select=user_id,accepted_count,accepted_emails,earned,created_at,profiles(username,display_name,avatar_url,role)&status=eq.diterima${createdFilter}&limit=5000`;
-  // Jangan menelan error schema/database sebagai leaderboard kosong. Jika kolom
-  // avatar belum ada, errorResponse akan memberi pesan migration yang jelas.
-  const rows = await supabaseFetch<Record<string, unknown>[]>(depositQuery);
-  const totals = new Map<
-    string,
-    { username: string; displayName: string; avatarUrl: string; approved: number; earnings: number }
-  >();
+  const pageSize = 1000;
+  const rows: Record<string, unknown>[] = [];
+  for (let offset = 0; offset < 100_000; offset += pageSize) {
+    const page = await supabaseFetch<Record<string, unknown>[]>(
+      `deposits?select=user_id,accepted_count,accepted_emails,earned,profiles(username,display_name,avatar_url,role,is_blocked)&status=eq.diterima${createdFilter}&order=created_at.asc,id.asc&limit=${pageSize}&offset=${offset}`,
+    );
+    rows.push(...page);
+    if (page.length < pageSize) break;
+  }
+  const totals = new Map<string, LeaderboardRow & { user_id: string }>();
   for (const row of rows) {
     const profile =
       row["profiles"] && typeof row["profiles"] === "object"
         ? (row["profiles"] as Record<string, unknown>)
         : {};
-    if (text(profile["role"]) !== "user") continue;
+    if (text(profile["role"]) !== "user" || profile["is_blocked"] === true) continue;
     const username = text(profile["username"]);
     if (!username) continue;
-    const displayName = text(profile["display_name"]) || username;
-    const avatarUrl = text(profile["avatar_url"]);
     const acceptedEmails = Array.isArray(row["accepted_emails"]) ? row["accepted_emails"] : [];
     const approved =
       acceptedEmails.length || Math.max(0, Math.floor(Number(row["accepted_count"] ?? 0)));
+    if (approved < 1) continue;
     const userId = String(row["user_id"] ?? username);
     const previous = totals.get(userId) ?? {
+      rank: 0,
+      user_id: userId,
       username,
-      displayName,
-      avatarUrl,
-      approved: 0,
+      display_name: text(profile["display_name"]) || username,
+      avatar_url: text(profile["avatar_url"]),
+      approved_gmails: 0,
+      deposit_count: 0,
       earnings: 0,
     };
-    previous.approved += approved;
+    previous.approved_gmails += approved;
+    previous.deposit_count += 1;
     previous.earnings += Math.max(0, Math.floor(Number(row["earned"] ?? 0)));
     totals.set(userId, previous);
   }
-  const rankings = [...totals.values()]
-    .filter((item) => item.approved > 0)
-    .sort((a, b) => b.approved - a.approved || a.username.localeCompare(b.username))
-    .map((item, index) => ({
-      rank: index + 1,
-      username: item.username,
-      display_name: item.displayName,
-      avatar_url: item.avatarUrl,
-      approved_gmails: item.approved,
-      earnings: item.earnings,
-    }));
-  const me = rankings.find((item) => item.username === currentUser["username"]);
-  return json({ leaderboard: rankings.slice(0, 50), me: me ?? null, period });
+  const ranked = [...totals.values()]
+    .sort(
+      (a, b) =>
+        b.approved_gmails - a.approved_gmails ||
+        b.deposit_count - a.deposit_count ||
+        a.username.localeCompare(b.username),
+    )
+    .map((item, index) => ({ ...item, rank: index + 1 }));
+  const strip = ({ user_id: _userId, ...item }: LeaderboardRow & { user_id: string }) => item;
+  const me = ranked.find((item) => item.user_id === currentUserId);
+  return {
+    leaderboard: ranked.slice(0, 50).map(strip),
+    me: me ? strip(me) : null,
+    totals: {
+      approved_gmails: ranked.reduce((sum, item) => sum + item.approved_gmails, 0),
+      depositors: ranked.length,
+      deposits: ranked.reduce((sum, item) => sum + item.deposit_count, 0),
+    },
+  };
+}
+
+async function leaderboard(request: Request) {
+  const currentUser = await requireUser(request);
+  const requestedPeriod = new URL(request.url).searchParams.get("period") || "7d";
+  const period = ["today", "7d", "30d", "all"].includes(requestedPeriod) ? requestedPeriod : "7d";
+  const since = leaderboardSince(period);
+  const currentUserId = String(currentUser["id"] ?? "");
+  let result: LeaderboardResult;
+  try {
+    // Agregasi dilakukan di database (RPC leaderboard_stats) langsung dari tabel deposits.
+    const data = await supabaseFetch<Partial<LeaderboardResult>>("rpc/leaderboard_stats", {
+      method: "POST",
+      body: JSON.stringify({
+        p_since: since || null,
+        p_user_id: currentUserId || null,
+        p_limit: 50,
+      }),
+    });
+    // user_id hanya dipakai di database; jangan dikirim ke user lain.
+    const publicRow = (row: LeaderboardRow & { user_id?: string }): LeaderboardRow => {
+      const { user_id: _userId, ...rest } = row;
+      return rest;
+    };
+    result = {
+      leaderboard: Array.isArray(data?.leaderboard) ? data.leaderboard.map(publicRow) : [],
+      me: data?.me ? publicRow(data.me) : null,
+      totals: data?.totals ?? { approved_gmails: 0, depositors: 0, deposits: 0 },
+    };
+  } catch (error) {
+    // Hanya fallback bila fungsi belum ada; error database lain tetap dilaporkan.
+    const message = error instanceof Error ? error.message : "";
+    if (!/PGRST202|leaderboard_stats|Could not find the function/i.test(message)) throw error;
+    result = await leaderboardFromDeposits(since, currentUserId);
+  }
+  return json({ ...result, period, updated_at: new Date().toISOString() });
 }
 
 async function updateProfileAvatar(request: Request) {
