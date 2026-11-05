@@ -20,6 +20,7 @@ import { Route as RiwayatRouteImport } from './routes/riwayat'
 import { Route as SaldoRouteImport } from './routes/saldo'
 import { Route as SetorRouteImport } from './routes/setor'
 import { Route as ApiSplatRouteImport } from './routes/api/$'
+import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as RiwayatNomortrxRouteImport } from './routes/riwayat.$nomortrx'
 
 const IndexRoute = IndexRouteImport.update({
@@ -77,6 +78,11 @@ const ApiSplatRoute = ApiSplatRouteImport.update({
   path: '/api/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiHealthRoute = ApiHealthRouteImport.update({
+  id: '/api/health',
+  path: '/api/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RiwayatNomortrxRoute = RiwayatNomortrxRouteImport.update({
   id: '/$nomortrx',
   path: '/$nomortrx',
@@ -95,6 +101,7 @@ export interface FileRoutesByFullPath {
   '/saldo': typeof SaldoRoute
   '/setor': typeof SetorRoute
   '/api/$': typeof ApiSplatRoute
+  '/api/health': typeof ApiHealthRoute
   '/riwayat/$nomortrx': typeof RiwayatNomortrxRoute
 }
 export interface FileRoutesByTo {
@@ -109,6 +116,7 @@ export interface FileRoutesByTo {
   '/saldo': typeof SaldoRoute
   '/setor': typeof SetorRoute
   '/api/$': typeof ApiSplatRoute
+  '/api/health': typeof ApiHealthRoute
   '/riwayat/$nomortrx': typeof RiwayatNomortrxRoute
 }
 export interface FileRoutesById {
@@ -124,6 +132,7 @@ export interface FileRoutesById {
   '/saldo': typeof SaldoRoute
   '/setor': typeof SetorRoute
   '/api/$': typeof ApiSplatRoute
+  '/api/health': typeof ApiHealthRoute
   '/riwayat/$nomortrx': typeof RiwayatNomortrxRoute
 }
 export interface FileRouteTypes {
@@ -140,6 +149,7 @@ export interface FileRouteTypes {
     | '/saldo'
     | '/setor'
     | '/api/$'
+    | '/api/health'
     | '/riwayat/$nomortrx'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -154,6 +164,7 @@ export interface FileRouteTypes {
     | '/saldo'
     | '/setor'
     | '/api/$'
+    | '/api/health'
     | '/riwayat/$nomortrx'
   id:
     | '__root__'
@@ -168,6 +179,7 @@ export interface FileRouteTypes {
     | '/saldo'
     | '/setor'
     | '/api/$'
+    | '/api/health'
     | '/riwayat/$nomortrx'
   fileRoutesById: FileRoutesById
 }
@@ -183,6 +195,7 @@ export interface RootRouteChildren {
   SaldoRoute: typeof SaldoRoute
   SetorRoute: typeof SetorRoute
   ApiSplatRoute: typeof ApiSplatRoute
+  ApiHealthRoute: typeof ApiHealthRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -264,6 +277,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/health': {
+      id: '/api/health'
+      path: '/api/health'
+      fullPath: '/api/health'
+      preLoaderRoute: typeof ApiHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/riwayat/$nomortrx': {
       id: '/riwayat/$nomortrx'
       path: '/$nomortrx'
@@ -297,6 +317,7 @@ const rootRouteChildren: RootRouteChildren = {
   SaldoRoute: SaldoRoute,
   SetorRoute: SetorRoute,
   ApiSplatRoute: ApiSplatRoute,
+  ApiHealthRoute: ApiHealthRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
