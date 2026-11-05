@@ -102,7 +102,8 @@
       (character) =>
         ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character],
     );
-  const state = { user: null, settings: null, deposits: [], withdrawals: [], leaderboard: [] };
+  const state = { user: null, settings: null, deposits: [], withdrawals: [], leaderboard: [], leaderboardMe: null };
+  let activeLeaderboardPeriod = "7d";
   let selectedDepositRoute = "PW";
   let depositSubmissionBusy = false;
   const generatedStockGmails = [];
@@ -147,6 +148,16 @@
     String(user?.display_name || "").trim() ||
     String(user?.username || "").trim() ||
     "Pengguna";
+  const renderProfileAvatar = (user) => {
+    const image = document.getElementById("profileAvatarImage");
+    const fallback = document.getElementById("profileAvatarFallback");
+    const avatarUrl = String(user?.avatarUrl || user?.avatar_url || "").trim();
+    if (image && fallback) {
+      image.src = avatarUrl;
+      image.classList.toggle("hidden", !avatarUrl);
+      fallback.classList.toggle("hidden", Boolean(avatarUrl));
+    }
+  };
   const applyIdentityToDom = (user) => {
     if (!user) return;
     const displayName = displayNameFor(user);
@@ -156,6 +167,7 @@
     if (profileName) profileName.textContent = displayName;
     const profileUsername = document.getElementById("profileUsername");
     if (profileUsername) profileUsername.textContent = `Username: @${user.username || ""}`;
+    renderProfileAvatar(user);
   };
   const dashboardDepositCounts = (deposits) => {
     const emailSet = (value) =>
@@ -631,28 +643,56 @@
   };
   const renderLeaderboard = () => {
     const container = document.getElementById("leaderboardList");
+    const podium = document.getElementById("leaderboardPodium");
     const stateText = document.getElementById("leaderboardState");
+    const meCard = document.getElementById("leaderboardMe");
     if (!container) return;
     const rows = Array.isArray(state.leaderboard) ? state.leaderboard : [];
+    const periodLabel = { today: "hari ini", "7d": "7 hari terakhir", "30d": "30 hari terakhir", all: "sepanjang masa" }[activeLeaderboardPeriod] || "periode terpilih";
+    const avatar = (item, size = "h-12 w-12") => {
+      const image = String(item?.avatar_url || item?.avatarUrl || "").trim();
+      const initials = String(item?.display_name || item?.username || "?").trim().slice(0, 1).toUpperCase();
+      return image
+        ? `<img src="${escapeHtml(image)}" alt="Foto ${escapeHtml(item?.username)}" class="${size} rounded-full object-cover ring-2 ring-white shadow-md" />`
+        : `<span class="${size} flex items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-sm font-black text-white ring-2 ring-white shadow-md">${escapeHtml(initials)}</span>`;
+    };
+    const money = (value) => `Rp${Number(value || 0).toLocaleString("id-ID")}`;
+    if (stateText) stateText.textContent = `Peringkat ${periodLabel}`;
     if (!rows.length) {
-      container.innerHTML = `<div class="rounded-3xl border border-blue-100 bg-white/80 p-8 text-center shadow-sm"><span class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-xl text-blue-500"><i class="fa-solid fa-ranking-star"></i></span><p class="mt-3 text-sm font-extrabold text-slate-700">Belum ada peringkat</p><p class="mt-1 text-xs leading-relaxed text-slate-500">Leaderboard akan menampilkan username setelah Gmail disetujui admin.</p></div>`;
-      if (stateText) stateText.textContent = "Menampilkan 0 pengguna";
+      if (podium) podium.innerHTML = `<div class="flex h-52 w-full flex-col items-center justify-center text-center text-slate-500"><i class="fa-solid fa-ranking-star text-3xl text-blue-300"></i><p class="mt-2 text-sm font-bold">Belum ada peringkat</p><p class="text-xs">Belum ada Gmail disetujui pada ${periodLabel}.</p></div>`;
+      container.innerHTML = "";
+      if (meCard) meCard.classList.add("hidden");
       return;
     }
-    const medal = ["fa-crown text-amber-500", "fa-medal text-slate-400", "fa-medal text-orange-500"];
-    container.innerHTML = rows
-      .map(
-        (item, index) =>
-          `<article class="flex items-center gap-3 rounded-2xl border border-blue-100/80 bg-white/90 p-3.5 shadow-[0_8px_24px_rgba(59,130,246,0.08)]"><div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${index < 3 ? "bg-blue-50" : "bg-slate-50"} text-sm font-black ${index < 3 ? medal[index] : "text-slate-500"}">${index < 3 ? `<i class="fa-solid ${medal[index].split(" ")[0]}"></i>` : `#${item.rank}`}</div><div class="min-w-0 flex-1"><p class="truncate text-sm font-extrabold text-slate-800">@${escapeHtml(item.username)}</p><p class="mt-0.5 text-[11px] font-medium text-slate-400">Peringkat ${item.rank}</p></div><div class="shrink-0 text-right"><p class="text-lg font-black text-blue-600">${Number(item.approved_gmails || 0).toLocaleString("id-ID")}</p><p class="text-[10px] font-bold uppercase tracking-wide text-slate-400">Gmail disetujui</p></div></article>`,
-      )
-      .join("");
-    if (stateText) stateText.textContent = `Menampilkan ${rows.length} pengguna teratas`;
+    const podiumSlots = [rows[1], rows[0], rows[2]];
+    if (podium) {
+      podium.innerHTML = podiumSlots.map((item, slotIndex) => {
+        if (!item) return `<div class="w-1/3"></div>`;
+        const rank = item.rank;
+        const isWinner = rank === 1;
+        const block = isWinner ? "h-36 bg-slate-300/80" : rank === 2 ? "h-28 bg-gradient-to-b from-amber-300 to-yellow-100" : "h-24 bg-gradient-to-b from-orange-300 to-amber-100";
+        return `<div class="flex w-1/3 flex-col items-center justify-end text-center"><div class="relative mb-2">${isWinner ? '<i class="fa-solid fa-crown absolute -top-7 left-1/2 -translate-x-1/2 text-2xl text-amber-500"></i>' : ''}${avatar(item, isWinner ? "h-20 w-20" : "h-14 w-14")}</div><p class="max-w-full truncate px-1 text-xs font-black text-slate-700">${escapeHtml(item.username)}</p><p class="text-[10px] text-slate-500">${Number(item.approved_gmails || 0).toLocaleString("id-ID")} Gmail</p><div class="mt-1 flex w-full items-center justify-center rounded-t-3xl ${block} text-4xl font-black text-white">${rank}</div></div>`;
+      }).join("");
+    }
+    const me = state.leaderboardMe;
+    if (meCard && me) {
+      meCard.classList.remove("hidden");
+      meCard.innerHTML = `<p class="text-xs font-bold text-blue-600">Peringkat Anda</p><div class="mt-2 flex items-center gap-3">${avatar(me, "h-12 w-12")}<div class="min-w-0 flex-1"><p class="truncate text-sm font-black text-slate-800">#${me.rank} ${escapeHtml(me.display_name || me.username)}</p><p class="text-[11px] text-slate-500">${Number(me.approved_gmails || 0).toLocaleString("id-ID")} Gmail diterima</p></div><div class="text-right"><p class="text-[10px] font-semibold text-slate-500">Total Pendapatan</p><p class="text-base font-black text-blue-600">${money(me.earnings)}</p></div></div>`;
+    } else if (meCard) meCard.classList.add("hidden");
+    container.innerHTML = rows.slice(3).map((item) => `<article class="flex items-center gap-3 rounded-2xl border border-blue-100/80 bg-white/90 p-3.5 shadow-sm"><div class="w-8 shrink-0 text-center text-sm font-black text-slate-500">#${item.rank}</div>${avatar(item, "h-10 w-10")}<div class="min-w-0 flex-1"><p class="truncate text-sm font-extrabold text-slate-800">${escapeHtml(item.display_name || item.username)}</p><p class="truncate text-[11px] text-slate-500">@${escapeHtml(item.username)} · ${Number(item.approved_gmails || 0).toLocaleString("id-ID")} Gmail diterima</p></div><div class="shrink-0 text-right"><p class="text-base font-black text-blue-600">${money(item.earnings)}</p><p class="text-[10px] text-slate-400">${Number(item.approved_gmails || 0).toLocaleString("id-ID")} Gmail</p></div></article>`).join("");
+  };
+  window.selectLeaderboardPeriod = (period) => {
+    if (!["today", "7d", "30d", "all"].includes(period)) return;
+    activeLeaderboardPeriod = period;
+    document.querySelectorAll("[data-leaderboard-period]").forEach((button) => button.classList.toggle("leaderboard-period-active", button.dataset.leaderboardPeriod === period));
+    window.refreshLeaderboard?.();
   };
   window.refreshLeaderboard = async () => {
     const container = document.getElementById("leaderboardList");
     try {
-      const result = await api("leaderboard");
+      const result = await api(`leaderboard?period=${encodeURIComponent(activeLeaderboardPeriod)}`);
       state.leaderboard = Array.isArray(result.leaderboard) ? result.leaderboard : [];
+      state.leaderboardMe = result.me || null;
       renderLeaderboard();
     } catch (error) {
       console.error("Gagal memuat leaderboard:", error);
@@ -660,6 +700,34 @@
       const stateText = document.getElementById("leaderboardState");
       if (stateText) stateText.textContent = "Belum tersedia";
     }
+  };
+  window.handleProfileAvatarChange = (input) => {
+    const file = input?.files?.[0];
+    if (!file) return;
+    if (!/^image\/(png|jpeg|webp|gif)$/i.test(file.type) || file.size > 1_000_000) {
+      showToast("warning", "Foto harus PNG, JPG, WEBP, atau GIF dengan ukuran maksimal 1 MB.");
+      input.value = "";
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const avatarUrl = String(reader.result || "");
+        const result = await api("profile/avatar", { method: "PATCH", body: JSON.stringify({ avatarUrl }) });
+        state.user = { ...state.user, ...(result.user || {}), avatarUrl };
+        applyIdentityToDom(state.user);
+        showToast("success", "Foto profil berhasil diperbarui.");
+      } catch (error) {
+        showToast("error", `Foto profil gagal disimpan: ${errorText(error, "coba lagi nanti.")}`);
+      } finally {
+        input.value = "";
+      }
+    };
+    reader.onerror = () => {
+      input.value = "";
+      showToast("error", "Foto profil tidak dapat dibaca.");
+    };
+    reader.readAsDataURL(file);
   };
   window.renderLeaderboard = renderLeaderboard;
   window.renderRiwayat = renderHistory;

@@ -295,6 +295,8 @@
         color: #000;
         box-shadow: 0 8px 18px rgba(37, 99, 235, 0.25);
       }
+      .leaderboard-period-option { transition: all 0.18s ease; }
+      .leaderboard-period-active { background: #0f83df; color: #fff !important; box-shadow: 0 5px 12px rgba(14, 131, 223, 0.25); }
       #stockGenerateModal:not(.hidden) { display: flex; }
       #stockGenerateModal .stock-generate-dialog { animation: stockGenerateModalIn 0.2s ease-out; }
       @keyframes stockGenerateModalIn {
@@ -1254,25 +1256,24 @@
 
         <!-- ==================== VIEW: LEADERBOARD PAGE ==================== -->
         <div id="view-leaderboard" class="hidden flex-col gap-4 pb-28 w-full">
-          <div class="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-600 p-5 text-white shadow-xl shadow-blue-500/25">
-            <div class="absolute -right-10 -top-12 h-36 w-36 rounded-full bg-white/10"></div>
-            <div class="absolute -bottom-16 -left-8 h-32 w-32 rounded-full bg-cyan-300/10"></div>
-            <button type="button" onclick="navigateTo('dashboard')" class="relative z-10 flex items-center gap-2 text-xs font-bold text-blue-100"><i class="fa-solid fa-arrow-left"></i> Kembali ke Beranda</button>
-            <div class="relative z-10 mt-7 flex items-end justify-between gap-4">
-              <div>
-                <p class="text-[10px] font-black uppercase tracking-[0.22em] text-blue-100">Hall of trusted senders</p>
-                <h1 class="mt-2 text-2xl font-black tracking-tight">Leaderboard</h1>
-                <p class="mt-2 max-w-[250px] text-xs leading-relaxed text-blue-100">Lihat username dengan jumlah Gmail disetujui terbanyak.</p>
-              </div>
-              <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-3xl bg-white/15 text-3xl shadow-inner shadow-white/10"><i class="fa-solid fa-ranking-star"></i></div>
+          <header class="flex items-center justify-between px-1 py-1">
+            <button type="button" onclick="navigateTo('dashboard')" class="flex items-center gap-2 text-sm font-bold text-slate-700"><i class="fa-solid fa-arrow-left"></i> Kembali</button>
+            <h1 class="flex items-center gap-2 text-lg font-black text-slate-800"><i class="fa-solid fa-trophy text-amber-500"></i> Leaderboard</h1>
+            <button type="button" onclick="refreshLeaderboard()" class="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-blue-600 shadow-sm" aria-label="Perbarui leaderboard"><i class="fa-solid fa-rotate"></i></button>
+          </header>
+          <div class="rounded-[30px] bg-gradient-to-b from-sky-100 via-blue-50 to-white p-3 shadow-inner shadow-blue-100">
+            <div class="grid grid-cols-4 gap-1 rounded-full bg-white/80 p-1 shadow-sm" role="tablist" aria-label="Periode leaderboard">
+              <button type="button" data-leaderboard-period="today" onclick="selectLeaderboardPeriod('today')" class="leaderboard-period-option rounded-full px-2 py-2.5 text-[11px] font-bold text-slate-600">Hari Ini</button>
+              <button type="button" data-leaderboard-period="7d" onclick="selectLeaderboardPeriod('7d')" class="leaderboard-period-option leaderboard-period-active rounded-full px-2 py-2.5 text-[11px] font-bold text-slate-600">7 Hari</button>
+              <button type="button" data-leaderboard-period="30d" onclick="selectLeaderboardPeriod('30d')" class="leaderboard-period-option rounded-full px-2 py-2.5 text-[11px] font-bold text-slate-600">30 Hari</button>
+              <button type="button" data-leaderboard-period="all" onclick="selectLeaderboardPeriod('all')" class="leaderboard-period-option rounded-full px-2 py-2.5 text-[11px] font-bold text-slate-600">Sepanjang Masa</button>
             </div>
+            <p id="leaderboardState" class="mt-3 text-center text-[11px] font-semibold text-slate-500">Peringkat 7 hari terakhir</p>
+            <div id="leaderboardPodium" class="mt-5 flex min-h-[250px] items-end justify-center gap-2"></div>
           </div>
-          <div class="flex items-center justify-between px-1">
-            <div><h2 class="text-sm font-black text-slate-800">Peringkat pengguna</h2><p id="leaderboardState" class="mt-1 text-[11px] font-medium text-slate-400">Peringkat terbaru</p></div>
-            <button type="button" onclick="refreshLeaderboard()" class="flex h-10 w-10 items-center justify-center rounded-xl border border-blue-100 bg-white text-blue-600 shadow-sm transition active:scale-95" aria-label="Muat ulang leaderboard"><i class="fa-solid fa-rotate"></i></button>
-          </div>
-          <div id="leaderboardList" class="space-y-2.5"><div class="rounded-3xl border border-blue-100 bg-white/80 p-8 text-center shadow-sm"><span class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-xl text-blue-500"><i class="fa-solid fa-ranking-star"></i></span><p class="mt-3 text-sm font-extrabold text-slate-700">Belum ada peringkat</p><p class="mt-1 text-xs leading-relaxed text-slate-500">Leaderboard akan menampilkan username setelah Gmail disetujui admin.</p></div></div>
-          <p class="rounded-2xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-[11px] font-semibold leading-relaxed text-blue-700"><i class="fa-solid fa-circle-info mr-1"></i> Peringkat dihitung dari Gmail yang sudah disetujui admin.</p>
+          <section id="leaderboardMe" class="hidden rounded-3xl border border-blue-300 bg-blue-50/80 p-4 shadow-sm"></section>
+          <div id="leaderboardList" class="space-y-2.5"></div>
+          <p class="rounded-2xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-[11px] font-semibold leading-relaxed text-blue-700"><i class="fa-solid fa-circle-info mr-1"></i> Peringkat dihitung dari Gmail yang sudah disetujui admin pada periode terpilih.</p>
         </div>
 
         <!-- ==================== VIEW 4: STOR PAGE (image1) ==================== -->
@@ -1744,10 +1745,13 @@
         <div
           class="bg-white rounded-2xl p-4 card-soft-shadow border border-slate-100 flex items-center gap-4"
         >
-          <div
-            class="w-16 h-16 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white text-2xl shadow-md shrink-0"
-          >
-            <i class="fa-solid fa-circle-user"></i>
+          <div class="relative shrink-0">
+            <div id="profileAvatarFallback" class="w-16 h-16 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white text-2xl shadow-md overflow-hidden">
+              <i class="fa-solid fa-circle-user"></i>
+            </div>
+            <img id="profileAvatarImage" alt="Foto profil" class="hidden h-16 w-16 rounded-full object-cover shadow-md" />
+            <button type="button" onclick="document.getElementById('profileAvatarInput')?.click()" class="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-blue-600 text-xs text-white shadow-md" aria-label="Tambah atau ubah foto profil"><i class="fa-solid fa-camera"></i></button>
+            <input id="profileAvatarInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="hidden" onchange="handleProfileAvatarChange(this)" />
           </div>
           <div class="flex flex-col gap-1">
             <span
@@ -1763,6 +1767,7 @@
             <p class="text-xs font-extrabold text-blue-600 mt-1">
               Saldo: <span id="profileBalance">Rp0</span>
             </p>
+            <button type="button" onclick="document.getElementById('profileAvatarInput')?.click()" class="mt-1 w-max text-[11px] font-bold text-blue-600">Tambah / ubah foto</button>
           </div>
         </div>
 

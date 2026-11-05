@@ -199,6 +199,7 @@ function publicUser(user: Record<string, unknown>) {
     id: user["id"],
     username: user["username"],
     displayName: user["display_name"],
+    avatarUrl: text(user["avatar_url"]),
     role: user["role"],
     balance: Number(user["balance"] ?? 0),
     withdrawn: Number(user["withdrawn"] ?? 0),
@@ -296,11 +297,22 @@ async function adjustUserBalance(request: Request, id: string) {
 }
 
 async function leaderboard(request: Request) {
-  await requireUser(request);
+  const currentUser = await requireUser(request);
+  const requestedPeriod = new URL(request.url).searchParams.get("period") || "7d";
+  const period = ["today", "7d", "30d", "all"].includes(requestedPeriod) ? requestedPeriod : "7d";
+  const since =
+    period === "today"
+      ? new Date(new Date().setUTCHours(0, 0, 0, 0)).toISOString()
+      : period === "7d"
+        ? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+        : period === "30d"
+          ? new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+          : "";
+  const createdFilter = since ? `&created_at=gte.${encodeURIComponent(since)}` : "";
   const rows = await supabaseFetch<Record<string, unknown>[]>(
-    "deposits?select=user_id,accepted_count,accepted_emails,profiles(username)&status=eq.diterima&limit=5000",
+    `deposits?select=user_id,accepted_count,accepted_emails,earned,created_at,profiles(username,display_name,avatar_url)&status=eq.diterima${createdFilter}&limit=5000`,
   );
-  const totals = new Map<string, { username: string; approved: number }>();
+  const totals = new Map<string, { username: string; displayName: string; avatarUrl: string; approved: number; earnings: number }>();
   for (const row of rows) {
     const profile =
       row["profiles"] && typeof row["profiles"] === "object"
@@ -308,24 +320,45 @@ async function leaderboard(request: Request) {
         : {};
     const username = text(profile["username"]);
     if (!username) continue;
+    const displayName = text(profile["display_name"]) || username;
+    const avatarUrl = text(profile["avatar_url"]);
     const acceptedEmails = Array.isArray(row["accepted_emails"]) ? row["accepted_emails"] : [];
     const approved =
       acceptedEmails.length || Math.max(0, Math.floor(Number(row["accepted_count"] ?? 0)));
     const userId = String(row["user_id"] ?? username);
-    const previous = totals.get(userId) ?? { username, approved: 0 };
+    const previous = totals.get(userId) ?? { username, displayName, avatarUrl, approved: 0, earnings: 0 };
     previous.approved += approved;
+    previous.earnings += Math.max(0, Math.floor(Number(row["earned"] ?? 0)));
     totals.set(userId, previous);
   }
   const rankings = [...totals.values()]
     .filter((item) => item.approved > 0)
     .sort((a, b) => b.approved - a.approved || a.username.localeCompare(b.username))
-    .slice(0, 50)
     .map((item, index) => ({
       rank: index + 1,
       username: item.username,
+      display_name: item.displayName,
+      avatar_url: item.avatarUrl,
       approved_gmails: item.approved,
+      earnings: item.earnings,
     }));
-  return json({ leaderboard: rankings });
+  const me = rankings.find((item) => item.username === currentUser["username"]);
+  return json({ leaderboard: rankings.slice(0, 50), me: me ?? null, period });
+}
+
+async function updateProfileAvatar(request: Request) {
+  const user = await requireUser(request);
+  const payload = await body(request);
+  const avatarUrl = text(payload["avatarUrl"]);
+  if (avatarUrl && (!/^data:image\/(png|jpe?g|webp|gif);base64,[a-z0-9+/]+=*$/i.test(avatarUrl) || avatarUrl.length > 1_500_000)) {
+    return json({ error: "Foto harus berupa PNG, JPG, WEBP, atau GIF maksimal 1,5 MB" }, { status: 400 });
+  }
+  const updated = await supabaseFetch<Record<string, unknown>[]>(
+    `profiles?id=eq.${encodeURIComponent(String(user["id"]))}&select=id,username,display_name,avatar_url,role,balance,withdrawn,wallet_bank,wallet_name,wallet_number`,
+    { method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify({ avatar_url: avatarUrl }) },
+  );
+  if (!updated.length) return json({ error: "Foto profil gagal disimpan" }, { status: 500 });
+  return json({ user: publicUser(updated[0]) });
 }
 
 function generateTemporaryPassword(length = 10) {
@@ -1043,6 +1076,7 @@ async function handler(request: Request, path: string) {
   }
   if (request.method === "GET" && path === "deposits") return userDeposits(request);
   if (request.method === "GET" && path === "leaderboard") return leaderboard(request);
+  if (request.method === "PATCH" && path === "profile/avatar") return updateProfileAvatar(request);
   if (request.method === "GET" && path.startsWith("deposits/") && path.split("/").length === 2)
     return userDepositDetail(request, path.split("/")[1] ?? "");
   if (request.method === "POST" && path === "deposits") return createDeposit(request);

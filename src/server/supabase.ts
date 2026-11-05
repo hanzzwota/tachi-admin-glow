@@ -130,7 +130,7 @@ export async function getCurrentUser(request: Request) {
   const profileId = sessions[0]?.profile_id;
   if (!profileId) return null;
   const profiles = await supabaseFetch<Row[]>(
-    `profiles?select=id,username,display_name,role,balance,withdrawn,wallet_bank,wallet_name,wallet_number& id=eq.${encodeURIComponent(profileId)}`.replace(
+    `profiles?select=id,username,display_name,avatar_url,role,balance,withdrawn,wallet_bank,wallet_name,wallet_number& id=eq.${encodeURIComponent(profileId)}`.replace(
       "& id=",
       "&id=",
     ),
