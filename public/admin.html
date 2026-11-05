@@ -1105,19 +1105,27 @@
       }
       function saldoModal(n) {
         const u = db.users.find((x) => x.username === n);
+        if (!u) return showToast("error", "User tidak ditemukan.");
         openModal(
           "Koreksi Saldo " + n,
           `<p class="text-sm mb-2">Saldo saat ini: <b>${rp(u.saldo)}</b></p><label class="text-xs font-semibold text-slate-500">Nominal (+ tambah / - kurang)</label>
-  <input id="adj" type="number" class="inp mt-1" placeholder="contoh: 5000 atau -2000"><button onclick="doAdj('${esc(n)}')" class="btn-p w-full py-3 rounded-xl mt-4 font-bold">Terapkan</button>`,
+  <input id="adj" type="number" step="1" class="inp mt-1" placeholder="contoh: 5000 atau -2000"><button onclick="doAdj('${esc(n)}', '${esc(u.id)}')" class="btn-p w-full py-3 rounded-xl mt-4 font-bold">Terapkan</button>`,
         );
       }
-      function doAdj(n) {
-        const v = parseInt(adj.value);
-        if (!v) return showToast("warning", "⚠️ Nominal koreksi saldo tidak valid.");
+      async function doAdj(n, id) {
+        const v = Number.parseInt(document.getElementById("adj")?.value || "", 10);
+        if (!Number.isSafeInteger(v) || v === 0) return showToast("warning", "⚠️ Nominal koreksi saldo tidak valid.");
         const u = db.users.find((x) => x.username === n);
         if (u.saldo + v < 0) return showToast("warning", "⚠️ Saldo user tidak boleh minus.");
-        // Belum ada endpoint koreksi saldo di server -> jangan tampilkan success palsu.
-        showToast("warning", NOT_SAVED);
+        try {
+          const result = await window.adjustUserBalance(id, v);
+          u.saldo = Number(result?.user?.balance ?? u.saldo + v);
+          closeModal();
+          renderUsers();
+          showToast("success", `Koreksi saldo ${n} berhasil disimpan ke server.`);
+        } catch (error) {
+          showToast("error", `Gagal menyimpan koreksi saldo: ${error?.message || "coba lagi nanti."}`);
+        }
       }
       async function resetPw(id, n) {
         if (!confirm(`Buat password baru untuk ${n}? Password lama tidak berlaku lagi.`)) return;

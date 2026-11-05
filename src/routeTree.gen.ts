@@ -14,6 +14,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AdminryugantengRouteImport } from './routes/adminryuganteng'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ProfilRouteImport } from './routes/profil'
 import { Route as RegisterRouteImport } from './routes/register'
@@ -47,6 +48,11 @@ const AuthRoute = AuthRouteImport.update({
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LeaderboardRoute = LeaderboardRouteImport.update({
+  id: '/leaderboard',
+  path: '/leaderboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -101,6 +107,7 @@ export interface FileRoutesByFullPath {
   '/adminryuganteng': typeof AdminryugantengRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
+  '/leaderboard': typeof LeaderboardRoute
   '/login': typeof LoginRoute
   '/profil': typeof ProfilRoute
   '/register': typeof RegisterRoute
@@ -117,6 +124,7 @@ export interface FileRoutesByTo {
   '/adminryuganteng': typeof AdminryugantengRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
+  '/leaderboard': typeof LeaderboardRoute
   '/login': typeof LoginRoute
   '/profil': typeof ProfilRoute
   '/register': typeof RegisterRoute
@@ -134,6 +142,7 @@ export interface FileRoutesById {
   '/adminryuganteng': typeof AdminryugantengRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
+  '/leaderboard': typeof LeaderboardRoute
   '/login': typeof LoginRoute
   '/profil': typeof ProfilRoute
   '/register': typeof RegisterRoute
@@ -152,6 +161,7 @@ export interface FileRouteTypes {
     | '/adminryuganteng'
     | '/auth'
     | '/dashboard'
+    | '/leaderboard'
     | '/login'
     | '/profil'
     | '/register'
@@ -168,6 +178,7 @@ export interface FileRouteTypes {
     | '/adminryuganteng'
     | '/auth'
     | '/dashboard'
+    | '/leaderboard'
     | '/login'
     | '/profil'
     | '/register'
@@ -184,6 +195,7 @@ export interface FileRouteTypes {
     | '/adminryuganteng'
     | '/auth'
     | '/dashboard'
+    | '/leaderboard'
     | '/login'
     | '/profil'
     | '/register'
@@ -201,6 +213,7 @@ export interface RootRouteChildren {
   AdminryugantengRoute: typeof AdminryugantengRoute
   AuthRoute: typeof AuthRoute
   DashboardRoute: typeof DashboardRoute
+  LeaderboardRoute: typeof LeaderboardRoute
   LoginRoute: typeof LoginRoute
   ProfilRoute: typeof ProfilRoute
   RegisterRoute: typeof RegisterRoute
@@ -246,6 +259,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/leaderboard': {
+      id: '/leaderboard'
+      path: '/leaderboard'
+      fullPath: '/leaderboard'
+      preLoaderRoute: typeof LeaderboardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -331,6 +351,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminryugantengRoute: AdminryugantengRoute,
   AuthRoute: AuthRoute,
   DashboardRoute: DashboardRoute,
+  LeaderboardRoute: LeaderboardRoute,
   LoginRoute: LoginRoute,
   ProfilRoute: ProfilRoute,
   RegisterRoute: RegisterRoute,

@@ -29,6 +29,8 @@
   const showToast = (type, message) => window.showToast?.(type, message);
   const errorText = (error, fallback) => window.toastErrorMessage?.(error, fallback) || fallback;
   let generatedGmailLoadErrorActive = false;
+  let stockGenerateModalCount = 10;
+  const deletingGeneratedGmailIds = new Set();
   const showGeneratedGmailError = (message) => {
     const alert = document.getElementById("stockGenerateAlert");
     if (alert) {
@@ -42,6 +44,11 @@
     if (alert) {
       alert.textContent = "";
       alert.classList.add("hidden");
+    }
+    const modalAlert = document.getElementById("stockGenerateModalAlert");
+    if (modalAlert) {
+      modalAlert.textContent = "";
+      modalAlert.classList.add("hidden");
     }
   };
   const format = (value) => `Rp${Number(value || 0).toLocaleString("id-ID")}`;
@@ -95,7 +102,7 @@
       (character) =>
         ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character],
     );
-  const state = { user: null, settings: null, deposits: [], withdrawals: [] };
+  const state = { user: null, settings: null, deposits: [], withdrawals: [], leaderboard: [] };
   let selectedDepositRoute = "PW";
   let depositSubmissionBusy = false;
   const generatedStockGmails = [];
@@ -622,6 +629,38 @@
       )
       .join("");
   };
+  const renderLeaderboard = () => {
+    const container = document.getElementById("leaderboardList");
+    const stateText = document.getElementById("leaderboardState");
+    if (!container) return;
+    const rows = Array.isArray(state.leaderboard) ? state.leaderboard : [];
+    if (!rows.length) {
+      container.innerHTML = `<div class="rounded-3xl border border-blue-100 bg-white/80 p-8 text-center shadow-sm"><span class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-xl text-blue-500"><i class="fa-solid fa-ranking-star"></i></span><p class="mt-3 text-sm font-extrabold text-slate-700">Belum ada peringkat</p><p class="mt-1 text-xs leading-relaxed text-slate-500">Leaderboard akan menampilkan username setelah Gmail disetujui admin.</p></div>`;
+      if (stateText) stateText.textContent = "Menampilkan 0 pengguna";
+      return;
+    }
+    const medal = ["fa-crown text-amber-500", "fa-medal text-slate-400", "fa-medal text-orange-500"];
+    container.innerHTML = rows
+      .map(
+        (item, index) =>
+          `<article class="flex items-center gap-3 rounded-2xl border border-blue-100/80 bg-white/90 p-3.5 shadow-[0_8px_24px_rgba(59,130,246,0.08)]"><div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${index < 3 ? "bg-blue-50" : "bg-slate-50"} text-sm font-black ${index < 3 ? medal[index] : "text-slate-500"}">${index < 3 ? `<i class="fa-solid ${medal[index].split(" ")[0]}"></i>` : `#${item.rank}`}</div><div class="min-w-0 flex-1"><p class="truncate text-sm font-extrabold text-slate-800">@${escapeHtml(item.username)}</p><p class="mt-0.5 text-[11px] font-medium text-slate-400">Peringkat ${item.rank}</p></div><div class="shrink-0 text-right"><p class="text-lg font-black text-blue-600">${Number(item.approved_gmails || 0).toLocaleString("id-ID")}</p><p class="text-[10px] font-bold uppercase tracking-wide text-slate-400">Gmail disetujui</p></div></article>`,
+      )
+      .join("");
+    if (stateText) stateText.textContent = `Menampilkan ${rows.length} pengguna teratas`;
+  };
+  window.refreshLeaderboard = async () => {
+    const container = document.getElementById("leaderboardList");
+    if (container) container.innerHTML = '<div class="rounded-3xl border border-blue-100 bg-white/80 p-8 text-center text-sm font-semibold text-slate-500"><i class="fa-solid fa-spinner fa-spin mr-2 text-blue-500"></i>Memuat leaderboard...</div>';
+    try {
+      const result = await api("leaderboard");
+      state.leaderboard = Array.isArray(result.leaderboard) ? result.leaderboard : [];
+      renderLeaderboard();
+    } catch (error) {
+      console.error("Gagal memuat leaderboard:", error);
+      if (container) container.innerHTML = '<div class="rounded-3xl border border-rose-100 bg-rose-50 p-8 text-center text-sm font-semibold text-rose-600">Leaderboard belum dapat dimuat. Silakan coba lagi.</div>';
+    }
+  };
+  window.renderLeaderboard = renderLeaderboard;
   window.renderRiwayat = renderHistory;
   window.renderRiwayatFromDeposits = (deposits, filter = window.activeRiwayatFilter || "semua") =>
     renderHistory(filter, deposits);
@@ -961,7 +1000,8 @@
     const customInput = document.getElementById("customStockGenerateCount");
     const generatedPanel = document.getElementById("generatedGmailPanel");
     const generatorEnabled = state.settings?.auto_stock_enabled === true;
-    if (generatorSection) generatorSection.classList.remove("hidden");
+    const hasGeneratedGmail = generatedStockGmails.length > 0;
+    if (generatorSection) generatorSection.style.display = hasGeneratedGmail ? "none" : "flex";
     document.querySelectorAll("[data-generate-only]").forEach((element) => {
       element.classList.remove("hidden");
     });
@@ -989,16 +1029,16 @@
     });
     if (customInput) customInput.disabled = stockGenerateBusy;
     if (mainButton) {
-      mainButton.style.display = generatedStockGmails.length > 0 ? "none" : "flex";
+      mainButton.style.display = hasGeneratedGmail ? "none" : "flex";
       mainButton.disabled = stockGenerateBusy || !generatorEnabled;
       mainButton
         .querySelector("span")
         ?.replaceChildren(
-          document.createTextNode(stockGenerateBusy ? "Sedang generate…" : "Generate Gmail"),
+          document.createTextNode(stockGenerateBusy ? "Sedang generate…" : "Generate"),
         );
     }
     if (againButton) {
-      againButton.style.display = generatedStockGmails.length > 0 ? "flex" : "none";
+      againButton.style.display = hasGeneratedGmail ? "flex" : "none";
       againButton.disabled = stockGenerateBusy || !generatorEnabled;
       againButton
         .querySelector("span")
@@ -1006,8 +1046,15 @@
           document.createTextNode(stockGenerateBusy ? "Sedang generate…" : "Generate Lagi"),
         );
     }
+    const modalButton = document.getElementById("stockGenerateModalButton");
+    if (modalButton) {
+      modalButton.disabled = stockGenerateBusy || !generatorEnabled;
+      modalButton.querySelector("span")?.replaceChildren(
+        document.createTextNode(stockGenerateBusy ? "Sedang generate…" : "Generate"),
+      );
+    }
     if (generatedPanel)
-      generatedPanel.style.display = generatedStockGmails.length > 0 ? "flex" : "none";
+      generatedPanel.style.display = hasGeneratedGmail ? "flex" : "none";
     if (progress) {
       if (stockGenerateBusy) {
         progress.textContent = "Mengambil maksimal 5 akun untuk batch ini…";
@@ -1064,7 +1111,7 @@
                 <span class="truncate font-mono text-xs text-slate-700">${escapeHtml(item.gmail)}</span>
               </button>
               <span class="shrink-0 rounded-full border px-2 py-1 text-[10px] font-bold ${status.classes}">${status.label}</span>
-              <button type="button" onclick="removeGeneratedStockGmail(${index})" class="h-8 w-8 shrink-0 rounded-lg text-slate-500 hover:bg-rose-50 hover:text-rose-600" aria-label="Hapus ${escapeHtml(item.gmail)} dari daftar"><i class="fa-regular fa-trash-can"></i></button>
+              <button type="button" onclick="removeGeneratedStockGmail('${escapeHtml(item.id)}')" class="h-8 w-8 shrink-0 rounded-lg text-slate-500 hover:bg-rose-50 hover:text-rose-600 disabled:cursor-wait disabled:opacity-50" aria-label="Hapus ${escapeHtml(item.gmail)} dari daftar" ${deletingGeneratedGmailIds.has(String(item.id)) ? "disabled" : ""}><i class="fa-regular fa-trash-can"></i></button>
             </div>`;
         })
         .join("");
@@ -1137,6 +1184,75 @@
     stockGenerateCompleted = 0;
     syncStockGeneratorControls();
   };
+  window.openStockGenerateModal = () => {
+    if (stockGenerateBusy) return;
+    if (state.settings?.auto_stock_enabled !== true) {
+      showToast("warning", "Generate Gmail sedang ditutup admin. Silakan coba lagi nanti.");
+      return;
+    }
+    const currentTarget =
+      stockGenerateTarget > stockGenerateCompleted ? stockGenerateTarget : stockGenerateModalCount || 10;
+    stockGenerateModalCount = currentTarget;
+    const input = document.getElementById("stockGenerateModalCount");
+    if (input) input.value = String(currentTarget);
+    document.querySelectorAll("[data-stock-modal-count]").forEach((option) => {
+      option.classList.toggle(
+        "stock-generate-modal-option-active",
+        Number(option.dataset.stockModalCount) === currentTarget,
+      );
+    });
+    document.getElementById("stockGenerateModalAlert")?.classList.add("hidden");
+    const modal = document.getElementById("stockGenerateModal");
+    if (modal) {
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+      document.body.classList.add("overflow-hidden");
+    }
+  };
+  window.closeStockGenerateModal = () => {
+    const modal = document.getElementById("stockGenerateModal");
+    if (modal) {
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+    }
+    document.body.classList.remove("overflow-hidden");
+  };
+  window.selectStockGenerateModalCount = (count) => {
+    const quantity = Number(count);
+    if (!Number.isSafeInteger(quantity) || quantity < 1) return;
+    stockGenerateModalCount = quantity;
+    const input = document.getElementById("stockGenerateModalCount");
+    if (input) input.value = String(quantity);
+    document.querySelectorAll("[data-stock-modal-count]").forEach((option) => {
+      option.classList.toggle(
+        "stock-generate-modal-option-active",
+        Number(option.dataset.stockModalCount) === quantity,
+      );
+    });
+  };
+  window.updateStockGenerateModalCustom = (value) => {
+    stockGenerateModalCount = Number(value);
+    document.querySelectorAll("[data-stock-modal-count]").forEach((option) => {
+      option.classList.toggle(
+        "stock-generate-modal-option-active",
+        Number(option.dataset.stockModalCount) === stockGenerateModalCount,
+      );
+    });
+  };
+  window.generateStockGmailFromModal = async () => {
+    const input = document.getElementById("stockGenerateModalCount");
+    const requested = Number(input?.value);
+    if (!Number.isSafeInteger(requested) || requested < 1) {
+      const alert = document.getElementById("stockGenerateModalAlert");
+      if (alert) {
+        alert.textContent = "Masukkan jumlah akun berupa bilangan bulat minimal 1.";
+        alert.classList.remove("hidden");
+      }
+      return;
+    }
+    const success = await window.generateStockGmail(requested);
+    if (success) window.closeStockGenerateModal();
+  };
   window.copyGeneratedStockGmail = async (index) => {
     const item = generatedStockGmails[index];
     if (!item) return;
@@ -1147,15 +1263,23 @@
       showToast("error", "Gagal menyalin Gmail. Silakan salin secara manual.");
     }
   };
-  window.removeGeneratedStockGmail = async (index) => {
-    const item = generatedStockGmails[index];
-    if (!item) return;
+  window.removeGeneratedStockGmail = async (id) => {
+    const itemId = String(id);
+    const itemIndex = generatedStockGmails.findIndex((entry) => String(entry.id) === itemId);
+    const item = itemIndex >= 0 ? generatedStockGmails[itemIndex] : null;
+    if (!item || deletingGeneratedGmailIds.has(itemId)) return;
+    deletingGeneratedGmailIds.add(itemId);
+    generatedStockGmails.splice(itemIndex, 1);
+    renderGeneratedStockGmails();
     try {
       await api(`stock/generated/${encodeURIComponent(item.id)}`, { method: "DELETE" });
-      showToast("success", "Gmail dibuang dari daftar. Akun tidak dikembalikan ke stok.");
-      refreshGeneratedStockGmails().catch((error) => console.error("Gagal memuat ulang Gmail:", error));
+      showToast("success", "Berhasil Menghapus Gmail");
     } catch (error) {
-      showToast("error", `Gagal mengarsipkan Gmail: ${errorText(error, "coba lagi nanti.")}`);
+      generatedStockGmails.splice(Math.min(itemIndex, generatedStockGmails.length), 0, item);
+      showToast("error", `Gagal menghapus Gmail: ${errorText(error, "coba lagi nanti.")}`);
+    } finally {
+      deletingGeneratedGmailIds.delete(itemId);
+      renderGeneratedStockGmails();
     }
   };
   window.copyAllGeneratedStockGmails = async () => {
@@ -1179,17 +1303,20 @@
       showToast("error", "Gagal menyalin Gmail. Silakan coba lagi.");
     }
   };
-  window.generateStockGmail = async () => {
-    if (stockGenerateBusy) return;
+  window.generateStockGmail = async (requestedOverride = null) => {
+    if (stockGenerateBusy) return false;
     if (state.settings?.auto_stock_enabled !== true) {
       showToast("warning", "Generate Gmail sedang ditutup admin. Silakan coba lagi nanti.");
-      return;
+      return false;
     }
-    const customValue = document.getElementById("customStockGenerateCount")?.value.trim();
+    const customValue =
+      requestedOverride === null
+        ? document.getElementById("customStockGenerateCount")?.value.trim()
+        : String(requestedOverride).trim();
     const requested = customValue ? Number(customValue) : selectedStockGenerateCount;
     if (!Number.isSafeInteger(requested) || requested < 1) {
       showToast("warning", "Masukkan jumlah akun berupa bilangan bulat minimal 1.");
-      return;
+      return false;
     }
     if (stockGenerateTarget !== requested || stockGenerateCompleted >= stockGenerateTarget) {
       stockGenerateTarget = requested;
@@ -1216,14 +1343,21 @@
         "success",
         `${gmails.length} Gmail berhasil dibuat di panel Generated Gmail (batch maksimal 5).${stockGenerateCompleted < stockGenerateTarget ? " Tekan Generate Lagi untuk melanjutkan target." : ""}`,
       );
+      return true;
     } catch (error) {
       const message =
         error?.status === 409 && String(error.message || "").includes("Stok Gmail")
           ? "Stok Gmail sedang kosong. Jika seharusnya tersedia, Silahkan Hubungi Admin."
           : "Gagal mengambil Gmail stok. Silahkan Hubungi Admin.";
       showGeneratedGmailError(message);
+      const modalAlert = document.getElementById("stockGenerateModalAlert");
+      if (modalAlert) {
+        modalAlert.textContent = message;
+        modalAlert.classList.remove("hidden");
+      }
       generatedGmailLoadErrorActive = true;
       showToast("error", message);
+      return false;
     } finally {
       stockGenerateBusy = false;
       syncStockGeneratorControls();

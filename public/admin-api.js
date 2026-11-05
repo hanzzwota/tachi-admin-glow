@@ -688,6 +688,14 @@
     await refreshAfterAction();
     return data.password;
   };
+  window.adjustUserBalance = async (id, amount) => {
+    const data = await api(`admin/users/${id}/balance`, {
+      method: "POST",
+      body: JSON.stringify({ amount }),
+    });
+    await refreshAfterAction();
+    return data;
+  };
   window.deleteUser = (id) => {
     if (confirm("Hapus akun user beserta riwayatnya? Tindakan ini tidak dapat dibatalkan."))
       userAction(id, "delete");

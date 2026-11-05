@@ -254,6 +254,80 @@ async function adminUsers(request: Request) {
   return json({ users: users.map((user) => ({ ...user, needs_password: pending.has(String(user["id"])) })) });
 }
 
+async function adjustUserBalance(request: Request, id: string) {
+  await requireAdmin(request);
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return json({ error: "User tidak valid" }, { status: 400 });
+  const payload = await body(request);
+  const amount = Number(payload["amount"]);
+  if (!Number.isSafeInteger(amount) || amount === 0) {
+    return json(
+      { error: "Nominal koreksi harus bilangan bulat dan tidak boleh nol" },
+      { status: 400 },
+    );
+  }
+  const users = await supabaseFetch<Record<string, unknown>[]>(
+    `profiles?select=id,balance&role=eq.user&id=eq.${encodeURIComponent(id)}&limit=1`,
+  );
+  const user = users[0];
+  if (!user) return json({ error: "User tidak ditemukan" }, { status: 404 });
+  const currentBalance = Number(user["balance"] ?? 0);
+  const nextBalance = currentBalance + amount;
+  if (!Number.isSafeInteger(nextBalance) || nextBalance < 0) {
+    return json(
+      { error: "Saldo user tidak boleh minus atau melebihi batas aman" },
+      { status: 400 },
+    );
+  }
+  const updated = await supabaseFetch<Record<string, unknown>[]>(
+    `profiles?id=eq.${encodeURIComponent(id)}&role=eq.user&balance=eq.${encodeURIComponent(String(currentBalance))}`,
+    {
+      method: "PATCH",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify({ balance: nextBalance }),
+    },
+  );
+  if (!updated.length) {
+    return json(
+      { error: "Saldo berubah oleh admin lain, silakan muat ulang lalu coba lagi" },
+      { status: 409 },
+    );
+  }
+  return json({ ok: true, user: updated[0], previous_balance: currentBalance, adjustment: amount });
+}
+
+async function leaderboard(request: Request) {
+  await requireUser(request);
+  const rows = await supabaseFetch<Record<string, unknown>[]>(
+    "deposits?select=user_id,accepted_count,accepted_emails,profiles(username)&status=eq.diterima&limit=5000",
+  );
+  const totals = new Map<string, { username: string; approved: number }>();
+  for (const row of rows) {
+    const profile =
+      row["profiles"] && typeof row["profiles"] === "object"
+        ? (row["profiles"] as Record<string, unknown>)
+        : {};
+    const username = text(profile["username"]);
+    if (!username) continue;
+    const acceptedEmails = Array.isArray(row["accepted_emails"]) ? row["accepted_emails"] : [];
+    const approved =
+      acceptedEmails.length || Math.max(0, Math.floor(Number(row["accepted_count"] ?? 0)));
+    const userId = String(row["user_id"] ?? username);
+    const previous = totals.get(userId) ?? { username, approved: 0 };
+    previous.approved += approved;
+    totals.set(userId, previous);
+  }
+  const rankings = [...totals.values()]
+    .filter((item) => item.approved > 0)
+    .sort((a, b) => b.approved - a.approved || a.username.localeCompare(b.username))
+    .slice(0, 50)
+    .map((item, index) => ({
+      rank: index + 1,
+      username: item.username,
+      approved_gmails: item.approved,
+    }));
+  return json({ leaderboard: rankings });
+}
+
 function generateTemporaryPassword(length = 10) {
   const alphabet = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789";
   const bytes = crypto.getRandomValues(new Uint8Array(length));
@@ -945,6 +1019,7 @@ async function handler(request: Request, path: string) {
     deposits: [20, 60 * 1000],
     withdrawals: [5, 10 * 60 * 1000],
     wallet: [10, 10 * 60 * 1000],
+    leaderboard: [30, 60 * 1000],
     "stock/claim": [10, 60 * 1000],
     "admin/settings": [30, 60 * 1000],
   };
@@ -967,6 +1042,7 @@ async function handler(request: Request, path: string) {
     return json({ settings: { ...(safe || {}), ...(await dailyDepositStats(settings)) } });
   }
   if (request.method === "GET" && path === "deposits") return userDeposits(request);
+  if (request.method === "GET" && path === "leaderboard") return leaderboard(request);
   if (request.method === "GET" && path.startsWith("deposits/") && path.split("/").length === 2)
     return userDepositDetail(request, path.split("/")[1] ?? "");
   if (request.method === "POST" && path === "deposits") return createDeposit(request);
@@ -982,6 +1058,8 @@ async function handler(request: Request, path: string) {
     return setUserBlocked(request, path.split("/")[2] ?? "", false);
   if (request.method === "POST" && path.startsWith("admin/users/") && path.endsWith("/password"))
     return resetUserPassword(request, path.split("/")[2] ?? "");
+  if (request.method === "POST" && path.startsWith("admin/users/") && path.endsWith("/balance"))
+    return adjustUserBalance(request, path.split("/")[2] ?? "");
   if (request.method === "POST" && path.startsWith("admin/users/") && path.endsWith("/delete"))
     return deleteUser(request, path.split("/")[2] ?? "");
   if (request.method === "PATCH" && path === "admin/settings") return updateSettings(request);
