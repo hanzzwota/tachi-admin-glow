@@ -1387,7 +1387,7 @@
                 <span class="truncate font-mono text-xs text-slate-700">${escapeHtml(item.gmail)}</span>
               </button>
               <span class="shrink-0 rounded-full border px-2 py-1 text-[10px] font-bold ${status.classes}">${status.label}</span>
-              <button type="button" onclick="removeGeneratedStockGmail('${escapeHtml(item.id)}')" class="h-8 w-8 shrink-0 rounded-lg text-slate-500 hover:bg-rose-50 hover:text-rose-600 disabled:cursor-wait disabled:opacity-50" aria-label="Hapus ${escapeHtml(item.gmail)} dari daftar" ${deletingGeneratedGmailIds.has(String(item.id)) ? "disabled" : ""}><i class="fa-regular fa-trash-can"></i></button>
+              <button type="button" onclick="removeGeneratedStockGmail('${escapeHtml(item.id)}')" class="h-8 w-8 shrink-0 rounded-lg text-slate-500 hover:bg-rose-50 hover:text-rose-600 disabled:cursor-wait disabled:opacity-50" aria-label="Hapus ${escapeHtml(item.gmail)} dari daftar" ${deletingGeneratedGmailIds.has(String(item.id)) || item.status === "diproses" ? "disabled" : ""} ${item.status === "diproses" ? 'title="Sedang diproses, tidak bisa dihapus"' : ""}><i class="fa-regular fa-trash-can"></i></button>
             </div>`;
         })
         .join("");
@@ -1543,21 +1543,32 @@
   };
   window.removeGeneratedStockGmail = async (id) => {
     const itemId = String(id);
-    const itemIndex = generatedStockGmails.findIndex((entry) => String(entry.id) === itemId);
-    const item = itemIndex >= 0 ? generatedStockGmails[itemIndex] : null;
+    const item = generatedStockGmails.find((entry) => String(entry.id) === itemId);
     if (!item || deletingGeneratedGmailIds.has(itemId)) return;
+    if (item.status === "diproses") {
+      showToast("warning", "Gmail sedang diproses admin, tidak bisa dihapus.");
+      return;
+    }
     deletingGeneratedGmailIds.add(itemId);
-    generatedStockGmails.splice(itemIndex, 1);
     renderGeneratedStockGmails();
     try {
-      await api(`stock/generated/${encodeURIComponent(item.id)}`, { method: "DELETE" });
-      showToast("success", "Berhasil Menghapus Gmail");
+      // Hapus di server dulu; UI hanya berubah setelah server benar-benar sukses.
+      const result = await api(`stock/generated/${encodeURIComponent(item.id)}`, {
+        method: "DELETE",
+      });
+      if (!result || result.ok !== true) throw new Error("Server tidak mengonfirmasi penghapusan.");
+      showToast(
+        "success",
+        result.outcome === "returned"
+          ? "Gmail dikembalikan ke stok"
+          : "Berhasil Menghapus Gmail",
+      );
     } catch (error) {
-      generatedStockGmails.splice(Math.min(itemIndex, generatedStockGmails.length), 0, item);
       showToast("error", `Gagal menghapus Gmail: ${errorText(error, "coba lagi nanti.")}`);
     } finally {
       deletingGeneratedGmailIds.delete(itemId);
-      renderGeneratedStockGmails();
+      // Sinkronkan dengan server (status bisa berubah dari tab/admin lain).
+      await refreshGeneratedStockGmails().catch(() => renderGeneratedStockGmails());
     }
   };
   window.copyAllGeneratedStockGmails = async () => {
