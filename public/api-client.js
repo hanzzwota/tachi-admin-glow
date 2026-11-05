@@ -29,7 +29,7 @@
   const showToast = (type, message) => window.showToast?.(type, message);
   const errorText = (error, fallback) => window.toastErrorMessage?.(error, fallback) || fallback;
   let generatedGmailLoadErrorActive = false;
-  let stockGenerateModalCount = 10;
+  let stockGenerateModalCount = 1;
   const deletingGeneratedGmailIds = new Set();
   const showGeneratedGmailError = (message) => {
     const alert = document.getElementById("stockGenerateAlert");
@@ -650,14 +650,15 @@
   };
   window.refreshLeaderboard = async () => {
     const container = document.getElementById("leaderboardList");
-    if (container) container.innerHTML = '<div class="rounded-3xl border border-blue-100 bg-white/80 p-8 text-center text-sm font-semibold text-slate-500"><i class="fa-solid fa-spinner fa-spin mr-2 text-blue-500"></i>Memuat leaderboard...</div>';
     try {
       const result = await api("leaderboard");
       state.leaderboard = Array.isArray(result.leaderboard) ? result.leaderboard : [];
       renderLeaderboard();
     } catch (error) {
       console.error("Gagal memuat leaderboard:", error);
-      if (container) container.innerHTML = '<div class="rounded-3xl border border-rose-100 bg-rose-50 p-8 text-center text-sm font-semibold text-rose-600">Leaderboard belum dapat dimuat. Silakan coba lagi.</div>';
+      if (container) container.innerHTML = '<div class="rounded-3xl border border-rose-100 bg-rose-50 p-8 text-center text-sm font-semibold text-rose-600">Leaderboard belum tersedia. Silakan coba lagi.</div>';
+      const stateText = document.getElementById("leaderboardState");
+      if (stateText) stateText.textContent = "Belum tersedia";
     }
   };
   window.renderLeaderboard = renderLeaderboard;
@@ -1191,7 +1192,7 @@
       return;
     }
     const currentTarget =
-      stockGenerateTarget > stockGenerateCompleted ? stockGenerateTarget : stockGenerateModalCount || 10;
+      stockGenerateTarget > stockGenerateCompleted ? stockGenerateTarget : stockGenerateModalCount || 1;
     stockGenerateModalCount = currentTarget;
     const input = document.getElementById("stockGenerateModalCount");
     if (input) input.value = String(currentTarget);
@@ -1483,7 +1484,7 @@
       const requestedView = new URLSearchParams(location.search).get("view");
       if (user) {
         applyIdentityToDom(user);
-        const availableViews = ["dashboard", "stor", "saldo", "profil", "riwayat", "riwayat-detail"];
+        const availableViews = ["dashboard", "stor", "saldo", "profil", "riwayat", "leaderboard", "riwayat-detail"];
         const initialView = availableViews.includes(requestedView) ? requestedView : "dashboard";
         window.navigateTo?.(initialView);
         await syncAppData();
