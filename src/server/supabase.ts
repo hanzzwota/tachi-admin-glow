@@ -13,15 +13,32 @@ export class DatabaseUnavailableError extends Error {
 }
 
 // Read config per request: env vars are only guaranteed inside handlers on the edge runtime.
+// Secret managers may return values wrapped in quotes or with escaped newlines.
+// Do not base64-decode or otherwise decrypt here: hosting must decrypt secrets before
+// exposing them to the process. Supabase supports both legacy JWT keys (eyJ...) and
+// new opaque keys (sb_secret_...).
+function cleanEnvValue(value: string | undefined) {
+  return (value ?? "")
+    .trim()
+    .replace(/^(['"])(.*)\1$/s, "$2")
+    .replace(/\\n/g, "")
+    .replace(/[\r\n\t ]/g, "");
+}
+
 function supabaseConfig() {
-  const url = process.env["SUPABASE_URL"]?.trim().replace(/\/+$/, "") ?? "";
+  const url = cleanEnvValue(process.env["SUPABASE_URL"]).replace(/\/+$/, "");
   const key =
-    process.env["SUPABASE_SECRET_KEY"]?.trim() ||
-    process.env["SUPABASE_SERVICE_ROLE_KEY"]?.trim() ||
-    "";
+    [
+      process.env["SUPABASE_SECRET_KEY"],
+      process.env["SUPABASE_SERVICE_ROLE_KEY"],
+      process.env["SUPABASE_KEY"],
+      process.env["SUPABASE_API_KEY"],
+    ]
+      .map(cleanEnvValue)
+      .find(Boolean) ?? "";
   if (!url || !key) {
     throw new Error(
-      "Koneksi database belum dikonfigurasi di server (SUPABASE_URL / SUPABASE_SECRET_KEY)",
+      "Koneksi database belum dikonfigurasi di server (SUPABASE_URL / SUPABASE_SECRET_KEY atau SUPABASE_SERVICE_ROLE_KEY)",
     );
   }
   return { url: url.replace(/\/$/, ""), key };
@@ -35,7 +52,8 @@ export async function supabaseFetch<T = Row>(path: string, init: RequestInit = {
     ...((init.headers as Record<string, string>) ?? {}),
   };
   // New-style keys (sb_secret_...) are opaque, not JWTs: sending them as a Bearer token is rejected.
-  if (!key.startsWith("sb_")) headers["Authorization"] = `Bearer ${key}`;
+  // Legacy service-role keys are JWTs beginning with eyJ and need the Bearer header.
+  if (key.startsWith("eyJ")) headers["Authorization"] = `Bearer ${key}`;
   let response: Response;
   try {
     response = await fetch(`${url}/rest/v1/${path}`, { ...init, headers });
