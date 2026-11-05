@@ -309,15 +309,23 @@ async function leaderboard(request: Request) {
           ? new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
           : "";
   const createdFilter = since ? `&created_at=gte.${encodeURIComponent(since)}` : "";
-  const rows = await supabaseFetch<Record<string, unknown>[]>(
-    `deposits?select=user_id,accepted_count,accepted_emails,earned,created_at,profiles(username,display_name,avatar_url)&status=eq.diterima${createdFilter}&limit=5000`,
-  );
+  const depositQuery = `deposits?select=user_id,accepted_count,accepted_emails,earned,created_at,profiles(username,display_name,avatar_url,role)&status=eq.diterima${createdFilter}&limit=5000`;
+  let rows: Record<string, unknown>[];
+  try {
+    rows = await supabaseFetch<Record<string, unknown>[]>(depositQuery);
+  } catch (error) {
+    console.warn("Leaderboard memakai fallback tanpa avatar_url:", error);
+    rows = await supabaseFetch<Record<string, unknown>[]>(
+      `deposits?select=user_id,accepted_count,accepted_emails,earned,created_at,profiles(username,display_name,role)&status=eq.diterima${createdFilter}&limit=5000`,
+    );
+  }
   const totals = new Map<string, { username: string; displayName: string; avatarUrl: string; approved: number; earnings: number }>();
   for (const row of rows) {
     const profile =
       row["profiles"] && typeof row["profiles"] === "object"
         ? (row["profiles"] as Record<string, unknown>)
         : {};
+    if (text(profile["role"]) !== "user") continue;
     const username = text(profile["username"]);
     if (!username) continue;
     const displayName = text(profile["display_name"]) || username;
