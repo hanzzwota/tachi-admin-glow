@@ -46,6 +46,16 @@ function supabaseConfig() {
 
 export async function supabaseFetch<T = Row>(path: string, init: RequestInit = {}): Promise<T> {
   const { url, key } = supabaseConfig();
+  const startedAt = performance.now();
+  const method = String(init.method || "GET").toUpperCase();
+  const resource = path.split("?")[0];
+  const logQueryTiming = (status: number) => {
+    if (process.env["SUPABASE_PERF_LOG"] === "1") {
+      console.info(
+        `[supabase-perf] ${method} ${resource} status=${status} duration_ms=${Math.round(performance.now() - startedAt)}`,
+      );
+    }
+  };
   const headers: Record<string, string> = {
     apikey: key,
     "Content-Type": "application/json",
@@ -58,13 +68,16 @@ export async function supabaseFetch<T = Row>(path: string, init: RequestInit = {
   try {
     response = await fetch(`${url}/rest/v1/${path}`, { ...init, headers });
   } catch (error) {
+    logQueryTiming(0);
     console.error("[supabaseFetch] network error:", error);
     throw new DatabaseUnavailableError(error);
   }
   if (!response.ok) {
+    logQueryTiming(response.status);
     const message = await response.text();
     throw new Error(`Supabase ${response.status}: ${message}`);
   }
+  logQueryTiming(response.status);
   if (response.status === 204) return undefined as T;
   const raw = await response.text();
   if (!raw.trim()) return undefined as T;

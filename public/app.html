@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>tachi69gmail - Platform Setor & Jual Beli Gmail</title>
+    <title>tachi69gmail - Platform Setor Gmail</title>
     <!-- Outlined Toast Notification: showToast(type, message) -->
     <script src="/toast.js"></script>
     <!-- Tailwind CSS CDN -->
@@ -342,6 +342,66 @@
       }
       .route-tab:disabled {
         cursor: not-allowed;
+      }
+
+      /* Navy premium leaderboard */
+      #view-leaderboard {
+        position: relative;
+        isolation: isolate;
+        overflow: hidden;
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        border-radius: 2rem;
+        background:
+          radial-gradient(circle at 50% -10%, rgba(45, 212, 191, 0.16), transparent 38%),
+          linear-gradient(145deg, #07142f 0%, #0b1e44 52%, #101b3b 100%);
+        box-shadow: 0 24px 70px rgba(5, 15, 42, 0.28), inset 0 1px 0 rgba(255,255,255,0.08);
+        padding: 1rem;
+      }
+      #view-leaderboard::before,
+      #view-leaderboard::after {
+        content: "";
+        position: absolute;
+        z-index: -1;
+        border-radius: 999px;
+        filter: blur(2px);
+        pointer-events: none;
+      }
+      #view-leaderboard::before { width: 180px; height: 180px; top: 120px; right: -90px; background: rgba(14, 165, 233, 0.14); }
+      #view-leaderboard::after { width: 160px; height: 160px; bottom: 80px; left: -90px; background: rgba(99, 102, 241, 0.14); }
+      #view-leaderboard > header { color: #e2e8f0; }
+      #view-leaderboard > header button:first-child { color: #b8c7e6; transition: color .2s ease; }
+      #view-leaderboard > header button:first-child:hover { color: #fff; }
+      #view-leaderboard > header h1 { color: #f8fafc; letter-spacing: -.02em; }
+      #view-leaderboard > header h1 i { color: #f6c85f; filter: drop-shadow(0 0 8px rgba(246,200,95,.45)); }
+      #view-leaderboard > header button:last-child { border-color: rgba(148,163,184,.22); background: rgba(255,255,255,.08); color: #8be4e0; box-shadow: inset 0 1px 0 rgba(255,255,255,.08); }
+      #view-leaderboard > header button:last-child:hover { background: rgba(45,212,191,.16); color: #fff; }
+      #view-leaderboard > div:nth-of-type(1) { border: 1px solid rgba(148,163,184,.16); background: linear-gradient(180deg, rgba(16,42,87,.92), rgba(7,22,54,.86)); box-shadow: inset 0 1px 0 rgba(255,255,255,.06); }
+      #view-leaderboard [role="tablist"] { background: rgba(3,12,32,.62); border: 1px solid rgba(148,163,184,.12); }
+      #view-leaderboard .leaderboard-period-option { color: #9fb0d2; }
+      #view-leaderboard .leaderboard-period-option:hover { color: #fff; background: rgba(255,255,255,.06); }
+      #view-leaderboard .leaderboard-period-active { background: linear-gradient(135deg, #2dd4bf, #0ea5e9); color: #06213c !important; box-shadow: 0 6px 18px rgba(45,212,191,.26); }
+      #view-leaderboard #leaderboardState { color: #94a9cf; }
+      #view-leaderboard #leaderboardSummary > div { border: 1px solid rgba(148,163,184,.14); background: rgba(3,13,35,.6); box-shadow: inset 0 1px 0 rgba(255,255,255,.05); }
+      #view-leaderboard #leaderboardPodium { min-height: 270px; }
+      #view-leaderboard #leaderboardMe { border-color: rgba(45,212,191,.4); background: linear-gradient(135deg, rgba(13,67,83,.9), rgba(9,34,65,.92)); color: #e2e8f0; box-shadow: 0 14px 30px rgba(2,12,30,.25); }
+      #view-leaderboard > p:last-child { border-color: rgba(45,212,191,.18); background: rgba(8,35,65,.75); color: #9bd8dc; }
+      .leaderboard-podium-name { color: #f8fafc; text-shadow: 0 1px 12px rgba(0,0,0,.35); }
+      .leaderboard-podium-count { color: #9fb0d2; }
+      .leaderboard-podium-block { border: 1px solid rgba(255,255,255,.26); box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 -10px 28px rgba(0,0,0,.14); }
+      .leaderboard-podium-gold { background: linear-gradient(180deg, #ffe29a, #b98227); color: #382300; }
+      .leaderboard-podium-silver { background: linear-gradient(180deg, #e9f2ff, #7b91b4); color: #15233b; }
+      .leaderboard-podium-bronze { background: linear-gradient(180deg, #ffc78d, #a85d31); color: #35180b; }
+      .leaderboard-row { border: 1px solid rgba(148,163,184,.16); background: rgba(10,31,68,.78); box-shadow: inset 0 1px 0 rgba(255,255,255,.04); transition: transform .2s ease, border-color .2s ease, background .2s ease; }
+      .leaderboard-row:hover { transform: translateY(-2px); border-color: rgba(45,212,191,.42); background: rgba(14,49,87,.92); }
+      .leaderboard-row-rank { color: #8fa7ce; }
+      .leaderboard-row-name { color: #f1f5f9; }
+      .leaderboard-row-meta { color: #8fa7ce; }
+      .leaderboard-row-count { color: #6ee7d8; }
+      .leaderboard-row-money { color: #8fa7ce; }
+      @media (max-width: 420px) {
+        #view-leaderboard { border-radius: 1.5rem; padding: .75rem; }
+        #view-leaderboard #leaderboardPodium { min-height: 240px; gap: .15rem; }
+        .leaderboard-podium-block { font-size: 2rem; }
       }
 
       /* Input highlight styling */
@@ -1257,24 +1317,24 @@
         <!-- ==================== VIEW: LEADERBOARD PAGE ==================== -->
         <div id="view-leaderboard" class="hidden flex-col gap-4 pb-28 w-full">
           <header class="flex items-center justify-between px-1 py-1">
-            <button type="button" onclick="navigateTo('dashboard')" class="flex items-center gap-2 text-sm font-bold text-slate-700"><i class="fa-solid fa-arrow-left"></i> Kembali</button>
-            <h1 class="flex items-center gap-2 text-lg font-black text-slate-800"><i class="fa-solid fa-trophy text-amber-500"></i> Leaderboard</h1>
-            <button type="button" onclick="refreshLeaderboard()" class="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-blue-600 shadow-sm" aria-label="Perbarui leaderboard"><i class="fa-solid fa-rotate"></i></button>
+            <button type="button" onclick="navigateTo('dashboard')" class="flex items-center gap-2 text-sm font-bold"><i class="fa-solid fa-arrow-left"></i> Kembali</button>
+            <h1 class="flex items-center gap-2 text-lg font-black"><i class="fa-solid fa-trophy"></i> Leaderboard</h1>
+            <button type="button" onclick="refreshLeaderboard(true)" class="flex h-9 w-9 items-center justify-center rounded-xl border shadow-sm" aria-label="Perbarui leaderboard"><i class="fa-solid fa-rotate"></i></button>
           </header>
-          <div class="rounded-[30px] bg-gradient-to-b from-sky-100 via-blue-50 to-white p-3 shadow-inner shadow-blue-100">
-            <div class="grid grid-cols-4 gap-1 rounded-full bg-white/80 p-1 shadow-sm" role="tablist" aria-label="Periode leaderboard">
+          <div class="rounded-[30px] p-3">
+            <div class="grid grid-cols-4 gap-1 rounded-full p-1 shadow-sm" role="tablist" aria-label="Periode leaderboard">
               <button type="button" data-leaderboard-period="today" onclick="selectLeaderboardPeriod('today')" class="leaderboard-period-option rounded-full px-2 py-2.5 text-[11px] font-bold text-slate-600">Hari Ini</button>
               <button type="button" data-leaderboard-period="7d" onclick="selectLeaderboardPeriod('7d')" class="leaderboard-period-option leaderboard-period-active rounded-full px-2 py-2.5 text-[11px] font-bold text-slate-600">7 Hari</button>
               <button type="button" data-leaderboard-period="30d" onclick="selectLeaderboardPeriod('30d')" class="leaderboard-period-option rounded-full px-2 py-2.5 text-[11px] font-bold text-slate-600">30 Hari</button>
               <button type="button" data-leaderboard-period="all" onclick="selectLeaderboardPeriod('all')" class="leaderboard-period-option rounded-full px-2 py-2.5 text-[11px] font-bold text-slate-600">Sepanjang Masa</button>
             </div>
-            <p id="leaderboardState" class="mt-3 text-center text-[11px] font-semibold text-slate-500">Peringkat 7 hari terakhir</p>
+            <p id="leaderboardState" class="mt-3 text-center text-[11px] font-semibold">Peringkat 7 hari terakhir</p>
             <div id="leaderboardSummary" class="mt-3 hidden grid-cols-3 gap-2 text-center"></div>
             <div id="leaderboardPodium" class="mt-5 flex min-h-[250px] items-end justify-center gap-2"></div>
           </div>
-          <section id="leaderboardMe" class="hidden rounded-3xl border border-blue-300 bg-blue-50/80 p-4 shadow-sm"></section>
+          <section id="leaderboardMe" class="hidden rounded-3xl border p-4 shadow-sm"></section>
           <div id="leaderboardList" class="space-y-2.5"></div>
-          <p class="rounded-2xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-[11px] font-semibold leading-relaxed text-blue-700"><i class="fa-solid fa-circle-info mr-1"></i> Peringkat dihitung dari jumlah Gmail yang sudah disetujui admin pada periode terpilih, langsung dari data setoran dan diperbarui otomatis.</p>
+          <p class="rounded-2xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-[11px] font-semibold leading-relaxed text-blue-700"><i class="fa-solid fa-circle-info mr-1"></i> Peringkat dihitung dari jumlah Gmail yang sudah disetujui admin. Data diperbarui saat halaman ini dibuka, saat periode diganti, atau ketika tombol refresh ditekan.</p>
         </div>
 
         <!-- ==================== VIEW 4: STOR PAGE (image1) ==================== -->

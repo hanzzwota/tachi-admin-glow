@@ -1,31 +1,62 @@
 (() => {
+  const inFlightGets = new Map();
+  const performanceSamples = [];
+  const recordPerformance = (path, startedAt, ok, status) => {
+    performanceSamples.push({
+      path: String(path).split("?")[0],
+      method: "GET",
+      durationMs: Math.round(performance.now() - startedAt),
+      ok,
+      status,
+      at: new Date().toISOString(),
+    });
+    if (performanceSamples.length > 100) performanceSamples.shift();
+    window.tachiAdminPerformance = performanceSamples;
+  };
   // Melempar Error bila jaringan gagal, HTTP bukan 2xx, atau backend mengirim `error`.
   // Toast success hanya boleh muncul setelah `await api(...)` selesai tanpa error.
   const api = async (path, options = {}) => {
-    let response;
-    try {
-      response = await fetch(`/api/${path}`, {
-        credentials: "include",
-        ...options,
-        headers: { "content-type": "application/json", ...(options.headers || {}) },
-      });
-    } catch (cause) {
-      console.error(`[admin-api] Fetch Error /api/${path}:`, cause);
-      const error = new Error("Koneksi gagal! Periksa jaringan Anda lalu coba lagi.");
-      error.isNetworkError = true;
-      error.cause = cause;
-      throw error;
-    }
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok || data.error) {
-      const error = new Error(
-        data.error || data.message || `Permintaan gagal (HTTP ${response.status})`,
+    const method = String(options.method || "GET").toUpperCase();
+    const dedupeKey = method === "GET" ? path : "";
+    if (dedupeKey && inFlightGets.has(dedupeKey)) return inFlightGets.get(dedupeKey);
+    const startedAt = performance.now();
+    const request = (async () => {
+      let response;
+      try {
+        response = await fetch(`/api/${path}`, {
+          credentials: "include",
+          ...options,
+          headers: { "content-type": "application/json", ...(options.headers || {}) },
+        });
+      } catch (cause) {
+        if (method === "GET") recordPerformance(path, startedAt, false, 0);
+        console.error(`[admin-api] Fetch Error /api/${path}:`, cause);
+        const error = new Error("Koneksi gagal! Periksa jaringan Anda lalu coba lagi.");
+        error.isNetworkError = true;
+        error.cause = cause;
+        throw error;
+      }
+      const data = await response.json().catch(() => ({}));
+      if (method === "GET")
+        recordPerformance(path, startedAt, response.ok && !data.error, response.status);
+      if (!response.ok || data.error) {
+        const error = new Error(
+          data.error || data.message || `Permintaan gagal (HTTP ${response.status})`,
+        );
+        error.status = response.status;
+        error.data = data;
+        throw error;
+      }
+      return data;
+    })();
+    if (dedupeKey) {
+      inFlightGets.set(dedupeKey, request);
+      request.then(
+        () => inFlightGets.delete(dedupeKey),
+        () => inFlightGets.delete(dedupeKey),
       );
-      error.status = response.status;
-      error.data = data;
-      throw error;
     }
-    return data;
+    return request;
   };
   const showToast = (type, message) => window.showToast?.(type, message);
   const errorText = (error, fallback) => window.toastErrorMessage?.(error, fallback) || fallback;

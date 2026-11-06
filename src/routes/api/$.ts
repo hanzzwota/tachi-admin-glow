@@ -907,7 +907,8 @@ async function generatedGmailList(request: Request) {
 
 async function archiveGeneratedGmail(request: Request, id: string) {
   const user = await requireUser(request);
-  if (!/^[0-9a-f-]{36}$/i.test(id)) return json({ error: "Gmail tidak ditemukan" }, { status: 404 });
+  if (!/^[0-9a-f-]{36}$/i.test(id))
+    return json({ error: "Gmail tidak ditemukan" }, { status: 404 });
   let result: { outcome?: string } | null;
   try {
     result = await supabaseFetch<{ outcome?: string } | null>("rpc/delete_generated_gmail", {

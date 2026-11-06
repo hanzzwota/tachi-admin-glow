@@ -1,32 +1,65 @@
 (() => {
+  const inFlightGets = new Map();
+  const performanceSamples = [];
+  const MAX_PERFORMANCE_SAMPLES = 100;
+  const recordPerformance = (path, startedAt, ok, status) => {
+    const sample = {
+      path: String(path).split("?")[0],
+      method: "GET",
+      durationMs: Math.round(performance.now() - startedAt),
+      ok,
+      status,
+      at: new Date().toISOString(),
+    };
+    performanceSamples.push(sample);
+    if (performanceSamples.length > MAX_PERFORMANCE_SAMPLES) performanceSamples.shift();
+    window.tachiPerformance = performanceSamples;
+  };
   // Semua request ke backend. Melempar Error bila jaringan gagal, HTTP bukan 2xx,
   // atau backend mengembalikan field `error` — sehingga pemanggil hanya
   // menampilkan toast success setelah `await api(...)` benar-benar berhasil.
   const api = async (path, options = {}) => {
-    let response;
-    try {
-      response = await fetch(`/api/${path}`, {
-        credentials: "include",
-        ...options,
-        headers: { "content-type": "application/json", ...(options.headers || {}) },
-      });
-    } catch (cause) {
-      console.error(`[api] Fetch Error /api/${path}:`, cause);
-      const error = new Error("Koneksi gagal! Periksa jaringan Anda lalu coba lagi.");
-      error.isNetworkError = true;
-      error.cause = cause;
-      throw error;
-    }
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok || data.error) {
-      const error = new Error(
-        data.error || data.message || `Permintaan gagal (HTTP ${response.status})`,
+    const method = String(options.method || "GET").toUpperCase();
+    const dedupeKey = method === "GET" ? path : "";
+    if (dedupeKey && inFlightGets.has(dedupeKey)) return inFlightGets.get(dedupeKey);
+    const startedAt = performance.now();
+    const request = (async () => {
+      let response;
+      try {
+        response = await fetch(`/api/${path}`, {
+          credentials: "include",
+          ...options,
+          headers: { "content-type": "application/json", ...(options.headers || {}) },
+        });
+      } catch (cause) {
+        if (method === "GET") recordPerformance(path, startedAt, false, 0);
+        console.error(`[api] Fetch Error /api/${path}:`, cause);
+        const error = new Error("Koneksi gagal! Periksa jaringan Anda lalu coba lagi.");
+        error.isNetworkError = true;
+        error.cause = cause;
+        throw error;
+      }
+      const data = await response.json().catch(() => ({}));
+      if (method === "GET")
+        recordPerformance(path, startedAt, response.ok && !data.error, response.status);
+      if (!response.ok || data.error) {
+        const error = new Error(
+          data.error || data.message || `Permintaan gagal (HTTP ${response.status})`,
+        );
+        error.status = response.status;
+        error.data = data;
+        throw error;
+      }
+      return data;
+    })();
+    if (dedupeKey) {
+      inFlightGets.set(dedupeKey, request);
+      request.then(
+        () => inFlightGets.delete(dedupeKey),
+        () => inFlightGets.delete(dedupeKey),
       );
-      error.status = response.status;
-      error.data = data;
-      throw error;
     }
-    return data;
+    return request;
   };
   const showToast = (type, message) => window.showToast?.(type, message);
   const errorText = (error, fallback) => window.toastErrorMessage?.(error, fallback) || fallback;
@@ -783,8 +816,8 @@
         .slice(0, 1)
         .toUpperCase();
       return image
-        ? `<img src="${escapeHtml(image)}" alt="Foto ${escapeHtml(item?.username)}" class="${size} rounded-full object-cover ring-2 ring-white shadow-md" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'${size} flex items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-sm font-black text-white ring-2 ring-white shadow-md',textContent:'${escapeHtml(initials)}'}))" />`
-        : `<span class="${size} flex items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-sm font-black text-white ring-2 ring-white shadow-md">${escapeHtml(initials)}</span>`;
+        ? `<img src="${escapeHtml(image)}" alt="Foto ${escapeHtml(item?.username)}" class="${size} rounded-full object-cover ring-2 ring-teal-300/70 shadow-md" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'${size} flex items-center justify-center rounded-full bg-gradient-to-br from-teal-300 to-sky-500 text-sm font-black text-slate-950 ring-2 ring-teal-200/70 shadow-md',textContent:'${escapeHtml(initials)}'}))" />`
+        : `<span class="${size} flex items-center justify-center rounded-full bg-gradient-to-br from-teal-300 to-sky-500 text-sm font-black text-slate-950 ring-2 ring-teal-200/70 shadow-md">${escapeHtml(initials)}</span>`;
     };
     const money = (value) => `Rp${Number(value || 0).toLocaleString("id-ID")}`;
     if (stateText) stateText.textContent = `Peringkat ${periodLabel}`;
@@ -793,7 +826,7 @@
       const totals = state.leaderboardTotals;
       if (totals && rows.length) {
         const cell = (value, label) =>
-          `<div class="rounded-2xl bg-white/90 px-2 py-2.5 shadow-sm"><p class="text-base font-black text-blue-600">${Number(value || 0).toLocaleString("id-ID")}</p><p class="text-[10px] font-semibold text-slate-500">${label}</p></div>`;
+          `<div class="rounded-2xl px-2 py-2.5 shadow-sm"><p class="text-base font-black text-teal-300">${Number(value || 0).toLocaleString("id-ID")}</p><p class="text-[10px] font-semibold text-slate-400">${label}</p></div>`;
         summary.innerHTML =
           cell(totals.approved_gmails, "Total Gmail") +
           cell(totals.depositors, "Penyetor") +
@@ -807,7 +840,7 @@
     }
     if (!rows.length) {
       if (podium)
-        podium.innerHTML = `<div class="flex h-52 w-full flex-col items-center justify-center text-center text-slate-500"><i class="fa-solid fa-ranking-star text-3xl text-blue-300"></i><p class="mt-2 text-sm font-bold">Belum ada data leaderboard untuk periode ini.</p></div>`;
+        podium.innerHTML = `<div class="flex h-52 w-full flex-col items-center justify-center text-center text-slate-400"><i class="fa-solid fa-ranking-star text-3xl text-teal-300"></i><p class="mt-2 text-sm font-bold">Belum ada data leaderboard untuk periode ini.</p></div>`;
       container.innerHTML = "";
       if (meCard) meCard.classList.add("hidden");
       return;
@@ -820,24 +853,24 @@
           const rank = item.rank;
           const isWinner = rank === 1;
           const block = isWinner
-            ? "h-36 bg-slate-300/80"
+            ? "h-36 leaderboard-podium-block leaderboard-podium-gold"
             : rank === 2
-              ? "h-28 bg-gradient-to-b from-amber-300 to-yellow-100"
-              : "h-24 bg-gradient-to-b from-orange-300 to-amber-100";
-          return `<div class="flex w-1/3 flex-col items-center justify-end text-center"><div class="relative mb-2">${isWinner ? '<i class="fa-solid fa-crown absolute -top-7 left-1/2 -translate-x-1/2 text-2xl text-amber-500"></i>' : ""}${avatar(item, isWinner ? "h-20 w-20" : "h-14 w-14")}</div><p class="max-w-full truncate px-1 text-xs font-black text-slate-700">${escapeHtml(item.username)}</p><p class="text-[10px] text-slate-500">${Number(item.approved_gmails || 0).toLocaleString("id-ID")} Gmail</p><div class="mt-1 flex w-full items-center justify-center rounded-t-3xl ${block} text-4xl font-black text-white">${rank}</div></div>`;
+              ? "h-28 leaderboard-podium-block leaderboard-podium-silver"
+              : "h-24 leaderboard-podium-block leaderboard-podium-bronze";
+          return `<div class="flex w-1/3 flex-col items-center justify-end text-center"><div class="relative mb-2">${isWinner ? '<i class="fa-solid fa-crown absolute -top-7 left-1/2 -translate-x-1/2 text-2xl text-amber-300 drop-shadow-[0_0_8px_rgba(253,224,71,.55)]"></i>' : ""}${avatar(item, isWinner ? "h-20 w-20" : "h-14 w-14")}</div><p class="leaderboard-podium-name max-w-full truncate px-1 text-xs font-black">${escapeHtml(item.username)}</p><p class="leaderboard-podium-count text-[10px]">${Number(item.approved_gmails || 0).toLocaleString("id-ID")} Gmail</p><div class="mt-1 flex w-full items-center justify-center rounded-t-3xl ${block} text-4xl font-black">${rank}</div></div>`;
         })
         .join("");
     }
     const me = state.leaderboardMe;
     if (meCard && me) {
       meCard.classList.remove("hidden");
-      meCard.innerHTML = `<p class="text-xs font-bold text-blue-600">Peringkat Anda</p><div class="mt-2 flex items-center gap-3">${avatar(me, "h-12 w-12")}<div class="min-w-0 flex-1"><p class="truncate text-sm font-black text-slate-800">#${me.rank} ${escapeHtml(me.display_name || me.username)}</p><p class="text-[11px] text-slate-500">${Number(me.approved_gmails || 0).toLocaleString("id-ID")} Gmail diterima · ${Number(me.deposit_count || 0).toLocaleString("id-ID")} setoran</p></div><div class="text-right"><p class="text-[10px] font-semibold text-slate-500">Total Pendapatan</p><p class="text-base font-black text-blue-600">${money(me.earnings)}</p></div></div>`;
+      meCard.innerHTML = `<p class="text-xs font-bold text-teal-300">Peringkat Anda</p><div class="mt-2 flex items-center gap-3">${avatar(me, "h-12 w-12")}<div class="min-w-0 flex-1"><p class="truncate text-sm font-black text-slate-100">#${me.rank} ${escapeHtml(me.display_name || me.username)}</p><p class="text-[11px] text-slate-300">${Number(me.approved_gmails || 0).toLocaleString("id-ID")} Gmail diterima · ${Number(me.deposit_count || 0).toLocaleString("id-ID")} setoran</p></div><div class="text-right"><p class="text-[10px] font-semibold text-slate-300">Total Pendapatan</p><p class="text-base font-black text-teal-300">${money(me.earnings)}</p></div></div>`;
     } else if (meCard) meCard.classList.add("hidden");
     container.innerHTML = rows
       .slice(3)
       .map(
         (item) =>
-          `<article class="flex items-center gap-3 rounded-2xl border border-blue-100/80 bg-white/90 p-3.5 shadow-sm"><div class="w-8 shrink-0 text-center text-sm font-black text-slate-500">#${item.rank}</div>${avatar(item, "h-10 w-10")}<div class="min-w-0 flex-1"><p class="truncate text-sm font-extrabold text-slate-800">${escapeHtml(item.display_name || item.username)}</p><p class="truncate text-[11px] text-slate-500">@${escapeHtml(item.username)} · ${Number(item.deposit_count || 0).toLocaleString("id-ID")} setoran</p></div><div class="shrink-0 text-right"><p class="text-base font-black text-blue-600">${Number(item.approved_gmails || 0).toLocaleString("id-ID")} Gmail</p><p class="text-[10px] text-slate-400">${money(item.earnings)}</p></div></article>`,
+          `<article class="leaderboard-row flex items-center gap-3 rounded-2xl p-3.5"><div class="leaderboard-row-rank w-8 shrink-0 text-center text-sm font-black">#${item.rank}</div>${avatar(item, "h-10 w-10")}<div class="min-w-0 flex-1"><p class="leaderboard-row-name truncate text-sm font-extrabold">${escapeHtml(item.display_name || item.username)}</p><p class="leaderboard-row-meta truncate text-[11px]">@${escapeHtml(item.username)} · ${Number(item.deposit_count || 0).toLocaleString("id-ID")} setoran</p></div><div class="shrink-0 text-right"><p class="leaderboard-row-count text-base font-black">${Number(item.approved_gmails || 0).toLocaleString("id-ID")} Gmail</p><p class="leaderboard-row-money text-[10px]">${money(item.earnings)}</p></div></article>`,
       )
       .join("");
   };
@@ -855,7 +888,7 @@
     window.refreshLeaderboard?.();
   };
   let leaderboardRequestId = 0;
-  window.refreshLeaderboard = async () => {
+  window.refreshLeaderboard = async (force = false) => {
     const container = document.getElementById("leaderboardList");
     const requestedPeriod = activeLeaderboardPeriod;
     const requestId = ++leaderboardRequestId;
@@ -875,12 +908,6 @@
       if (stateText) stateText.textContent = "Belum tersedia";
     }
   };
-  // Sinkron otomatis dengan data setoran selama halaman leaderboard terbuka.
-  window.setInterval(() => {
-    const view = document.getElementById("view-leaderboard");
-    if (document.visibilityState === "visible" && view && !view.classList.contains("hidden"))
-      window.refreshLeaderboard?.();
-  }, 30000);
   window.handleProfileAvatarChange = (input) => {
     const file = input?.files?.[0];
     if (!file) return;
@@ -916,73 +943,82 @@
   window.renderRiwayat = renderHistory;
   window.renderRiwayatFromDeposits = (deposits, filter = window.activeRiwayatFilter || "semua") =>
     renderHistory(filter, deposits);
+  let syncInFlight = null;
   async function syncAppData() {
-    const { user } = await api("auth/me");
-    if (!user) return null;
-    const previousUser = state.user;
-    const incomingWallet = user.wallet || {};
-    const previousWallet = previousUser?.wallet || {};
-    const wallet = incomingWallet.number && incomingWallet.name ? incomingWallet : previousWallet;
-    state.user = {
-      ...previousUser,
-      ...user,
-      username: user.username || previousUser?.username || "",
-      displayName: displayNameFor(user),
-      wallet,
-    };
-    applyUserDom();
-    const [settingsResult, depositsResult, withdrawalsResult, generatedGmailsResult] =
-      await Promise.allSettled([
-        api("settings"),
-        api("deposits"),
-        api("withdrawals"),
-        api("stock/generated"),
-      ]);
-    if (settingsResult.status === "fulfilled") {
-      const settings = settingsResult.value.settings || {};
-      state.settings = {
-        ...settings,
-        payment_fees: normalizePaymentFees(settings.payment_fees, Number(settings.fee || 0)),
+    if (syncInFlight) return syncInFlight;
+    syncInFlight = (async () => {
+      const { user } = await api("auth/me");
+      if (!user) return null;
+      const previousUser = state.user;
+      const incomingWallet = user.wallet || {};
+      const previousWallet = previousUser?.wallet || {};
+      const wallet = incomingWallet.number && incomingWallet.name ? incomingWallet : previousWallet;
+      state.user = {
+        ...previousUser,
+        ...user,
+        username: user.username || previousUser?.username || "",
+        displayName: displayNameFor(user),
+        wallet,
       };
-    } else {
-      console.warn("Gagal memuat pengaturan aplikasi:", settingsResult.reason);
+      applyUserDom();
+      const [settingsResult, depositsResult, withdrawalsResult, generatedGmailsResult] =
+        await Promise.allSettled([
+          api("settings"),
+          api("deposits"),
+          api("withdrawals"),
+          api("stock/generated"),
+        ]);
+      if (settingsResult.status === "fulfilled") {
+        const settings = settingsResult.value.settings || {};
+        state.settings = {
+          ...settings,
+          payment_fees: normalizePaymentFees(settings.payment_fees, Number(settings.fee || 0)),
+        };
+      } else {
+        console.warn("Gagal memuat pengaturan aplikasi:", settingsResult.reason);
+      }
+      if (depositsResult.status === "fulfilled") {
+        state.deposits = Array.isArray(depositsResult.value.deposits)
+          ? depositsResult.value.deposits
+          : [];
+        renderHistory();
+        const detailId = new URLSearchParams(location.search).get("nomortrx");
+        if (new URLSearchParams(location.search).get("view") === "riwayat-detail" && detailId)
+          renderHistoryDetail(detailId);
+      } else {
+        console.warn("Gagal memuat riwayat setoran:", depositsResult.reason);
+      }
+      if (withdrawalsResult.status === "fulfilled") {
+        state.withdrawals = Array.isArray(withdrawalsResult.value.withdrawals)
+          ? withdrawalsResult.value.withdrawals
+          : [];
+        renderWithdrawals();
+      } else {
+        console.warn("Gagal memuat riwayat penarikan:", withdrawalsResult.reason);
+      }
+      if (generatedGmailsResult.status === "fulfilled") {
+        replaceGeneratedStockGmails(generatedGmailsResult.value.gmails);
+        clearGeneratedGmailError();
+      } else {
+        console.warn("Gagal memuat Gmail hasil generate:", generatedGmailsResult.reason);
+        const detail = errorText(generatedGmailsResult.reason, "");
+        const message = detail.includes("Gmail stok belum siap")
+          ? detail
+          : "Gagal mengambil Gmail stok. Silahkan Hubungi Admin.";
+        showGeneratedGmailError(message);
+        if (!generatedGmailLoadErrorActive) showToast("error", message);
+        generatedGmailLoadErrorActive = true;
+      }
+      window.maybeShowInformationOverlay?.();
+      applyUserDom();
+      window.updateSlide?.();
+      return state;
+    })();
+    try {
+      return await syncInFlight;
+    } finally {
+      syncInFlight = null;
     }
-    if (depositsResult.status === "fulfilled") {
-      state.deposits = Array.isArray(depositsResult.value.deposits)
-        ? depositsResult.value.deposits
-        : [];
-      renderHistory();
-      const detailId = new URLSearchParams(location.search).get("nomortrx");
-      if (new URLSearchParams(location.search).get("view") === "riwayat-detail" && detailId)
-        renderHistoryDetail(detailId);
-    } else {
-      console.warn("Gagal memuat riwayat setoran:", depositsResult.reason);
-    }
-    if (withdrawalsResult.status === "fulfilled") {
-      state.withdrawals = Array.isArray(withdrawalsResult.value.withdrawals)
-        ? withdrawalsResult.value.withdrawals
-        : [];
-      renderWithdrawals();
-    } else {
-      console.warn("Gagal memuat riwayat penarikan:", withdrawalsResult.reason);
-    }
-    if (generatedGmailsResult.status === "fulfilled") {
-      replaceGeneratedStockGmails(generatedGmailsResult.value.gmails);
-      clearGeneratedGmailError();
-    } else {
-      console.warn("Gagal memuat Gmail hasil generate:", generatedGmailsResult.reason);
-      const detail = errorText(generatedGmailsResult.reason, "");
-      const message = detail.includes("Gmail stok belum siap")
-        ? detail
-        : "Gagal mengambil Gmail stok. Silahkan Hubungi Admin.";
-      showGeneratedGmailError(message);
-      if (!generatedGmailLoadErrorActive) showToast("error", message);
-      generatedGmailLoadErrorActive = true;
-    }
-    window.maybeShowInformationOverlay?.();
-    applyUserDom();
-    window.updateSlide?.();
-    return state;
   }
   window.handleAuthSubmit = async (event) => {
     event.preventDefault();
@@ -1559,9 +1595,7 @@
       if (!result || result.ok !== true) throw new Error("Server tidak mengonfirmasi penghapusan.");
       showToast(
         "success",
-        result.outcome === "returned"
-          ? "Gmail dikembalikan ke stok"
-          : "Berhasil Menghapus Gmail",
+        result.outcome === "returned" ? "Gmail dikembalikan ke stok" : "Berhasil Menghapus Gmail",
       );
     } catch (error) {
       showToast("error", `Gagal menghapus Gmail: ${errorText(error, "coba lagi nanti.")}`);
