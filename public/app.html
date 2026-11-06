@@ -32,6 +32,10 @@
 
       #appModal:not(.hidden) { display: flex; align-items: center; justify-content: center; }
       #appModal #informationModalPanel { margin: auto; max-height: calc(100dvh - 2rem); overflow-y: auto; }
+      #appModal.withdraw-confirmation-modal {
+        background: rgba(219, 234, 254, 0.78);
+        backdrop-filter: blur(8px);
+      }
       #appModal.information-modal #informationModalPanel {
         max-width: 410px;
         border: 1px solid rgba(255, 255, 255, 0.08);
@@ -2674,6 +2678,8 @@
         document.getElementById("appModal").classList.remove("information-modal");
         document.getElementById("informationModalIcon")?.classList.add("hidden");
         document.getElementById("informationModalSubtitle")?.classList.add("hidden");
+        document.getElementById("informationModalFooter")?.classList.remove("hidden");
+        document.getElementById("appModal").classList.remove("withdraw-confirmation-modal");
         document.getElementById("modalTitle").innerText = title;
         document.getElementById("modalBody").innerText = body;
         document.getElementById("appModal").classList.remove("hidden");
@@ -2684,6 +2690,8 @@
         document.getElementById("appModal").classList.remove("information-modal");
         document.getElementById("informationModalIcon")?.classList.add("hidden");
         document.getElementById("informationModalSubtitle")?.classList.add("hidden");
+        document.getElementById("informationModalFooter")?.classList.remove("hidden");
+        document.getElementById("appModal").classList.remove("withdraw-confirmation-modal");
         informationExpanded = false;
         document.getElementById("appModal").classList.add("hidden");
       }

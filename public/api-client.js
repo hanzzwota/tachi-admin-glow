@@ -1759,19 +1759,48 @@
     const modalTitle = document.getElementById("modalTitle");
     const modal = document.getElementById("appModal");
     if (!modalBody || !modalTitle || !modal) return;
-    modalTitle.textContent = "Konfirmasi Tarik";
+    modalTitle.textContent = "Konfirmasi Penarikan";
+    modal.classList.add("withdraw-confirmation-modal");
+    document.getElementById("informationModalFooter")?.classList.add("hidden");
     const netAmount = amount - fee;
-    modalBody.innerHTML = `<div class="space-y-2 text-xs"><div class="flex justify-between"><span>Metode payment</span><b>${escapeHtml(bank)}</b></div><div class="flex justify-between"><span>Nomor payment</span><b>${escapeHtml(number)}</b></div><div class="flex justify-between"><span>Nama pemilik</span><b>${escapeHtml(wallet.name)}</b></div><div class="flex justify-between"><span>Nominal penarikan</span><b>${format(amount)}</b></div><div class="flex justify-between"><span>Fee payment</span><b>−${format(fee)}</b></div><div class="flex justify-between border-t pt-2"><span>Total saldo terpotong</span><b>${format(amount)}</b></div><div class="flex justify-between"><span>Saldo bersih diterima</span><b>${format(netAmount)}</b></div><div class="rounded-xl bg-slate-100 p-3 text-slate-600">Pastikan nomor payment sudah benar. Jika Nomor Salah/Tidak Sesuai Dengan Nomor Payment Anda Admin Tidak Berhak Bertanggung Jawab.</div><div class="flex gap-2 pt-2"><button type="button" class="flex-1 rounded-xl border border-slate-200 px-3 py-2 font-bold" onclick="closeModal()">Kembali/Edit Nomor</button><button type="button" class="flex-1 rounded-xl bg-blue-600 px-3 py-2 font-bold text-white" id="confirmWithdrawalButton">Konfirmasi Tarik</button></div></div>`;
+    modalBody.innerHTML = `<div class="space-y-3 text-[11px] text-slate-700">
+      <p class="text-xs leading-relaxed text-slate-500">Harap konfirmasi detail penarikan berikut:</p>
+      <div class="divide-y divide-sky-100 overflow-hidden rounded-2xl border border-sky-100 bg-white">
+        <div class="px-3 py-2"><p class="text-[10px] text-slate-400">Payment dari</p><b class="block pt-0.5">${escapeHtml(bank)} · ${escapeHtml(number)}</b></div>
+        <div class="px-3 py-2"><p class="text-[10px] text-slate-400">Atas nama</p><b class="block pt-0.5">${escapeHtml(wallet.name)}</b></div>
+        <div class="px-3 py-2"><p class="text-[10px] text-slate-400">Nominal penarikan</p><b class="block pt-0.5 text-slate-900">${format(amount)}</b></div>
+        <div class="px-3 py-2"><p class="text-[10px] text-slate-400">Fee payment</p><b class="block pt-0.5">−${format(fee)}</b></div>
+        <div class="bg-blue-50/80 px-3 py-2"><p class="text-[10px] text-blue-600">Total saldo terpotong</p><b class="block pt-0.5 text-blue-900">${format(amount)}</b></div>
+        <div class="px-3 py-2"><p class="text-[10px] text-slate-400">Saldo bersih diterima</p><b class="block pt-0.5">${format(netAmount)}</b></div>
+      </div>
+      <label class="flex items-start gap-2 rounded-xl border border-blue-100 bg-blue-50/70 p-3 text-[10px] leading-relaxed text-slate-600">
+        <input id="confirmWithdrawalAgreement" type="checkbox" class="mt-0.5 accent-blue-600" />
+        <span>Saya setuju saldo saya dipotong ${format(amount)} dan data payment di atas sudah benar.</span>
+      </label>
+      <div class="space-y-2 pt-1">
+        <button type="button" class="w-full rounded-xl bg-blue-500 px-3 py-2.5 font-bold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-50" id="confirmWithdrawalButton" disabled>Konfirmasi</button>
+        <button type="button" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 font-bold text-slate-700" onclick="closeModal()">Batal</button>
+      </div>
+    </div>`;
     modal.classList.remove("hidden");
-    document.getElementById("confirmWithdrawalButton")?.addEventListener("click", async () => {
+    const agreement = document.getElementById("confirmWithdrawalAgreement");
+    const confirmButton = document.getElementById("confirmWithdrawalButton");
+    agreement?.addEventListener("change", () => {
+      if (confirmButton) confirmButton.disabled = !agreement.checked;
+    });
+    confirmButton?.addEventListener("click", async () => {
       const button = document.getElementById("confirmWithdrawalButton");
       if (button) button.disabled = true;
       closeModal();
       try {
-        await api("withdrawals", {
+        const result = await api("withdrawals", {
           method: "POST",
           body: JSON.stringify({ amount, confirmWallet: true }),
         });
+        if (result.user) {
+          state.user = { ...state.user, ...result.user };
+          applyUserDom();
+        }
       } catch (error) {
         showToast("error", `Penarikan saldo gagal: ${errorText(error, "coba lagi nanti.")}`);
         if (button) button.disabled = false;

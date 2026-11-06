@@ -1105,7 +1105,11 @@ async function createWithdrawal(request: Request) {
       throw fallbackError;
     }
   }
-  return json({ withdrawal: rows[0] }, { status: 201 });
+  const freshUser = await getCurrentUser(request);
+  return json(
+    { withdrawal: rows[0], user: freshUser ? publicUser(freshUser) : undefined },
+    { status: 201 },
+  );
 }
 
 async function processWithdrawal(request: Request, id: string, status: "selesai" | "ditolak") {
