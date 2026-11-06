@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export function StaticPageFrame({
   view,
@@ -10,6 +10,21 @@ export function StaticPageFrame({
   page?: string;
 }) {
   const [frameLoaded, setFrameLoaded] = useState(false);
+  const frameRef = useRef<HTMLIFrameElement>(null);
+  useEffect(() => {
+    const handleReady = (event: MessageEvent) => {
+      if (
+        page === "app.html" &&
+        event.origin === window.location.origin &&
+        event.source === frameRef.current?.contentWindow &&
+        event.data?.type === "tachi-app-ready"
+      ) {
+        setFrameLoaded(true);
+      }
+    };
+    window.addEventListener("message", handleReady);
+    return () => window.removeEventListener("message", handleReady);
+  }, [page]);
   return (
     <div className="relative h-dvh w-full">
       {!frameLoaded && (
@@ -23,9 +38,12 @@ export function StaticPageFrame({
         </div>
       )}
       <iframe
+        ref={frameRef}
         src={`/${page}?${page === "app.html" ? `view=${encodeURIComponent(view)}` : ""}${query ? `${page === "app.html" ? "&" : ""}${query}` : ""}`}
         title={`tachi69gmail ${view}`}
-        onLoad={() => setFrameLoaded(true)}
+        onLoad={() => {
+          if (page !== "app.html") setFrameLoaded(true);
+        }}
         className="block h-full w-full border-0"
       />
     </div>
