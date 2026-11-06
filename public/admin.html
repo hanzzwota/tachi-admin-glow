@@ -817,7 +817,13 @@
           }, 0);
         const harusDibayar = db.withdrawals
           .filter((w) => w.status === "pending")
-          .reduce((total, w) => total + finite(w.amount) + finite(w.fee), 0);
+          .reduce(
+            (total, w) =>
+              total +
+              finite(w.amount) -
+              (w.fee_deducted_from_amount === true ? finite(w.fee) : 0),
+            0,
+          );
         const card = (i, c, l, v) =>
           `<div class="glass rounded-2xl p-4"><div class="w-9 h-9 rounded-xl flex items-center justify-center ${c} mb-2"><i class="fa ${i}"></i></div><div class="text-xs text-slate-500">${l}</div><div class="text-lg font-extrabold">${v}</div></div>`;
         stats.innerHTML =
