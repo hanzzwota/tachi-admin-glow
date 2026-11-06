@@ -1798,9 +1798,7 @@
     }
   };
   window.addEventListener("DOMContentLoaded", async () => {
-    const loadingScreen = document.getElementById("appLoadingScreen");
     const finishInitialLoad = () => {
-      loadingScreen?.classList.add("hidden");
       if (window.parent !== window)
         window.parent.postMessage({ type: "tachi-app-ready" }, window.location.origin);
     };
