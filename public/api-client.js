@@ -1050,11 +1050,13 @@
       if (resendAvailableAt <= Date.now()) clearInterval(resendTimer);
     }, 1000);
   };
-  const openRegisterOtp = (emailHint, resendAvailableAt) => {
+  const openRegisterOtp = (emailHint, resendAvailableAt, restored = false) => {
     const overlay = document.getElementById("register-otp-overlay");
     const hint = document.getElementById("register-otp-hint");
     if (hint)
-      hint.textContent = `Kode 6 digit dikirim ke ${emailHint || "Gmail kamu"}. Cek juga folder Spam.`;
+      hint.textContent = restored
+        ? "Masukan Kode Yang Sudah Di Kirim Tadi"
+        : `Kode 6 digit dikirim ke ${emailHint || "Gmail kamu"}. Cek juga folder Spam.`;
     otpBoxes().forEach((box) => (box.value = ""));
     overlay?.classList.remove("hidden");
     overlay?.classList.add("flex");
@@ -1070,7 +1072,7 @@
       }
       pendingRegistrationId = pending.registrationId;
       lastRegisterPayload = null;
-      openRegisterOtp(pending.emailHint, Number(pending.resendAvailableAt) || Date.now());
+      openRegisterOtp(pending.emailHint, Number(pending.resendAvailableAt) || Date.now(), true);
     } catch {
       clearRegistrationState();
     }

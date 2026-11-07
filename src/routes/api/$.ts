@@ -24,6 +24,7 @@ const booleanValue = (value: unknown, fallback = false) => {
 };
 const paymentMethods = ["DANA", "OVO", "GoPay", "ShopeePay", "BCA", "BRI", "Mandiri"];
 const paymentModes = ["all", "dana_only"] as const;
+const OTP_COOLDOWN_MS = 3 * 60 * 1000;
 const paymentKey = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, "");
 function canonicalPaymentFees(value: unknown, fallback: number) {
   const source = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
@@ -161,6 +162,13 @@ function maskEmail(email: string) {
   return `${(local ?? "").slice(0, 1)}***@${domain ?? ""}`;
 }
 
+function otpCooldownMessage(remainingMs: number) {
+  const remainingSeconds = Math.max(1, Math.ceil(remainingMs / 1000));
+  const minutes = Math.floor(remainingSeconds / 60);
+  const seconds = String(remainingSeconds % 60).padStart(2, "0");
+  return `Anda Baru Saja Mengirim OTP,Tunggu ${minutes}:${seconds} Lagi`;
+}
+
 async function otpDigest(registrationId: string, code: string) {
   const secret =
     process.env["SUPABASE_SECRET_KEY"] ??
@@ -234,13 +242,19 @@ async function resendRegistrationOtp(request: Request) {
   if (!/^[0-9a-f-]{36}$/i.test(registrationId))
     return json({ error: "Pendaftaran OTP tidak valid" }, { status: 400 });
   const rows = await supabaseFetch<Record<string, unknown>[]>(
-    `registration_otps?select=registration_id,username,email,display_name,password_hash,password_salt,expires_at&registration_id=eq.${encodeURIComponent(registrationId)}&limit=1`,
+    `registration_otps?select=registration_id,username,email,display_name,password_hash,password_salt,expires_at,created_at&registration_id=eq.${encodeURIComponent(registrationId)}&limit=1`,
   );
   const pending = rows[0];
   if (!pending || Date.parse(String(pending["expires_at"])) <= Date.now())
     return json(
       { error: "Sesi pendaftaran sudah kedaluwarsa. Silakan daftar ulang." },
       { status: 410 },
+    );
+  const lastSentAt = Date.parse(String(pending["created_at"]));
+  if (Number.isFinite(lastSentAt) && Date.now() - lastSentAt < OTP_COOLDOWN_MS)
+    return json(
+      { error: otpCooldownMessage(OTP_COOLDOWN_MS - (Date.now() - lastSentAt)) },
+      { status: 429 },
     );
   await sendRegistrationOtp({
     registration_id: registrationId,
@@ -387,6 +401,15 @@ async function register(request: Request) {
   ]);
   if (existingUsername.length) return json({ error: "Username sudah dipakai" }, { status: 409 });
   if (existingEmail.length) return json({ error: "Email sudah dipakai" }, { status: 409 });
+  const pendingRows = await supabaseFetch<Record<string, unknown>[]>(
+    `registration_otps?select=created_at&email=ilike.${encodeURIComponent(email)}&order=created_at.desc&limit=1`,
+  );
+  const lastSentAt = Date.parse(String(pendingRows[0]?.["created_at"]));
+  if (Number.isFinite(lastSentAt) && Date.now() - lastSentAt < OTP_COOLDOWN_MS)
+    return json(
+      { error: otpCooldownMessage(OTP_COOLDOWN_MS - (Date.now() - lastSentAt)) },
+      { status: 429 },
+    );
   await supabaseFetch(
     `registration_otps?expires_at=lt.${encodeURIComponent(new Date().toISOString())}`,
     {
