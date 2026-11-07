@@ -49,8 +49,6 @@ Semua session memakai cookie `HttpOnly; SameSite=None; Secure`, dan semua data a
 
 Sebelum merilis versi aplikasi yang memakai harga per mode, terapkan migrasi `supabase/migrations/20261104100000_pw_captcha_rates.sql` ke database Supabase melalui prosedur rilis yang berwenang. Migrasi menambah `app_settings.pw_rate` dan `app_settings.captcha_rate`, masing-masing diinisialisasi dari nilai `rate` yang lama. Dashboard admin menjadi sumber konfigurasi; endpoint setoran memilih harga di server dan menyimpan snapshot pada setiap transaksi.
 
-## Login OTP email
+## Akun
 
-Terapkan migrasi `supabase/migrations/20261107130000_email_registration_otp.sql`. Tambahkan secret server `RESEND_API_KEY` dan `AUTH_EMAIL_FROM` (alamat pengirim/domain yang sudah diverifikasi di Resend). Pendaftaran baru wajib mengisi email unik. OTP 6 digit dikirim ke email saat registrasi dan akun baru dibuat setelah OTP terverifikasi; OTP berlaku 10 menit (maksimal 5 percobaan). Login tidak meminta OTP. User dapat mengganti password dari menu profil, dan admin dapat menetapkan password pilihan saat reset di pengaturan user.
-
-Akun lama tetap dapat login seperti sebelumnya; OTP hanya diterapkan pada pendaftaran baru. Jangan masukkan nomor WhatsApp ke kolom `profiles.email`.
+User dapat mengganti kata sandi dari profil, dan admin dapat menetapkan kata sandi pilihan saat reset akun. Pengiriman OTP pendaftaran dikelola melalui konfigurasi aplikasi Lovable; jangan menambahkan kredensial provider email ke repository.
