@@ -1023,6 +1023,7 @@
   let pendingRegistrationId = "";
   let lastRegisterPayload = null;
   let resendTimer = null;
+  let resendAvailableAt = 0;
   const RESEND_COOLDOWN_SECONDS = 180;
   const REGISTRATION_STATE_KEY = "tachi_pending_registration";
   const otpBoxes = () => [...document.querySelectorAll("#register-otp-boxes .otp-box")];
@@ -1033,15 +1034,22 @@
     );
   };
   const clearRegistrationState = () => sessionStorage.removeItem(REGISTRATION_STATE_KEY);
-  const startResendCooldown = (resendAvailableAt = Date.now() + RESEND_COOLDOWN_SECONDS * 1000) => {
+  const cooldownMessage = () => {
+    const remainingSeconds = Math.max(1, Math.ceil((resendAvailableAt - Date.now()) / 1000));
+    const minutes = Math.floor(remainingSeconds / 60);
+    const seconds = String(remainingSeconds % 60).padStart(2, "0");
+    return `Anda Baru Saja Mengirim OTP,Tunggu ${minutes}:${seconds} Lagi`;
+  };
+  const startResendCooldown = (availableAt = Date.now() + RESEND_COOLDOWN_SECONDS * 1000) => {
     const button = document.getElementById("register-otp-resend");
     if (!button) return;
+    resendAvailableAt = availableAt;
     clearInterval(resendTimer);
     const render = () => {
       const remaining = Math.max(0, Math.ceil((resendAvailableAt - Date.now()) / 1000));
       const m = Math.floor(remaining / 60);
       const s = String(remaining % 60).padStart(2, "0");
-      button.disabled = remaining > 0;
+      button.disabled = false;
       button.textContent = remaining > 0 ? `Kirim ulang (${m}:${s})` : "Kirim ulang";
     };
     render();
@@ -1093,7 +1101,12 @@
   };
   window.resendRegisterOtp = async () => {
     const button = document.getElementById("register-otp-resend");
-    if (!pendingRegistrationId || button?.disabled) return;
+    if (!pendingRegistrationId) return;
+    if (resendAvailableAt > Date.now()) {
+      showToast("error", cooldownMessage());
+      return;
+    }
+    if (button?.disabled) return;
     if (button) {
       button.disabled = true;
       button.textContent = "Mengirim...";
