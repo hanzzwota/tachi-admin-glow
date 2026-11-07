@@ -1021,6 +1021,104 @@
     }
   }
   let pendingRegistrationId = "";
+  let lastRegisterPayload = null;
+  let resendTimer = null;
+  const RESEND_COOLDOWN_SECONDS = 180;
+  const otpBoxes = () => [...document.querySelectorAll("#register-otp-boxes .otp-box")];
+  const startResendCooldown = () => {
+    const button = document.getElementById("register-otp-resend");
+    if (!button) return;
+    let remaining = RESEND_COOLDOWN_SECONDS;
+    clearInterval(resendTimer);
+    const render = () => {
+      const m = Math.floor(remaining / 60);
+      const s = String(remaining % 60).padStart(2, "0");
+      button.disabled = remaining > 0;
+      button.textContent = remaining > 0 ? `Kirim ulang (${m}:${s})` : "Kirim ulang";
+    };
+    render();
+    resendTimer = setInterval(() => {
+      remaining -= 1;
+      render();
+      if (remaining <= 0) clearInterval(resendTimer);
+    }, 1000);
+  };
+  const openRegisterOtp = (emailHint) => {
+    const overlay = document.getElementById("register-otp-overlay");
+    const hint = document.getElementById("register-otp-hint");
+    if (hint)
+      hint.textContent = `Kode 6 digit dikirim ke ${emailHint || "Gmail kamu"}. Cek juga folder Spam.`;
+    otpBoxes().forEach((box) => (box.value = ""));
+    overlay?.classList.remove("hidden");
+    overlay?.classList.add("flex");
+    startResendCooldown();
+    setTimeout(() => otpBoxes()[0]?.focus(), 50);
+  };
+  window.closeRegisterOtp = (keepState) => {
+    const overlay = document.getElementById("register-otp-overlay");
+    overlay?.classList.add("hidden");
+    overlay?.classList.remove("flex");
+    clearInterval(resendTimer);
+    if (!keepState) pendingRegistrationId = "";
+  };
+  window.verifyRegisterOtp = () => {
+    document.querySelector("#view-register form")?.requestSubmit();
+  };
+  window.resendRegisterOtp = async () => {
+    const button = document.getElementById("register-otp-resend");
+    if (!lastRegisterPayload || button?.disabled) return;
+    if (button) {
+      button.disabled = true;
+      button.textContent = "Mengirim...";
+    }
+    try {
+      const result = await api("auth/register", {
+        method: "POST",
+        body: JSON.stringify(lastRegisterPayload),
+      });
+      if (result?.registrationId) pendingRegistrationId = result.registrationId;
+      otpBoxes().forEach((box) => (box.value = ""));
+      showToast("success", "Kode baru sudah dikirim ulang ke Gmail kamu.");
+      startResendCooldown();
+    } catch (error) {
+      showToast("error", error.message || "Gagal mengirim ulang kode. Coba lagi.");
+      if (button) {
+        button.disabled = false;
+        button.textContent = "Kirim ulang";
+      }
+    }
+  };
+  document.addEventListener("input", (event) => {
+    const box = event.target;
+    if (!box.classList?.contains("otp-box")) return;
+    const boxes = otpBoxes();
+    const digits = box.value.replace(/\D/g, "");
+    if (digits.length > 1) {
+      const start = boxes.indexOf(box);
+      digits.split("").slice(0, 6 - start).forEach((d, i) => (boxes[start + i].value = d));
+      boxes[Math.min(start + digits.length, 5)]?.focus();
+    } else {
+      box.value = digits;
+      if (digits) boxes[boxes.indexOf(box) + 1]?.focus();
+    }
+    if (boxes.every((b) => b.value)) window.verifyRegisterOtp();
+  });
+  document.addEventListener("keydown", (event) => {
+    const box = event.target;
+    if (!box.classList?.contains("otp-box") || event.key !== "Backspace" || box.value) return;
+    otpBoxes()[otpBoxes().indexOf(box) - 1]?.focus();
+  });
+  document.addEventListener("paste", (event) => {
+    const box = event.target;
+    if (!box.classList?.contains("otp-box")) return;
+    const digits = (event.clipboardData?.getData("text") || "").replace(/\D/g, "").slice(0, 6);
+    if (!digits) return;
+    event.preventDefault();
+    const boxes = otpBoxes();
+    digits.split("").forEach((d, i) => boxes[i] && (boxes[i].value = d));
+    boxes[Math.min(digits.length, 5)]?.focus();
+    if (digits.length === 6) window.verifyRegisterOtp();
+  });
   window.handleAuthSubmit = async (event) => {
     event.preventDefault();
     const fields = [...event.target.querySelectorAll("input")];
@@ -1030,7 +1128,9 @@
       ? otpStep
         ? {
             registrationId: pendingRegistrationId,
-            code: document.getElementById("register-otp-code")?.value.trim() || "",
+            code: [...document.querySelectorAll("#register-otp-boxes .otp-box")]
+              .map((box) => box.value)
+              .join(""),
           }
         : {
             displayName: fields[0].value.trim(),
@@ -1071,18 +1171,9 @@
       );
       if (isRegister && !otpStep && result?.otpRequired) {
         pendingRegistrationId = result.registrationId;
-        const otpStepEl = document.getElementById("register-otp-step");
-        otpStepEl?.classList.remove("hidden");
-        otpStepEl?.classList.add("flex");
-        const hint = document.getElementById("register-otp-hint");
-        if (hint)
-          hint.textContent = `Kode OTP dikirim ke ${result.emailHint}. Kode berlaku 10 menit.`;
-        const button = event.target.querySelector('button[type="submit"] span');
-        if (button) button.textContent = "Verifikasi & Daftar";
-        showToast(
-          "success",
-          "Kode verifikasi dikirim ke email. Masukkan kodenya untuk menyelesaikan pendaftaran.",
-        );
+        lastRegisterPayload = payload;
+        openRegisterOtp(result.emailHint);
+        showToast("success", "Kode verifikasi dikirim ke Gmail kamu.");
         return;
       }
       if (!result || !result.user || !result.user.id) {
@@ -1095,7 +1186,8 @@
         return;
       }
       pendingRegistrationId = "";
-      document.getElementById("register-otp-step")?.classList.add("hidden");
+      lastRegisterPayload = null;
+      window.closeRegisterOtp?.(true);
       showToast(
         "success",
         isRegister
