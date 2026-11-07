@@ -1,0 +1,3 @@
+-- Compatibility marker for the migration already applied on Supabase.
+-- The final SECURITY DEFINER and EXECUTE grants are represented by the local
+-- 20261105120000_leaderboard_stats.sql migration; keep this version for history parity.

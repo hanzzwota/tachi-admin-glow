@@ -1,0 +1,3 @@
+-- Compatibility marker for the migration already applied on Supabase.
+-- The leaderboard schema is represented by the local 20261105120000_leaderboard_stats.sql
+-- migration; keep this version so local and remote migration histories stay aligned.
