@@ -925,12 +925,13 @@
             </div>
 
             <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">Email atau WhatsApp</label>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Email (untuk verifikasi pendaftaran)</label>
               <div class="custom-input rounded-xl px-3.5 py-2.5 flex items-center gap-3">
                 <i class="fa-solid fa-mobile-screen text-blue-500 text-sm"></i>
                 <input
-                  type="text"
-                  placeholder="email@gmail.com atau 08xxxxxxxxxx"
+                  type="email"
+                  placeholder="nama@email.com"
+                  autocomplete="email"
                   required
                   class="bg-transparent text-xs text-slate-800 placeholder-slate-400 focus:outline-none w-full font-medium"
                 />
@@ -972,6 +973,14 @@
               </div>
             </div>
 
+            <div id="register-otp-step" class="hidden flex-col gap-2">
+              <label class="block text-xs font-bold text-slate-700">Kode OTP email</label>
+              <p id="register-otp-hint" class="text-xs text-slate-500">Kode 6 digit berlaku 10 menit.</p>
+              <div class="custom-input rounded-xl px-3.5 py-2.5 flex items-center gap-3">
+                <i class="fa-solid fa-envelope text-blue-500 text-sm"></i>
+                <input id="register-otp-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" class="bg-transparent text-xs text-slate-800 placeholder-slate-400 focus:outline-none w-full font-medium" />
+              </div>
+            </div>
             <button
               type="submit"
               class="btn-glossy w-full text-white font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-2 mt-2 active:scale-98 transition-transform"

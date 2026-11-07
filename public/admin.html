@@ -1134,19 +1134,26 @@
         }
       }
       async function resetPw(id, n) {
-        if (!confirm(`Buat password baru untuk ${n}? Password lama tidak berlaku lagi.`)) return;
-        let np;
-        try {
-          np = await window.resetUserPassword(id);
-        } catch (error) {
-          showToast("error", `Gagal reset password: ${error?.message || "coba lagi nanti."}`);
-          return;
-        }
         openModal(
-          "Password Direset",
-          `<p class="text-sm">Password baru untuk <b>${esc(n)}</b>:</p><div class="flex gap-2 mt-2"><input readonly value="${esc(np)}" class="inp font-mono"><button onclick="copy('${esc(np)}')" class="btn-p px-4 rounded-xl"><i class="fa fa-copy"></i></button></div><p class="text-xs text-slate-500 mt-2">Berikan password ini ke user. User dapat login dengan password ini.</p>`,
+          `Atur password baru ${n}`,
+          `<label class="text-sm font-semibold">Password baru (minimal 6 karakter)</label><input id="reset-password-input" type="password" minlength="6" maxlength="128" class="inp mt-2" placeholder="Masukkan password pilihan"><label class="text-sm font-semibold mt-3 block">Ulangi password baru</label><input id="reset-password-confirm" type="password" minlength="6" maxlength="128" class="inp mt-2" placeholder="Ulangi password pilihan"><button onclick="saveResetPw('${esc(id)}','${esc(n)}')" class="btn-p w-full py-3 rounded-xl mt-4 font-bold">Simpan password baru</button>`,
         );
       }
+      async function saveResetPw(id, n) {
+        const password = document.getElementById("reset-password-input")?.value || "";
+        const confirmation = document.getElementById("reset-password-confirm")?.value || "";
+        if (password.length < 6 || password.length > 128)
+          return showToast("warning", "Password baru harus terdiri dari 6-128 karakter.");
+        if (password !== confirmation) return showToast("warning", "Konfirmasi password tidak cocok.");
+        try {
+          await window.resetUserPassword(id, password);
+          closeModal();
+          showToast("success", `Password ${n} berhasil diperbarui.`);
+        } catch (error) {
+          showToast("error", `Gagal reset password: ${error?.message || "coba lagi nanti."}`);
+        }
+      }
+
 
       function renderAssignedStock() {
         const list = document.getElementById("assignedStockList");

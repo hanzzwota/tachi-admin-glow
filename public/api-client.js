@@ -1020,28 +1020,44 @@
       syncInFlight = null;
     }
   }
+  let pendingRegistrationId = "";
   window.handleAuthSubmit = async (event) => {
     event.preventDefault();
     const fields = [...event.target.querySelectorAll("input")];
-    const isRegister = fields.length > 2;
+    const isRegister = Boolean(event.target.closest("#view-register"));
+    const otpStep = isRegister && Boolean(pendingRegistrationId);
     const payload = isRegister
-      ? {
-          displayName: fields[0].value.trim(),
-          username: fields[1].value.trim(),
-          password: fields[3].value,
-        }
+      ? otpStep
+        ? {
+            registrationId: pendingRegistrationId,
+            code: document.getElementById("register-otp-code")?.value.trim() || "",
+          }
+        : {
+            displayName: fields[0].value.trim(),
+            username: fields[1].value.trim(),
+            email: fields[2].value.trim(),
+            password: fields[3].value,
+          }
       : { username: fields[0].value.trim(), password: fields[1].value };
 
-    // Validasi input -> WARNING (bukan error sistem, bukan success).
-    if (!payload.username || !payload.password || (isRegister && !payload.displayName)) {
+    if (otpStep) {
+      if (!/^\d{6}$/.test(payload.code)) {
+        showToast("warning", "Masukkan kode OTP 6 digit dari email.");
+        return;
+      }
+    } else if (
+      !payload.username ||
+      !payload.password ||
+      (isRegister && (!payload.displayName || !payload.email))
+    ) {
       showToast("warning", "⚠️ Harap isi semua kolom yang wajib!");
       return;
     }
-    if (!/^[a-zA-Z0-9_.]{3,30}$/.test(payload.username)) {
+    if (!otpStep && !/^[a-zA-Z0-9_.]{3,30}$/.test(payload.username)) {
       showToast("warning", "⚠️ Username 3-30 karakter: huruf, angka, titik, atau underscore.");
       return;
     }
-    if (payload.password.length < 6) {
+    if (!otpStep && payload.password.length < 6) {
       showToast("warning", "⚠️ Kata sandi minimal 6 karakter.");
       return;
     }
@@ -1049,38 +1065,42 @@
     const submitButton = event.target.querySelector('button[type="submit"]');
     if (submitButton) submitButton.disabled = true;
     try {
-      console.log(isRegister ? "Mencoba daftar dengan payload:" : "Mencoba login dengan payload:", {
-        username: payload.username,
-      });
-      const result = await api(isRegister ? "auth/register" : "auth/login", {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
-      console.log("Response dari server:", {
-        user: result?.user?.username,
-        role: result?.user?.role,
-      });
-
-      // SUCCESS hanya jika server benar-benar mengembalikan user (sesi cookie sudah dibuat).
-      if (!result || !result.user || !result.user.id) {
+      const result = await api(
+        isRegister ? (otpStep ? "auth/verify-registration" : "auth/register") : "auth/login",
+        { method: "POST", body: JSON.stringify(payload) },
+      );
+      if (isRegister && !otpStep && result?.otpRequired) {
+        pendingRegistrationId = result.registrationId;
+        const otpStepEl = document.getElementById("register-otp-step");
+        otpStepEl?.classList.remove("hidden");
+        otpStepEl?.classList.add("flex");
+        const hint = document.getElementById("register-otp-hint");
+        if (hint)
+          hint.textContent = `Kode OTP dikirim ke ${result.emailHint}. Kode berlaku 10 menit.`;
+        const button = event.target.querySelector('button[type="submit"] span');
+        if (button) button.textContent = "Verifikasi & Daftar";
         showToast(
-          "error",
-          isRegister
-            ? "Pendaftaran gagal! Server tidak mengembalikan data akun. Coba lagi. 😟"
-            : "Login gagal! Server tidak mengembalikan sesi login. Coba lagi. 😟",
+          "success",
+          "Kode verifikasi dikirim ke email. Masukkan kodenya untuk menyelesaikan pendaftaran.",
         );
         return;
       }
+      if (!result || !result.user || !result.user.id) {
+        showToast("error", "Server tidak mengembalikan sesi akun. Coba lagi.");
+        return;
+      }
       if (result.user.role === "admin") {
-        showToast("success", "Login admin berhasil! Mengalihkan ke dashboard admin... 🚀");
+        showToast("success", "Login admin berhasil! Mengalihkan ke dashboard admin...");
         setTimeout(() => window.top.location.assign("/admin"), 600);
         return;
       }
+      pendingRegistrationId = "";
+      document.getElementById("register-otp-step")?.classList.add("hidden");
       showToast(
         "success",
         isRegister
-          ? `Pendaftaran berhasil! Selamat datang, ${result.user.displayName || result.user.username}. 🎉`
-          : "Login berhasil! Mengalihkan ke dashboard... 🚀",
+          ? `Pendaftaran berhasil! Selamat datang, ${result.user.displayName || result.user.username}.`
+          : "Login berhasil! Mengalihkan ke dashboard...",
       );
       try {
         await syncAppData();
@@ -1113,8 +1133,8 @@
           "error",
           error.message ||
             (isRegister
-              ? "Pendaftaran gagal! Periksa kembali data Anda. 😟"
-              : "Login gagal! Username atau password salah. 😟"),
+              ? "Pendaftaran gagal. Periksa kembali data Anda."
+              : "Username atau password salah."),
         );
       }
     } finally {
@@ -1814,8 +1834,25 @@
       syncAppData().catch((error) => console.error("Gagal memuat ulang data:", error));
     });
   };
-  window.updatePassword = () =>
-    showToast("warning", "⚠️ Fitur ganti kata sandi belum tersedia. Hubungi admin untuk reset.");
+  window.updatePassword = async () => {
+    const oldPassword = document.getElementById("old-password")?.value || "";
+    const newPassword = document.getElementById("new-password")?.value || "";
+    if (!oldPassword || !newPassword)
+      return showToast("warning", "Isi kata sandi lama dan kata sandi baru.");
+    if (newPassword.length < 6 || newPassword.length > 128)
+      return showToast("warning", "Kata sandi baru harus terdiri dari 6-128 karakter.");
+    try {
+      await api("auth/change-password", {
+        method: "POST",
+        body: JSON.stringify({ oldPassword, newPassword }),
+      });
+      document.getElementById("old-password").value = "";
+      document.getElementById("new-password").value = "";
+      showToast("success", "Kata sandi berhasil diperbarui.");
+    } catch (error) {
+      showToast("error", error.message || "Gagal memperbarui kata sandi.");
+    }
+  };
   window.logout = async () => {
     try {
       await api("auth/logout", { method: "POST" });

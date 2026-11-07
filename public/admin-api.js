@@ -763,10 +763,13 @@
   };
   window.blockUser = (id) => userAction(id, "block");
   window.unblockUser = (id) => userAction(id, "unblock");
-  window.resetUserPassword = async (id) => {
-    const data = await api(`admin/users/${id}/password`, { method: "POST" });
+  window.resetUserPassword = async (id, password) => {
+    const data = await api(`admin/users/${id}/password`, {
+      method: "POST",
+      body: JSON.stringify({ password }),
+    });
     await refreshAfterAction();
-    return data.password;
+    return data;
   };
   window.adjustUserBalance = async (id, amount) => {
     const data = await api(`admin/users/${id}/balance`, {

@@ -156,10 +156,187 @@ async function login(request: Request) {
   return json({ user: publicUser(user) }, { headers: { "set-cookie": session.cookie } });
 }
 
+function maskEmail(email: string) {
+  const [local, domain] = email.split("@");
+  return `${(local ?? "").slice(0, 1)}***@${domain ?? ""}`;
+}
+
+async function otpDigest(registrationId: string, code: string) {
+  const secret =
+    process.env["SUPABASE_SECRET_KEY"] ??
+    process.env["SUPABASE_SERVICE_ROLE_KEY"] ??
+    process.env["SUPABASE_KEY"] ??
+    process.env["SUPABASE_API_KEY"] ??
+    "";
+  if (!secret) throw new Error("Kunci rahasia server belum dikonfigurasi");
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const digest = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(`${registrationId}:${code}`),
+  );
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function sendRegistrationOtp(registration: {
+  registration_id: string;
+  username: string;
+  email: string;
+  display_name: string;
+  password_hash: string;
+  password_salt: string;
+}) {
+  const apiKey = process.env["RESEND_API_KEY"] ?? "";
+  const from = process.env["AUTH_EMAIL_FROM"] ?? "";
+  if (!apiKey || !from)
+    throw new Error("Pengiriman OTP belum dikonfigurasi (RESEND_API_KEY / AUTH_EMAIL_FROM)");
+  const code = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000).padStart(6, "0");
+  await supabaseFetch("registration_otps", {
+    method: "POST",
+    headers: { Prefer: "return=minimal" },
+    body: JSON.stringify({
+      ...registration,
+      code_hash: await otpDigest(registration.registration_id, code),
+      expires_at: new Date(Date.now() + 10 * 60_000).toISOString(),
+      attempts: 0,
+      created_at: new Date().toISOString(),
+    }),
+  });
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from,
+      to: [registration.email],
+      subject: "Kode verifikasi pendaftaran Tachi",
+      text: `Kode OTP pendaftaran kamu: ${code}. Kode berlaku 10 menit. Jangan bagikan kode ini kepada siapa pun.`,
+    }),
+  });
+  if (!response.ok) {
+    await supabaseFetch(
+      `registration_otps?registration_id=eq.${encodeURIComponent(registration.registration_id)}`,
+      { method: "DELETE" },
+    );
+    console.error("Resend OTP gagal:", response.status, await response.text());
+    throw new Error("Email OTP gagal dikirim. Coba lagi nanti.");
+  }
+}
+
+async function verifyRegistrationOtp(request: Request) {
+  const payload = await body(request);
+  const registrationId = text(payload["registrationId"]);
+  const code = text(payload["code"]);
+  if (!/^[0-9a-f-]{36}$/i.test(registrationId) || !/^\d{6}$/.test(code))
+    return json({ error: "Kode OTP tidak valid" }, { status: 400 });
+  const rows = await supabaseFetch<Record<string, unknown>[]>(
+    `registration_otps?select=*&registration_id=eq.${encodeURIComponent(registrationId)}&limit=1`,
+  );
+  const pending = rows[0];
+  if (
+    !pending ||
+    Number(pending["attempts"]) >= 5 ||
+    Date.parse(String(pending["expires_at"])) <= Date.now()
+  ) {
+    await supabaseFetch(
+      `registration_otps?registration_id=eq.${encodeURIComponent(registrationId)}`,
+      { method: "DELETE" },
+    );
+    return json({ error: "Kode OTP tidak valid atau sudah kedaluwarsa" }, { status: 401 });
+  }
+  if ((await otpDigest(registrationId, code)) !== String(pending["code_hash"])) {
+    await supabaseFetch(
+      `registration_otps?registration_id=eq.${encodeURIComponent(registrationId)}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ attempts: Number(pending["attempts"]) + 1 }),
+      },
+    );
+    return json({ error: "Kode OTP salah" }, { status: 401 });
+  }
+  const username = String(pending["username"]);
+  const email = String(pending["email"]);
+  const [existingUsername, existingEmail] = await Promise.all([
+    supabaseFetch<Record<string, unknown>[]>(
+      `profiles?select=id&username=eq.${encodeURIComponent(username)}&limit=1`,
+    ),
+    supabaseFetch<Record<string, unknown>[]>(
+      `profiles?select=id&email=eq.${encodeURIComponent(email)}&limit=1`,
+    ),
+  ]);
+  if (existingUsername.length || existingEmail.length) {
+    await supabaseFetch(
+      `registration_otps?registration_id=eq.${encodeURIComponent(registrationId)}`,
+      { method: "DELETE" },
+    );
+    return json(
+      { error: existingUsername.length ? "Username sudah dipakai" : "Email sudah dipakai" },
+      { status: 409 },
+    );
+  }
+  const created = await supabaseFetch<Record<string, unknown>[]>("profiles", {
+    method: "POST",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify({
+      username,
+      email,
+      display_name: String(pending["display_name"]),
+      password_hash: String(pending["password_hash"]),
+      password_salt: String(pending["password_salt"]),
+    }),
+  });
+  const user = created[0];
+  if (!user) return json({ error: "Akun gagal dibuat, silakan coba lagi" }, { status: 500 });
+  await supabaseFetch(
+    `registration_otps?registration_id=eq.${encodeURIComponent(registrationId)}`,
+    { method: "DELETE" },
+  );
+  const session = await createSession(String(user["id"]));
+  return json(
+    { user: publicUser(user) },
+    { status: 201, headers: { "set-cookie": session.cookie } },
+  );
+}
+
+async function changeOwnPassword(request: Request) {
+  const user = await requireUser(request);
+  const payload = await body(request);
+  const oldPassword = typeof payload["oldPassword"] === "string" ? payload["oldPassword"] : "";
+  const newPassword = typeof payload["newPassword"] === "string" ? payload["newPassword"] : "";
+  if (newPassword.length < 6 || newPassword.length > 128)
+    return json({ error: "Password baru harus terdiri dari 6-128 karakter" }, { status: 400 });
+  if (!user["password_hash"] || !user["password_salt"])
+    return json({ error: "Akun belum memiliki password. Hubungi admin." }, { status: 409 });
+  if (
+    !(await verifyPassword(
+      oldPassword,
+      String(user["password_hash"]),
+      String(user["password_salt"]),
+    ))
+  )
+    return json({ error: "Password lama salah" }, { status: 401 });
+  const hashed = await hashPassword(newPassword);
+  await supabaseFetch(`profiles?id=eq.${encodeURIComponent(String(user["id"]))}`, {
+    method: "PATCH",
+    body: JSON.stringify({ password_hash: hashed.hash, password_salt: hashed.salt }),
+  });
+  await supabaseFetch(`sessions?profile_id=eq.${encodeURIComponent(String(user["id"]))}`, {
+    method: "DELETE",
+  });
+  const session = await createSession(String(user["id"]));
+  return json({ ok: true }, { headers: { "set-cookie": session.cookie } });
+}
+
 async function register(request: Request) {
   const payload = await body(request);
   const username = text(payload["username"]);
   const displayName = text(payload["displayName"]) || text(payload["name"]);
+  const email = text(payload["email"]).toLowerCase();
   const password = typeof payload["password"] === "string" ? payload["password"] : "";
   if (!/^[a-zA-Z0-9_.]{3,30}$/.test(username))
     return json(
@@ -167,36 +344,41 @@ async function register(request: Request) {
       { status: 400 },
     );
   if (password.length < 6) return json({ error: "Password minimal 6 karakter" }, { status: 400 });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    return json({ error: "Masukkan alamat email yang valid" }, { status: 400 });
   if (process.env["ADMIN_USERNAME"] && username === process.env["ADMIN_USERNAME"])
     return json({ error: "Username tersebut dicadangkan untuk admin" }, { status: 409 });
-  const existing = await supabaseFetch<Record<string, unknown>[]>(
-    `profiles?select=id&username=eq.${encodeURIComponent(username)}&limit=1`,
+  const [existingUsername, existingEmail] = await Promise.all([
+    supabaseFetch<Record<string, unknown>[]>(
+      `profiles?select=id&username=eq.${encodeURIComponent(username)}&limit=1`,
+    ),
+    supabaseFetch<Record<string, unknown>[]>(
+      `profiles?select=id&email=eq.${encodeURIComponent(email)}&limit=1`,
+    ),
+  ]);
+  if (existingUsername.length) return json({ error: "Username sudah dipakai" }, { status: 409 });
+  if (existingEmail.length) return json({ error: "Email sudah dipakai" }, { status: 409 });
+  await supabaseFetch(
+    `registration_otps?expires_at=lt.${encodeURIComponent(new Date().toISOString())}`,
+    {
+      method: "DELETE",
+    },
   );
-  if (existing.length) return json({ error: "Username sudah dipakai" }, { status: 409 });
   const hashed = await hashPassword(password);
-  const created = await supabaseFetch<Record<string, unknown>[]>("profiles", {
-    method: "POST",
-    headers: { Prefer: "return=representation" },
-    body: JSON.stringify({
-      username,
-      display_name: displayName.slice(0, 100),
-      password_hash: hashed.hash,
-      password_salt: hashed.salt,
-    }),
+  const registration = {
+    registration_id: crypto.randomUUID(),
+    username,
+    email,
+    display_name: displayName.slice(0, 100),
+    password_hash: hashed.hash,
+    password_salt: hashed.salt,
+  };
+  await sendRegistrationOtp(registration);
+  return json({
+    registrationId: registration.registration_id,
+    otpRequired: true,
+    emailHint: maskEmail(email),
   });
-  const user =
-    created?.[0] ??
-    (
-      await supabaseFetch<Record<string, unknown>[]>(
-        `profiles?select=*&username=eq.${encodeURIComponent(username)}&limit=1`,
-      )
-    )[0];
-  if (!user) return json({ error: "Akun gagal dibuat, silakan coba lagi" }, { status: 500 });
-  const session = await createSession(String(user["id"]));
-  return json(
-    { user: publicUser(user) },
-    { status: 201, headers: { "set-cookie": session.cookie } },
-  );
 }
 
 function publicUser(user: Record<string, unknown>) {
@@ -457,16 +639,13 @@ async function updateProfileAvatar(request: Request) {
   return json({ user: publicUser(updated[0]) });
 }
 
-function generateTemporaryPassword(length = 10) {
-  const alphabet = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789";
-  const bytes = crypto.getRandomValues(new Uint8Array(length));
-  return Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join("");
-}
-
 async function resetUserPassword(request: Request, id: string) {
   await requireAdmin(request);
   if (!/^[0-9a-f-]{36}$/i.test(id)) return json({ error: "User tidak valid" }, { status: 400 });
-  const password = generateTemporaryPassword();
+  const payload = await body(request);
+  const password = typeof payload["password"] === "string" ? payload["password"] : "";
+  if (password.length < 6 || password.length > 128)
+    return json({ error: "Password baru harus terdiri dari 6-128 karakter" }, { status: 400 });
   const hashed = await hashPassword(password);
   const updated = await supabaseFetch<Record<string, unknown>[]>(
     `profiles?id=eq.${encodeURIComponent(id)}&role=eq.user`,
@@ -478,7 +657,7 @@ async function resetUserPassword(request: Request, id: string) {
   );
   if (!updated?.length) return json({ error: "User tidak ditemukan" }, { status: 404 });
   await supabaseFetch(`sessions?profile_id=eq.${encodeURIComponent(id)}`, { method: "DELETE" });
-  return json({ ok: true, password });
+  return json({ ok: true });
 }
 
 async function createDeposit(request: Request) {
@@ -1178,6 +1357,8 @@ async function handler(request: Request, path: string) {
   const limits: Record<string, [number, number]> = {
     "auth/login": [8, 15 * 60 * 1000],
     "auth/register": [5, 60 * 60 * 1000],
+    "auth/verify-registration": [10, 15 * 60 * 1000],
+    "auth/change-password": [5, 15 * 60 * 1000],
     deposits: [20, 60 * 1000],
     withdrawals: [5, 10 * 60 * 1000],
     wallet: [10, 10 * 60 * 1000],
@@ -1192,6 +1373,10 @@ async function handler(request: Request, path: string) {
   }
   if (request.method === "POST" && path === "auth/login") return login(request);
   if (request.method === "POST" && path === "auth/register") return register(request);
+  if (request.method === "POST" && path === "auth/change-password")
+    return changeOwnPassword(request);
+  if (request.method === "POST" && path === "auth/verify-registration")
+    return verifyRegistrationOtp(request);
   if (request.method === "POST" && path === "auth/logout") return logout();
   if (request.method === "GET" && path === "auth/me") {
     const user = await getCurrentUser(request);
