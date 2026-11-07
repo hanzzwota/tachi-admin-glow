@@ -199,7 +199,7 @@ async function sendRegistrationOtp(registration: {
   const code = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000).padStart(6, "0");
   await supabaseFetch("registration_otps", {
     method: "POST",
-    headers: { Prefer: "return=minimal" },
+    headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
     body: JSON.stringify({
       ...registration,
       code_hash: await otpDigest(registration.registration_id, code),
@@ -226,6 +226,35 @@ async function sendRegistrationOtp(registration: {
     console.error("Resend OTP gagal:", response.status, await response.text());
     throw new Error("Email OTP gagal dikirim. Coba lagi nanti.");
   }
+}
+
+async function resendRegistrationOtp(request: Request) {
+  const payload = await body(request);
+  const registrationId = text(payload["registrationId"]);
+  if (!/^[0-9a-f-]{36}$/i.test(registrationId))
+    return json({ error: "Pendaftaran OTP tidak valid" }, { status: 400 });
+  const rows = await supabaseFetch<Record<string, unknown>[]>(
+    `registration_otps?select=registration_id,username,email,display_name,password_hash,password_salt,expires_at&registration_id=eq.${encodeURIComponent(registrationId)}&limit=1`,
+  );
+  const pending = rows[0];
+  if (!pending || Date.parse(String(pending["expires_at"])) <= Date.now())
+    return json(
+      { error: "Sesi pendaftaran sudah kedaluwarsa. Silakan daftar ulang." },
+      { status: 410 },
+    );
+  await sendRegistrationOtp({
+    registration_id: registrationId,
+    username: String(pending["username"]),
+    email: String(pending["email"]),
+    display_name: String(pending["display_name"]),
+    password_hash: String(pending["password_hash"]),
+    password_salt: String(pending["password_salt"]),
+  });
+  return json({
+    registrationId,
+    otpRequired: true,
+    emailHint: maskEmail(String(pending["email"])),
+  });
 }
 
 async function verifyRegistrationOtp(request: Request) {
@@ -1357,6 +1386,7 @@ async function handler(request: Request, path: string) {
   const limits: Record<string, [number, number]> = {
     "auth/login": [8, 15 * 60 * 1000],
     "auth/register": [5, 60 * 60 * 1000],
+    "auth/resend-registration": [3, 15 * 60 * 1000],
     "auth/verify-registration": [10, 15 * 60 * 1000],
     "auth/change-password": [5, 15 * 60 * 1000],
     deposits: [20, 60 * 1000],
@@ -1373,6 +1403,8 @@ async function handler(request: Request, path: string) {
   }
   if (request.method === "POST" && path === "auth/login") return login(request);
   if (request.method === "POST" && path === "auth/register") return register(request);
+  if (request.method === "POST" && path === "auth/resend-registration")
+    return resendRegistrationOtp(request);
   if (request.method === "POST" && path === "auth/change-password")
     return changeOwnPassword(request);
   if (request.method === "POST" && path === "auth/verify-registration")

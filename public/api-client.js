@@ -1024,13 +1024,21 @@
   let lastRegisterPayload = null;
   let resendTimer = null;
   const RESEND_COOLDOWN_SECONDS = 180;
+  const REGISTRATION_STATE_KEY = "tachi_pending_registration";
   const otpBoxes = () => [...document.querySelectorAll("#register-otp-boxes .otp-box")];
-  const startResendCooldown = () => {
+  const saveRegistrationState = (registrationId, emailHint, expiresAt, resendAvailableAt) => {
+    sessionStorage.setItem(
+      REGISTRATION_STATE_KEY,
+      JSON.stringify({ registrationId, emailHint, expiresAt, resendAvailableAt }),
+    );
+  };
+  const clearRegistrationState = () => sessionStorage.removeItem(REGISTRATION_STATE_KEY);
+  const startResendCooldown = (resendAvailableAt = Date.now() + RESEND_COOLDOWN_SECONDS * 1000) => {
     const button = document.getElementById("register-otp-resend");
     if (!button) return;
-    let remaining = RESEND_COOLDOWN_SECONDS;
     clearInterval(resendTimer);
     const render = () => {
+      const remaining = Math.max(0, Math.ceil((resendAvailableAt - Date.now()) / 1000));
       const m = Math.floor(remaining / 60);
       const s = String(remaining % 60).padStart(2, "0");
       button.disabled = remaining > 0;
@@ -1038,12 +1046,11 @@
     };
     render();
     resendTimer = setInterval(() => {
-      remaining -= 1;
       render();
-      if (remaining <= 0) clearInterval(resendTimer);
+      if (resendAvailableAt <= Date.now()) clearInterval(resendTimer);
     }, 1000);
   };
-  const openRegisterOtp = (emailHint) => {
+  const openRegisterOtp = (emailHint, resendAvailableAt) => {
     const overlay = document.getElementById("register-otp-overlay");
     const hint = document.getElementById("register-otp-hint");
     if (hint)
@@ -1051,35 +1058,60 @@
     otpBoxes().forEach((box) => (box.value = ""));
     overlay?.classList.remove("hidden");
     overlay?.classList.add("flex");
-    startResendCooldown();
+    startResendCooldown(resendAvailableAt);
     setTimeout(() => otpBoxes()[0]?.focus(), 50);
+  };
+  const restorePendingRegistration = () => {
+    try {
+      const pending = JSON.parse(sessionStorage.getItem(REGISTRATION_STATE_KEY) || "null");
+      if (!pending?.registrationId || Number(pending.expiresAt) <= Date.now()) {
+        clearRegistrationState();
+        return;
+      }
+      pendingRegistrationId = pending.registrationId;
+      lastRegisterPayload = null;
+      openRegisterOtp(pending.emailHint, Number(pending.resendAvailableAt) || Date.now());
+    } catch {
+      clearRegistrationState();
+    }
   };
   window.closeRegisterOtp = (keepState) => {
     const overlay = document.getElementById("register-otp-overlay");
     overlay?.classList.add("hidden");
     overlay?.classList.remove("flex");
     clearInterval(resendTimer);
-    if (!keepState) pendingRegistrationId = "";
+    if (!keepState) {
+      pendingRegistrationId = "";
+      lastRegisterPayload = null;
+      clearRegistrationState();
+    }
   };
   window.verifyRegisterOtp = () => {
     document.querySelector("#view-register form")?.requestSubmit();
   };
   window.resendRegisterOtp = async () => {
     const button = document.getElementById("register-otp-resend");
-    if (!lastRegisterPayload || button?.disabled) return;
+    if (!pendingRegistrationId || button?.disabled) return;
     if (button) {
       button.disabled = true;
       button.textContent = "Mengirim...";
     }
     try {
-      const result = await api("auth/register", {
+      const result = await api("auth/resend-registration", {
         method: "POST",
-        body: JSON.stringify(lastRegisterPayload),
+        body: JSON.stringify({ registrationId: pendingRegistrationId }),
       });
       if (result?.registrationId) pendingRegistrationId = result.registrationId;
+      const resendAvailableAt = Date.now() + RESEND_COOLDOWN_SECONDS * 1000;
+      saveRegistrationState(
+        pendingRegistrationId,
+        result.emailHint,
+        Date.now() + 10 * 60 * 1000,
+        resendAvailableAt,
+      );
       otpBoxes().forEach((box) => (box.value = ""));
       showToast("success", "Kode baru sudah dikirim ulang ke Gmail kamu.");
-      startResendCooldown();
+      startResendCooldown(resendAvailableAt);
     } catch (error) {
       showToast("error", error.message || "Gagal mengirim ulang kode. Coba lagi.");
       if (button) {
@@ -1175,7 +1207,14 @@
       if (isRegister && !otpStep && result?.otpRequired) {
         pendingRegistrationId = result.registrationId;
         lastRegisterPayload = payload;
-        openRegisterOtp(result.emailHint);
+        const resendAvailableAt = Date.now() + RESEND_COOLDOWN_SECONDS * 1000;
+        saveRegistrationState(
+          pendingRegistrationId,
+          result.emailHint,
+          Date.now() + 10 * 60 * 1000,
+          resendAvailableAt,
+        );
+        openRegisterOtp(result.emailHint, resendAvailableAt);
         showToast("success", "Kode verifikasi dikirim ke Gmail kamu.");
         return;
       }
@@ -1190,6 +1229,7 @@
       }
       pendingRegistrationId = "";
       lastRegisterPayload = null;
+      clearRegistrationState();
       window.closeRegisterOtp?.(true);
       showToast(
         "success",
@@ -2002,6 +2042,7 @@
         window.top.location.replace("/auth");
         return;
       } else {
+        if (requestedView === "register") restorePendingRegistration();
         finishInitialLoad();
       }
     } catch (error) {
