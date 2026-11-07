@@ -285,6 +285,29 @@ export function errorResponse(error: unknown) {
       { status: 503 },
     );
   }
+  const registrationSchemaUnavailable =
+    message.startsWith("Supabase ") && /registration_otps|profiles.*email/i.test(message);
+  if (registrationSchemaUnavailable) {
+    return json(
+      {
+        error:
+          "Pendaftaran belum siap pada database. Admin perlu menerapkan migration email_registration_otp lalu redeploy.",
+      },
+      { status: 503 },
+    );
+  }
+  if (/Pengiriman OTP belum dikonfigurasi/.test(message)) {
+    return json(
+      {
+        error:
+          "Pendaftaran email belum dikonfigurasi. Admin perlu mengisi RESEND_API_KEY dan AUTH_EMAIL_FROM di server.",
+      },
+      { status: 503 },
+    );
+  }
+  if (/Email OTP gagal dikirim/.test(message)) {
+    return json({ error: message }, { status: 502 });
+  }
   // Wrong/rotated key on the host (e.g. Vercel env) makes every query fail with 401.
   if (isInvalidDatabaseKeyMessage(message)) {
     return json({ error: INVALID_DATABASE_KEY_MESSAGE }, { status: 503 });

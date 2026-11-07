@@ -1095,7 +1095,10 @@
     const digits = box.value.replace(/\D/g, "");
     if (digits.length > 1) {
       const start = boxes.indexOf(box);
-      digits.split("").slice(0, 6 - start).forEach((d, i) => (boxes[start + i].value = d));
+      digits
+        .split("")
+        .slice(0, 6 - start)
+        .forEach((d, i) => (boxes[start + i].value = d));
       boxes[Math.min(start + digits.length, 5)]?.focus();
     } else {
       box.value = digits;
@@ -1212,6 +1215,14 @@
         showToast(
           "error",
           error.message || "Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi.",
+        );
+      } else if (error.status === 503 || error.status === 502) {
+        showToast(
+          "error",
+          error.message ||
+            (isRegister
+              ? "Layanan pendaftaran sedang belum siap. Coba lagi nanti."
+              : "Layanan sedang belum siap. Coba lagi nanti."),
         );
       } else if (error.status >= 500) {
         showToast(

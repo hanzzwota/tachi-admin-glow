@@ -266,7 +266,7 @@ async function verifyRegistrationOtp(request: Request) {
       `profiles?select=id&username=eq.${encodeURIComponent(username)}&limit=1`,
     ),
     supabaseFetch<Record<string, unknown>[]>(
-      `profiles?select=id&email=eq.${encodeURIComponent(email)}&limit=1`,
+      `profiles?select=id&email=ilike.${encodeURIComponent(email)}&limit=1`,
     ),
   ]);
   if (existingUsername.length || existingEmail.length) {
@@ -353,7 +353,7 @@ async function register(request: Request) {
       `profiles?select=id&username=eq.${encodeURIComponent(username)}&limit=1`,
     ),
     supabaseFetch<Record<string, unknown>[]>(
-      `profiles?select=id&email=eq.${encodeURIComponent(email)}&limit=1`,
+      `profiles?select=id&email=ilike.${encodeURIComponent(email)}&limit=1`,
     ),
   ]);
   if (existingUsername.length) return json({ error: "Username sudah dipakai" }, { status: 409 });
